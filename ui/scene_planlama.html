@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS PLANLAMA</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#4aa3ff;--c2:#2f6bff;--ln:rgba(74,163,255,.26);--hi:rgba(74,163,255,.14);--card:rgba(6,16,34,.72);--ok:#35e06b}
+html,body{background:radial-gradient(ellipse 60% 55% at 50% 45%,rgba(47,107,255,.09),transparent 70%),radial-gradient(ellipse at 50% -10%,#0b1d3d 0%,#02060f 66%)}
+#stage{overflow:hidden}
+#lk{position:absolute;inset:0;width:100%;height:100%}
+.ln{fill:none;stroke:#4aa3ff;stroke-width:3;stroke-linecap:round;opacity:.85;filter:drop-shadow(0 0 5px rgba(74,163,255,.55));transition:stroke .4s}
+.ln.ok{stroke:var(--ok);filter:drop-shadow(0 0 5px rgba(53,224,107,.55))}
+.nd{position:absolute;transform:translate(-50%,-50%);width:118px;text-align:center;cursor:grab;touch-action:none;z-index:2}
+.nd.drag{cursor:grabbing;z-index:4}
+.ic{position:relative;width:58px;height:58px;margin:0 auto 6px;border-radius:15px;background:rgba(8,22,46,.92);border:1.5px solid var(--ln);display:grid;place-items:center;color:var(--c);box-shadow:0 6px 22px rgba(0,0,0,.45);transition:border-color .2s,box-shadow .3s}
+.nd.o{width:128px}.nd.o .ic{width:72px;height:72px;border-radius:50%;color:#ffd84a;border:2px solid rgba(255,216,74,.65);background:radial-gradient(circle at 35% 30%,rgba(255,216,74,.28),rgba(40,28,0,.92) 72%)}.nd.o .ic svg{width:38px;height:38px;fill:rgba(255,216,74,.18)}
+.em{font-size:38px;line-height:1;filter:drop-shadow(0 0 8px rgba(255,216,74,.6))}
+.tg{display:inline-block;margin-bottom:3px;padding:1px 8px;border-radius:9px;font:700 9.5px Consolas;letter-spacing:.18em;color:var(--c);border:1px solid var(--ln)}.nd.o .tg{color:#ffd84a;border-color:rgba(255,216,74,.5)}
+.ic svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.nd.done .ic{border-color:var(--ok);color:var(--ok)}
+.nd.got .ic{border-color:var(--ok);color:#ffd84a;box-shadow:0 0 0 3px rgba(53,224,107,.25),0 0 30px rgba(255,216,74,.55);animation:glow 2.4s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 5px rgba(53,224,107,.18),0 0 44px rgba(255,216,74,.8)}}
+.nd.sel .ic{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.18),0 6px 22px rgba(0,0,0,.45)}
+.nd.from .ic{border-color:#ffd84a;box-shadow:0 0 0 4px rgba(255,216,74,.3)}
+.dot{position:absolute;top:-5px;right:-5px;width:17px;height:17px;border-radius:50%;background:#ffd84a;border:2px solid #04101c;cursor:pointer;box-shadow:0 0 8px rgba(255,216,74,.7)}
+.nd.done .dot,.nd.got .dot{background:var(--ok);box-shadow:0 0 10px var(--ok)}.nd.o .dot{cursor:default}
+.lb{font:600 13px "Segoe UI",sans-serif;color:#fff;line-height:1.2;word-break:break-word;text-shadow:0 1px 6px #000}
+.nd.done .lb{color:rgba(255,255,255,.6);text-decoration:line-through}
+.pg{margin-top:3px;font:11px Consolas;color:var(--mut);letter-spacing:.08em}.nd.got .pg{color:var(--ok)}
+#tools{position:absolute;left:0;top:0;z-index:6;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;max-width:calc(100% - 270px)}
+#nm{width:210px;padding:8px 12px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:9px;color:#fff;font:14px "Segoe UI",sans-serif;outline:0;user-select:text}#nm:focus{border-color:var(--c)}
+#stat{position:absolute;right:0;top:0;z-index:6;min-width:240px;padding:12px 16px}
+.bar{height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin:5px 0 11px}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--c2),var(--c));transition:width .5s}.bar.o i{background:linear-gradient(90deg,#ffb300,#ffd84a)}
+#stat .t{font:600 12px Bahnschrift,Consolas;letter-spacing:.14em;color:var(--mut);display:flex;justify-content:space-between}#stat .t b{color:#fff}
+#hint{position:absolute;inset:0;display:none;place-items:center;text-align:center;color:var(--mut);font-size:15px;line-height:1.7;pointer-events:none;z-index:1}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:8}
+#win{position:absolute;left:50%;top:18%;transform:translate(-50%,-20px);opacity:0;z-index:9;padding:16px 30px;text-align:center;pointer-events:none;transition:opacity .4s,transform .4s;border-color:#ffd84a}
+#win.on{opacity:1;transform:translate(-50%,0)}#win b{display:block;font:700 22px Bahnschrift,Consolas;letter-spacing:.2em;color:#ffd84a}#win span{font-size:16px;color:#fff}
+body.link #stage{cursor:crosshair}
+</style></head><body>
+<div id="stage">
+ <svg id="lk"></svg><div id="hint">Henüz düğüm yok.<br>Yukarıya bir ad yazıp <b>+ GÖREV</b> ya da <b>+ ÖDÜL</b> deyin,<br>sonra <b>BAĞLA</b> ile görevleri ödüle bağlayın.<br>Sesle: "görev ekle ödev yap", "ödül ekle film izle".</div>
+ <div id="tools" class="card"><input id="nm" maxlength="60" placeholder="Görev ya da ödül adı" spellcheck="false" autocomplete="off">
+  <button class="prim" id="addg">+ GÖREV</button><button id="addo" style="color:#ffd84a">+ ÖDÜL</button><button id="lkb">BAĞLA</button><button id="del">SİL</button><button id="clr">BİTENLERİ TEMİZLE</button></div>
+ <div id="stat" class="card"><div class="t"><span>GÖREVLER</span><b id="sg">0/0</b></div><div class="bar"><i id="bg1"></i></div><div class="t"><span>ÖDÜLLER</span><b id="so">0/0</b></div><div class="bar o"><i id="bg2"></i></div>
+  <div class="mut" style="font-size:12px;line-height:1.5">Yeşil nokta: tamam · sarı nokta: bekliyor<br>Noktaya tıkla: görevi bitir/geri al<br>Bir ödüle bağlı tüm görevler bitince ödül senin.</div></div>
+ <canvas id="fx"></canvas><div id="win" class="card"><b>ÖDÜL KAZANILDI</b><span id="wt"></span></div>
+</div>
+<script>
+let S={nodes:[],links:[],stat:{g:0,gd:0,o:0,od:0}},sel=null,linkMode=false,from=null,dragging=false,drag=null;
+const NS="http://www.w3.org/2000/svg",st=$("stage"),lk=$("lk");
+Mode.start({kind:"planlama",title:"PLANLAMA",placeholder:"Komut: görev ekle ödev yap · ödül ekle film izle · ödev ile film ödülünü bağla · ödevi bitir · durum",init:s=>{S=s;render()},act:d=>{if(d.snap&&!dragging){S=d.snap;render()}if(d.won)d.won.forEach(celebrate)}});
+const ICO={g:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 9.5l2 2 4-4M8 16h8"/></svg>',o:'<span class="em">🏆</span>'};
+const esc=Mode.esc,by=i=>S.nodes.find(n=>n.id===i);
+const W=()=>st.clientWidth,H=()=>st.clientHeight,pos=n=>[n.x*W(),n.y*H()];
+function render(){
+ st.querySelectorAll(".nd").forEach(e=>e.remove());lk.innerHTML="";
+ for(const n of S.nodes){const e=document.createElement("div");e.className="nd "+n.t+(n.done?" done":"")+(n.got?" got":"")+(sel===n.id?" sel":"")+(from===n.id?" from":"");e.dataset.id=n.id;
+  e.innerHTML='<div class="ic">'+ICO[n.t]+'<span class="dot" title="'+(n.t==="g"?"Bitir / geri al":"")+'"></span></div><div class="tg">'+(n.t==="o"?"ÖDÜL":"GÖREV")+'</div><div class="lb">'+esc(n.text)+'</div>'+(n.t==="o"?'<div class="pg">'+(n.prog&&n.prog[1]?n.prog[0]+" / "+n.prog[1]+" görev":"görev bağla")+'</div>':"");
+  const [x,y]=pos(n);e.style.left=x+"px";e.style.top=y+"px";st.appendChild(e);wire(e,n)}
+ drawLinks();stats();$("hint").style.display=S.nodes.length?"none":"grid";
+ $("del").disabled=!sel;$("del").style.opacity=sel?1:.4;$("lkb").classList.toggle("cur",linkMode);document.body.classList.toggle("link",linkMode)}
+function drawLinks(){lk.innerHTML="";for(const [a,b] of S.links){const A=by(a),B=by(b);if(!A||!B)continue;const [ax,ay]=pos(A),[bx,by_]=pos(B),mx=(ax+bx)/2;
+  const p=document.createElementNS(NS,"path");p.setAttribute("d","M"+ax+" "+ay+" C"+mx+" "+ay+" "+mx+" "+by_+" "+bx+" "+by_);
+  const ok=(A.done||A.got)&&(B.done||B.got);p.setAttribute("class","ln"+(ok?" ok":""));p.dataset.a=a;p.dataset.b=b;lk.appendChild(p)}}
+function stats(){const s=S.stat;$("sg").textContent=s.gd+"/"+s.g;$("so").textContent=s.od+"/"+s.o;$("bg1").style.width=(s.g?s.gd/s.g*100:0)+"%";$("bg2").style.width=(s.o?s.od/s.o*100:0)+"%";
+ Mode.pill(!S.nodes.length?"BOŞ":s.o&&s.od===s.o?"HEPSİ TAMAM":"PLANDA")}
+function wire(e,n){
+ e.querySelector(".dot").addEventListener("pointerdown",ev=>ev.stopPropagation());
+ e.querySelector(".dot").addEventListener("click",ev=>{ev.stopPropagation();if(n.t==="g")Mode.send({type:"text",text:"@tamam "+n.id})});
+ e.addEventListener("pointerdown",ev=>{if(ev.button!==0)return;e.setPointerCapture(ev.pointerId);drag={id:n.id,e,sx:ev.clientX,sy:ev.clientY,ox:n.x,oy:n.y,moved:false}});
+ e.addEventListener("pointermove",ev=>{if(!drag||drag.e!==e)return;const dx=ev.clientX-drag.sx,dy=ev.clientY-drag.sy;
+  if(!drag.moved&&Math.hypot(dx,dy)<5)return;drag.moved=dragging=true;e.classList.add("drag");
+  n.x=Math.max(.04,Math.min(.96,drag.ox+dx/W()));n.y=Math.max(.06,Math.min(.94,drag.oy+dy/H()));const [x,y]=pos(n);e.style.left=x+"px";e.style.top=y+"px";drawLinks()});
+ e.addEventListener("pointerup",ev=>{if(!drag||drag.e!==e)return;const d=drag;drag=null;dragging=false;e.classList.remove("drag");
+  if(d.moved)Mode.send({type:"text",text:"@taşı "+n.id+" "+n.x.toFixed(3)+" "+n.y.toFixed(3)});else pick(n)})}
+function pick(n){
+ if(linkMode){if(!from){from=n.id;sel=null}else if(from===n.id)from=null;else{const ex=S.links.some(l=>(l[0]===from&&l[1]===n.id)||(l[1]===from&&l[0]===n.id));Mode.send({type:"text",text:"@"+(ex?"kes ":"bağla ")+from+" "+n.id});from=null}}
+ else sel=sel===n.id?null:n.id;render()}
+function add(t){const v=$("nm").value.trim();if(!v)return $("nm").focus();Mode.send({type:"text",text:"@ekle "+t+" "+v});$("nm").value="";$("nm").focus()}
+$("addg").onclick=()=>add("g");$("addo").onclick=()=>add("o");
+$("lkb").onclick=()=>{linkMode=!linkMode;from=null;render();$("log").textContent=linkMode?"Jarvis: bağlamak için iki düğüme sırayla tıklayın; bağlı iki düğüme tekrar tıklarsanız bağ kopar.":"Jarvis: bağlama kapalı."};
+$("del").onclick=()=>{if(sel){Mode.send({type:"text",text:"@sil "+sel});sel=null}};
+$("clr").onclick=()=>Mode.cmd("biten görevleri temizle");
+$("nm").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")add(e.shiftKey?"o":"g");else if(e.key==="Escape")e.target.blur()});
+addEventListener("keydown",e=>{if((e.key==="Delete"||e.key==="Backspace")&&sel&&document.activeElement.tagName!=="INPUT")$("del").click()});
+addEventListener("resize",()=>{fit();render()});
+// ödül kutlaması: konfeti + başlık
+const fx=$("fx"),cx=fx.getContext("2d");let P=[],raf=0;
+function fit(){fx.width=st.clientWidth;fx.height=st.clientHeight}fit();
+function celebrate(id){const n=by(id);if(!n)return;const [x,y]=pos(n);$("wt").textContent=n.text;$("win").classList.add("on");setTimeout(()=>$("win").classList.remove("on"),3600);
+ const cols=["#ffd84a","#35e06b","#4aa3ff","#ff6fa8","#fff"];
+ for(let i=0;i<90;i++){const a=Math.random()*6.283,v=2+Math.random()*6;P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-3,r:3+Math.random()*4,c:cols[i%5],l:1})}
+ if(!raf)raf=requestAnimationFrame(step)}
+function step(){cx.clearRect(0,0,fx.width,fx.height);P=P.filter(p=>p.l>0);for(const p of P){p.x+=p.vx;p.y+=p.vy;p.vy+=.22;p.vx*=.99;p.l-=.011;cx.globalAlpha=Math.max(0,p.l);cx.fillStyle=p.c;cx.fillRect(p.x,p.y,p.r,p.r*.6)}
+ cx.globalAlpha=1;raf=P.length?requestAnimationFrame(step):0}
+</script></body></html>

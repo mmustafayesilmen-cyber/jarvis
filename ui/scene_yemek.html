@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS YEMEK</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#9be564;--c2:#4fbf6a;--ln:rgba(155,229,100,.24);--hi:rgba(155,229,100,.12);--card:rgba(10,24,10,.68);--miss:#ffad5c}
+html,body{background:radial-gradient(ellipse 60% 55% at 50% 45%,rgba(155,229,100,.07),transparent 70%),radial-gradient(ellipse at 50% -10%,#16300c 0%,#050b03 64%)}
+#stage{display:flex;flex-direction:column;gap:14px}
+#have{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#have .lb{font:600 11px Consolas;letter-spacing:.3em;color:var(--c);margin-right:4px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:7px 8px 7px 14px;border-radius:20px;border:1px solid var(--c);background:rgba(155,229,100,.12);font:600 15px "Segoe UI";color:#fff}
+.chip i{font-style:normal;cursor:pointer;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--mut);background:rgba(0,0,0,.35)}.chip i:hover{color:#fff;background:rgba(255,120,84,.4)}
+#add{width:190px;padding:8px 12px;border-radius:20px;border:1px dashed var(--ln);background:rgba(0,0,0,.3);color:#fff;font:14px "Segoe UI";outline:0;user-select:text}#add:focus{border-color:var(--c)}
+#stat{display:flex;align-items:center;gap:12px;min-height:22px;font:13px Consolas;color:var(--mut)}
+#stat .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--ln);border-top-color:var(--c);animation:sp 0.8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+#stat b{color:#fff;font-weight:600}#stat .err{color:var(--bad)}
+#tools{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));grid-auto-rows:max-content;gap:16px;overflow:auto;padding:4px;flex:1;min-height:0;align-content:start}
+.rc>*{flex:none}
+.rc{cursor:pointer;padding:0;overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;display:flex;flex-direction:column}
+.rc:hover{transform:translateY(-4px);border-color:var(--c);box-shadow:0 16px 40px rgba(0,0,0,.4),0 0 24px rgba(155,229,100,.22)}
+.rc .im{height:140px;background:#0d1a08 center/cover no-repeat;position:relative}
+.rc .no{position:absolute;top:10px;left:10px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 14px Bahnschrift;background:rgba(0,0,0,.65);border:1px solid var(--c);color:var(--c)}
+.rc .ok{position:absolute;top:10px;right:10px;font:700 10px Consolas;letter-spacing:.14em;color:#06170a;background:var(--c);border-radius:8px;padding:4px 8px}
+.rc .bd{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.rc b{font-size:17px;line-height:1.25}.rc .m{font-size:12.5px;color:var(--mut)}
+.bar{height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.bar u{display:block;height:100%;background:linear-gradient(90deg,var(--c2),var(--c))}
+.tags{display:flex;flex-wrap:wrap;gap:5px}.tags span{font-size:11.5px;padding:2px 8px;border-radius:9px}
+.tags .y{color:#dfffc9;background:rgba(155,229,100,.16)}.tags .n{color:var(--miss);background:rgba(255,173,92,.13)}
+#empty{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+#empty h1{margin:0;font:600 34px "Segoe UI";color:#fff}#empty p{margin:0;color:var(--mut);font-size:16px;max-width:640px;line-height:1.5}
+#ex{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#view{display:none;grid-template-columns:minmax(280px,360px) 1fr minmax(230px,280px);gap:20px;flex:1;min-height:0}
+#view>div{min-height:0;overflow:auto}
+#vimg{height:150px;border-radius:12px;background:#0d1a08 center/cover no-repeat;margin-bottom:12px}
+#mal{margin:0;padding:0;list-style:none}#mal li{margin:6px 0;font-size:14.5px;line-height:1.4;display:flex;gap:8px}
+#mal li:before{content:"•";color:var(--mut);width:14px;flex:none;text-align:center}
+#mal li.y:before{content:"✓";color:var(--c)}#mal li.n:before{content:"✗";color:var(--miss)}#mal li.n{color:var(--miss)}#mal li.s{color:var(--mut)}#mal li.o{opacity:.7}
+#mal li small{font:10px Consolas;letter-spacing:.1em;color:var(--mut);align-self:center}
+#stepbox{display:flex;flex-direction:column;gap:16px}
+#all{margin:0;padding-left:26px;font-size:15px;line-height:1.5;color:var(--mut)}#all li{margin:7px 0;cursor:pointer;padding:2px 6px;border-radius:8px}#all li:hover{background:var(--hi)}
+#all li.on{color:#fff;background:var(--hi)}#all li.done{opacity:.55}#all li::marker{color:var(--c);font-weight:600}#allw h3{margin:6px 0 4px}#st.pre{font:500 15px "Segoe UI";color:var(--mut);text-shadow:none}
+#sn{font:600 12px Consolas;letter-spacing:.3em;color:var(--c)}#st{font:600 min(3.4vh,30px)/1.38 "Segoe UI",sans-serif;color:#fff;text-shadow:0 0 24px rgba(155,229,100,.25)}
+#dots{display:flex;gap:8px;flex-wrap:wrap}#dots i{width:28px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);cursor:pointer}#dots i.on{background:var(--c);box-shadow:0 0 10px var(--c)}#dots i.done{background:rgba(155,229,100,.45)}
+.nav{display:flex;gap:12px;flex-wrap:wrap}.nav button{padding:12px 22px;font-size:13px}
+#tm{font:300 64px Bahnschrift,Consolas;color:#fff;text-align:center;font-variant-numeric:tabular-nums}#tl{text-align:center;font-size:13px;color:var(--mut);margin-top:4px;min-height:18px}
+body.ring #tm{animation:pl 1s infinite}@keyframes pl{50%{opacity:.3}}
+#src{font:12px Consolas;color:var(--mut);margin-top:12px;word-break:break-all}
+#staples,#staples0{margin-top:14px;font-size:12px;color:var(--mut)}#staples span,#staples0 span{display:inline-block;margin:3px 4px 0 0;padding:2px 8px;border-radius:9px;border:1px solid var(--ln);cursor:pointer}
+#staples span.off,#staples0 span.off{border-color:var(--miss);color:var(--miss);text-decoration:line-through}
+</style></head><body>
+<div id="stage">
+ <div id="have"><span class="lb">ELİMDEKİLER</span><span id="chips"></span><input id="add" placeholder="+ malzeme ekle" spellcheck="false" autocomplete="off">
+  <div id="tools"><button id="only">SADECE ELİMDEKİLERLE</button><button id="again">YENİDEN ARA</button><button id="clr">TEMİZLE</button></div></div>
+ <div id="stat"></div>
+ <div id="empty"><h1>Elinizde ne var?</h1><p>Malzemeleri söyleyin ya da yukarıya yazın. İnternette tarif arar, her tarifin gerçek malzeme listesine bakar ve eksiği en az olandan sıralarım.</p>
+  <div id="ex"></div><p style="font-size:13px">Tuz, su, yağ, baharat, un, şeker ve salça evde var sayılır; olmayanı aşağıdan ya da "evde un yok" diyerek işaretleyin.</p><div id="staples0"></div></div>
+ <div id="grid"></div>
+ <div id="more" style="display:none;text-align:center"><button id="mb">DAHA FAZLA TARİF</button></div>
+ <div id="view">
+  <div class="card"><div id="vimg"></div><h3>MALZEMELER <small id="meta"></small></h3><ul id="mal"></ul>
+   <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button id="back">‹ SONUÇLAR</button><button id="shop">EKSİKLERİ LİSTEYE EKLE</button></div><div id="src"></div></div>
+  <div class="card" id="stepbox"><div id="sn"></div><div id="st"></div><div id="dots"></div>
+   <div class="nav"><button id="prev">‹ ÖNCEKİ</button><button class="prim" id="next">BAŞLA</button><button id="rep">TEKRAR OKU</button></div>
+   <div id="allw"><h3>HAZIRLANIŞI</h3><ol id="all"></ol></div></div>
+  <div class="card"><h3>SAYAÇ</h3><div id="tm">00:00</div><div id="tl">Adımda süre geçiyorsa sayaç kurabilirsiniz.</div>
+   <div class="nav" style="justify-content:center;margin-top:14px"><button id="tset">ADIMA SAYAÇ KUR</button><button id="tstop">DURDUR</button></div>
+   <div id="staples"></div></div>
+ </div>
+</div>
+<script>
+let D=null,endAt=0,audio=null;
+const EX=["elimde tavuk, patates ve soğan var","yumurta, domates, biber ve peynir","kıyma ve patlıcan","kabak, havuç ve yoğurt","makarna ve ton balığı","kırmızı mercimek ve soğan"];
+Mode.start({kind:"yemek",title:"YEMEK",placeholder:"Komut: elimde tavuk, patates ve soğan var · biber de var · patatesi çıkar · ikinciyi aç · başla · sonraki · sayaç kur",init:d=>{D=d;draw()},act,tick:tickT});
+function act(d){if(d.snap){D=d.snap;draw()}if(d.timer){endAt=Date.now()+d.timer*60000;$("tl").textContent=d.label||"";document.body.classList.remove("ring")}}
+function staples(el){if(!D)return;$(el).innerHTML='<div style="margin-bottom:4px">EVDE VAR SAYILANLAR (tıklayıp kapatın):</div>'+D.staples.filter(s=>!["buz","su","et suyu","sarımsak tozu"].includes(s)).map(s=>'<span class="'+(D.nostaple.includes(s)?"off":"")+'" data-s="'+Mode.esc(s)+'">'+Mode.esc(s)+"</span>").join("");
+ $(el).querySelectorAll("span").forEach(e=>e.onclick=()=>Mode.cmd("@temel "+e.dataset.s))}
+function draw(){if(!D)return;const c=D.cur;
+ $("chips").innerHTML=D.items.map(i=>'<span class="chip">'+Mode.esc(i)+'<i data-i="'+Mode.esc(i)+'" title="Çıkar">×</i></span>').join(" ");
+ $("chips").querySelectorAll("i").forEach(e=>e.onclick=()=>Mode.cmd("@çıkar "+e.dataset.i));
+ $("only").className=D.only?"cur":"";$("tools").style.display=D.items.length?"flex":"none";
+ $("stat").innerHTML=D.busy?'<span class="spin"></span>'+Mode.esc(D.busy):D.err?'<span class="err">'+Mode.esc(D.err)+"</span>":D.total?"<b>"+D.total+"</b> tarif incelendi · <b>"+D.full+"</b> tanesi tamamen elinizdekilerle"+(D.only?" · yalnızca eksiksizler gösteriliyor":""):"";
+ Mode.pill(D.busy?"ARANIYOR":c?"TARİF":D.total?D.total+" TARİF":"HAZIR");
+ const emp=!c&&!D.items.length&&!D.busy;$("empty").style.display=emp?"flex":"none";
+ if(emp){$("ex").innerHTML=EX.map(x=>"<button>"+Mode.esc(x)+"</button>").join("");$("ex").querySelectorAll("button").forEach((b,i)=>b.onclick=()=>Mode.cmd(EX[i]));staples("staples0")}
+ $("grid").style.display=!c&&!emp?"grid":"none";$("view").style.display=c?"grid":"none";$("have").style.display=c?"none":"flex";
+ $("more").style.display=!c&&D.list.length&&D.list.length<(D.only?D.full:D.total)?"block":"none";
+ if(!c){$("grid").innerHTML=D.list.map((r,i)=>'<div class="card rc" data-i="'+i+'"><div class="im"'+(r.img?' style="background-image:url(\''+encodeURI(r.img)+'\')"':"")+'><span class="no">'+(i+1)+"</span>"+(r.miss.length?"":'<span class="ok">EKSİK YOK</span>')+'</div><div class="bd"><b>'+Mode.esc(r.ad)+'</b><div class="m">'+[r.dk?r.dk+" dk":"",r.kisi,r.site].filter(Boolean).map(Mode.esc).join(" · ")+'</div><div class="bar"><u style="width:'+Math.round(r.cov*100)+'%"></u></div><div class="tags">'+r.used.map(x=>'<span class="y">✓ '+Mode.esc(x)+"</span>").join("")+r.miss.slice(0,5).map(x=>'<span class="n">✗ '+Mode.esc(x)+"</span>").join("")+(r.miss.length>5?'<span class="n">+'+(r.miss.length-5)+"</span>":"")+"</div></div></div>").join("");
+  $("grid").querySelectorAll(".rc").forEach(e=>e.onclick=()=>Mode.cmd("@aç "+e.dataset.i));return}
+ $("vimg").style.display=c.img?"block":"none";if(c.img)$("vimg").style.backgroundImage="url('"+encodeURI(c.img)+"')";
+ $("meta").textContent=[c.dk?c.dk+" dk":"",c.kisi].filter(Boolean).join(" · ");
+ $("mal").innerHTML=c.mal.map(m=>'<li class="'+(m.st?"s":m.ok===true?"y":m.ok===false?"n":"")+(m.opt?" o":"")+'">'+Mode.esc(m.t)+(m.st?" <small>TEMEL</small>":m.opt?" <small>İSTEĞE BAĞLI</small>":"")+"</li>").join("");
+ $("shop").style.display=c.miss.length?"inline-block":"none";$("src").textContent="Kaynak: "+c.url;
+ const s=c.step,n=c.adim.length;$("dots").innerHTML=c.adim.map((a,i)=>'<i class="'+(i===s?"on":i<s?"done":"")+'" data-i="'+i+'"></i>').join("");
+ $("dots").querySelectorAll("i").forEach(e=>e.onclick=()=>Mode.cmd("@adım "+e.dataset.i));
+ $("sn").textContent=s<0?c.ad.toUpperCase():"ADIM "+(s+1)+" / "+n;
+ $("st").textContent=s<0?(c.miss.length?"Eksikler: "+c.miss.join(", ")+". ":"Eksiğiniz yok. ")+"Malzemeleri hazırlayın, hazır olunca BAŞLA'ya basın ya da başla deyin.":c.adim[s].t;
+ $("st").className=s<0?"pre":"";
+ $("all").innerHTML=c.adim.map((a,i)=>'<li class="'+(i===s?"on":i<s?"done":"")+'" data-i="'+i+'">'+Mode.esc(a.t)+(a.dk?' <span class="mut">('+a.dk+" dk)</span>":"")+"</li>").join("");
+ $("all").querySelectorAll("li").forEach(e=>e.onclick=()=>Mode.cmd("@adım "+e.dataset.i));
+ $("next").textContent=s<0?"BAŞLA":s>=n-1?"BİTTİ":"SONRAKİ ›";$("tset").style.display=s>=0&&c.adim[s].dk?"inline-block":"none";staples("staples")}
+$("add").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){Mode.cmd(e.target.value.trim()+(D&&D.items.length?" de var":" var"));e.target.value=""}});
+$("only").onclick=()=>Mode.cmd(D&&D.only?"hepsini göster":"sadece elimdekilerle");$("again").onclick=()=>Mode.cmd("yeniden ara");$("clr").onclick=()=>Mode.cmd("temizle");
+$("mb").onclick=()=>Mode.cmd("daha fazla");$("back").onclick=()=>Mode.cmd("sonuçlara dön");$("shop").onclick=()=>Mode.cmd("eksikleri listeye ekle");
+$("next").onclick=()=>Mode.cmd(D&&D.cur&&D.cur.step<0?"başla":"sonraki");$("prev").onclick=()=>Mode.cmd("önceki");$("rep").onclick=()=>Mode.cmd("tekrar");$("tset").onclick=()=>Mode.cmd("sayaç kur");
+$("tstop").onclick=()=>{endAt=0;$("tm").textContent="00:00";$("tl").textContent="";document.body.classList.remove("ring")};
+function beep(){try{audio=audio||new AudioContext();for(let i=0;i<3;i++){const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(audio.destination);o.start(audio.currentTime+i*.5);o.stop(audio.currentTime+i*.5+.25)}}catch(e){}}
+function tickT(){if(!endAt)return;const s=Math.max(0,Math.ceil((endAt-Date.now())/1000));$("tm").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+ if(s<=0){endAt=0;document.body.classList.add("ring");$("tl").textContent="Süre doldu!";beep()}}
+</script></body></html>

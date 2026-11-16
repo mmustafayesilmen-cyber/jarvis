@@ -1,0 +1,19 @@
+{
+  "tts": "edge",
+  "jarvis_fx": true,
+  "log_max_mb": 5,
+  "mola_len": 10,
+  "uyku_len": 30,
+  "odak_len": 45,
+  "uzak_tam_kontrol": false,
+  "uzak_tailscale": false,
+  "uzak_otomatik": false,
+  "uzak_wa_no": "",
+  "spor_fav": [],
+  "save_clips": false,
+  "volume_max": 60,
+  "city": "Istanbul",
+  "report_phone": "",
+  "kendi_tarayici": true,
+  "tarayici_tema": "gx"
+}

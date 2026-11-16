@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS HOLOGRAM</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#00e5ff;--bg:#010a10;--ln:rgba(0,229,255,.28);--hi:rgba(0,229,255,.16)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 60%,#04202c 0%,#010a10 70%);color:#d8fbff;font-family:"Segoe UI",Bahnschrift,Consolas,sans-serif;user-select:none}
+#cv{position:fixed;inset:0;width:100%;height:100%;cursor:grab}#cv.dr{cursor:grabbing}
+#top{position:fixed;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:8px;padding:0 14px;z-index:5;background:linear-gradient(#000c,transparent);border-bottom:1px solid var(--ln)}
+#title{font:600 14px Bahnschrift,Consolas;letter-spacing:.35em;color:var(--c);text-shadow:0 0 12px var(--c);white-space:nowrap;margin-right:10px}
+#sp{flex:1}
+button,select{font:12px Consolas;letter-spacing:.06em;padding:5px 9px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,12,18,.65);white-space:nowrap}
+button:hover{background:var(--hi)}button.on{background:var(--hi);border-color:var(--c)}
+option{background:#041a24;color:#d8fbff}
+#close{border-color:rgba(255,120,84,.7);color:#ff9a7a}
+#side{position:fixed;right:10px;top:58px;bottom:84px;width:292px;overflow:auto;z-index:4;padding:10px 12px;border:1px solid var(--ln);background:rgba(2,14,20,.72);scrollbar-width:thin}
+#side h3{font:600 11.5px Consolas;letter-spacing:.25em;color:var(--c);margin:14px 0 7px;opacity:.9}#side h3:first-child{margin-top:0}
+.g{display:flex;flex-wrap:wrap;gap:5px}
+.sw{width:22px;height:22px;padding:0;border:1px solid rgba(255,255,255,.4)}.sw:hover{transform:scale(1.18)}
+.sl{display:flex;align-items:center;gap:8px;margin:5px 0;font:12px Consolas}.sl span{width:26px;opacity:.8}.sl output{width:38px;text-align:right}
+input[type=range]{flex:1;accent-color:var(--c)}
+input[type=color]{width:30px;height:26px;padding:0;border:1px solid var(--ln);background:none;cursor:pointer}
+#info{font:12px/1.7 Consolas;opacity:.9}#info b{color:var(--c);font-weight:400}
+#bar{position:fixed;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--ln);background:rgba(0,0,0,.65);z-index:9;padding:6px 12px}
+#cmd{width:100%;padding:8px 12px;background:rgba(0,0,0,.55);border:1px solid var(--ln);color:var(--c);font:14px Consolas;outline:0;user-select:text}#cmd:focus{border-color:var(--c)}
+#log{height:30px;margin-top:5px;font:12.5px Consolas;overflow:hidden;display:flex;gap:14px;align-items:center;white-space:nowrap}
+#log span.j{color:#cfeeff;overflow:hidden;text-overflow:ellipsis;max-width:62vw}#log span.mem{color:#9fe8a0;opacity:.85;margin-left:auto}
+#scantxt{position:fixed;left:50%;top:70px;transform:translateX(-50%);font:600 15px Bahnschrift,Consolas;letter-spacing:.4em;color:var(--c);text-shadow:0 0 14px var(--c);z-index:3;display:none}
+@media(max-width:900px){#side{display:none}}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div id="top"><span id="title">HOLOGRAM</span><span id="sp"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="scantxt"></div>
+<div id="side">
+ <h3>SEÇİLİ EKLEM</h3><div id="jsel" class="mut">Bir eklem noktasına tıklayın.</div><div id="jsl"></div>
+ <h3>GÖRÜNÜM</h3><div class="g" id="g_style"></div>
+ <div class="g" style="margin-top:6px" id="g_tog"></div>
+ <h3>DURUŞ</h3><div class="g" id="g_pose"></div>
+ <h3>ANİMASYON</h3><div class="g" id="g_anim"></div>
+ <h3>RENK</h3><select id="ctarget" style="width:100%;margin-bottom:6px"></select><div class="g" id="g_col"></div>
+ <div class="g" style="margin-top:7px;align-items:center"><input type="color" id="cpick" value="#00e5ff"><button id="crain">GÖKKUŞAĞI</button><button id="creset">RENKLERİ SIFIRLA</button></div>
+ <h3>BİLGİ</h3><div id="info"></div>
+</div>
+<div id="bar"><input id="cmd" placeholder="Komut: sağ kolu yana kaldır · dirseği doksan derece bük · kafayı sola çevir · kafayı kırmızı yap · T pozu · yürü · tel kafes · tara · yardım · çık" spellcheck="false" autocomplete="off"><div id="log"><span class="j" id="jl">Jarvis: fareyle döndürebilir, tekerlekle yakınlaşabilir, eklemlere tıklayabilirsiniz.</span><span class="mem" id="mem">anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)</span></div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const cv=$("cv"),ctx=cv.getContext("2d");
+let W=0,H=0,DPR=1;function fit(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}addEventListener("resize",fit);fit();
+// ------------------------------------------------------------------ iskelet
+// o: ebeveyne göre ofset (cm), part: renk bölgesi. Sağ = -x, ön = +z.
+const N=[
+ ["pelvis",null,[0,100,0],"torso"],["chest","pelvis",[0,32,0],"torso"],["neck","chest",[0,26,0],"neck"],["head","neck",[0,12,0],"head"],["crown","head",[0,15,0],"head"],["nose","head",[0,8,10],"head"],
+ ["shoulderR","chest",[-19,18,0],"armR"],["elbowR","shoulderR",[0,-28,0],"armR"],["wristR","elbowR",[0,-25,0],"armR"],["handR","wristR",[0,-10,0],"handR"],
+ ["shoulderL","chest",[19,18,0],"armL"],["elbowL","shoulderL",[0,-28,0],"armL"],["wristL","elbowL",[0,-25,0],"armL"],["handL","wristL",[0,-10,0],"handL"],
+ ["hipR","pelvis",[-9,-3,0],"legR"],["kneeR","hipR",[0,-43,0],"legR"],["ankleR","kneeR",[0,-41,0],"legR"],["toeR","ankleR",[0,-6,14],"footR"],
+ ["hipL","pelvis",[9,-3,0],"legL"],["kneeL","hipL",[0,-43,0],"legL"],["ankleL","kneeL",[0,-41,0],"legL"],["toeL","ankleL",[0,-6,14],"footL"]];
+const IDX={};N.forEach((n,i)=>IDX[n[0]]=i);
+// kemikler: [a,b,r0,r1,bölge,şekil,genişlikÇarpanı(x),derinlik(z)]
+const BONES=[
+ ["pelvis","chest",15,17,"torso","tube",1,.62],["chest","neck",17,6,"torso","tube",1,.6],["neck","head",4.4,4.6,"neck","tube",1,1],["head","crown",9,9,"head","sphere",.92,1],
+ ["chest","shoulderR",4.6,4.6,"armR","tube",1,1],["shoulderR","elbowR",4.7,3.7,"armR","tube",1,1],["elbowR","wristR",3.5,2.7,"armR","tube",1,1],["wristR","handR",2.6,3.2,"handR","tube",1,.6],
+ ["chest","shoulderL",4.6,4.6,"armL","tube",1,1],["shoulderL","elbowL",4.7,3.7,"armL","tube",1,1],["elbowL","wristL",3.5,2.7,"armL","tube",1,1],["wristL","handL",2.6,3.2,"handL","tube",1,.6],
+ ["pelvis","hipR",5,6.6,"legR","tube",1,1],["hipR","kneeR",6.8,4.8,"legR","tube",1,1],["kneeR","ankleR",4.5,3.2,"legR","tube",1,1],["ankleR","toeR",3.2,2.4,"footR","tube",1,.9],
+ ["pelvis","hipL",5,6.6,"legL","tube",1,1],["hipL","kneeL",6.8,4.8,"legL","tube",1,1],["kneeL","ankleL",4.5,3.2,"legL","tube",1,1],["ankleL","toeL",3.2,2.4,"footL","tube",1,.9]];
+const JOINTS=["pelvis","chest","neck","head","shoulderR","elbowR","wristR","shoulderL","elbowL","wristL","hipR","kneeR","ankleR","hipL","kneeL","ankleL"];
+const TR={pelvis:"Leğen",chest:"Göğüs / omurga",neck:"Boyun",head:"Kafa",shoulder:"Omuz",elbow:"Dirsek",wrist:"Bilek",hip:"Kalça",knee:"Diz",ankle:"Ayak bileği"};
+function jname(n){const m=n.match(/^(\w+?)([RL])?$/);const base=n.replace(/[RL]$/,"");return(n.endsWith("R")&&base!==n?"Sağ ":n.endsWith("L")&&base!==n?"Sol ":"")+(TR[base]||n)}
+const LIM={elbow:[-150,5],knee:[-5,150],wrist:[-80,80]};
+// ------------------------------------------------------------------ matematik
+const mul=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r[i*3+j]=a[i*3]*b[j]+a[i*3+1]*b[3+j]+a[i*3+2]*b[6+j];return r};
+const mv=(m,v)=>[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
+const RX=a=>{const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0,c,-s,0,s,c]},RY=a=>{const c=Math.cos(a),s=Math.sin(a);return[c,0,s,0,1,0,-s,0,c]},RZ=a=>{const c=Math.cos(a),s=Math.sin(a);return[c,-s,0,s,c,0,0,0,1]};
+const D2R=Math.PI/180,I3=[1,0,0,0,1,0,0,0,1];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sc=(a,k)=>[a[0]*k,a[1]*k,a[2]*k],len=a=>Math.hypot(a[0],a[1],a[2]);
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];const nrm=a=>{const l=len(a)||1;return[a[0]/l,a[1]/l,a[2]/l]};
+// ------------------------------------------------------------------ durum
+const Z=()=>N.map(()=>[0,0,0]);
+let cur=Z(),tgt=Z(),lift=0,liftT=0,anim=null,animT0=0,poseName="normal",rainbow=false;
+let yaw=0.5,pitch=0.12,yawT=null,pitchT=null,zoom=1,zoomT=1,spin=0.4,style="wire";
+let T={joints:true,labels:false,grid:true,hud:true};
+let sel=null,scanT=-1,hover=null;
+const colors={parts:{},joints:{}};const BASE="#00e5ff";
+const parts=["head","neck","torso","armR","armL","handR","handL","legR","legL","footR","footL"];
+const PRE={
+ normal:{shoulderR:[0,0,-7],shoulderL:[0,0,7],elbowR:[-10,0,0],elbowL:[-10,0,0],hipR:[0,0,-3],hipL:[0,0,3]},
+ tpose:{shoulderR:[0,0,-90],shoulderL:[0,0,90]},
+ star:{shoulderR:[0,0,-135],shoulderL:[0,0,135],hipR:[0,0,-24],hipL:[0,0,24]},
+ victory:{shoulderR:[0,0,-160],shoulderL:[0,0,160],hipR:[0,0,-6],hipL:[0,0,6]},
+ sit:{hipR:[-90,0,-3],hipL:[-90,0,3],kneeR:[90,0,0],kneeL:[90,0,0],shoulderR:[-35,0,-5],shoulderL:[-35,0,5],elbowR:[-70,0,0],elbowL:[-70,0,0]},
+ squat:{hipR:[-110,0,-14],hipL:[-110,0,14],kneeR:[125,0,0],kneeL:[125,0,0],chest:[18,0,0],shoulderR:[-80,0,-6],shoulderL:[-80,0,6]},
+ bow:{chest:[48,0,0],neck:[12,0,0],shoulderR:[8,0,-6],shoulderL:[8,0,6]},
+ hero:{shoulderR:[0,0,-35],shoulderL:[0,0,35],elbowR:[0,0,100],elbowL:[0,0,-100],hipR:[0,0,-13],hipL:[0,0,13],chest:[0,0,0],neck:[8,0,0]},
+ ironman:{shoulderR:[-88,0,-4],elbowR:[0,0,0],shoulderL:[0,0,28],elbowL:[-20,0,0],hipR:[0,0,-8],hipL:[0,0,8],chest:[0,-14,0],_lift:22},
+ fly:{pelvis:[85,0,0],shoulderR:[0,0,-176],shoulderL:[0,0,176],hipR:[0,0,-4],hipL:[0,0,4],neck:[-62,0,0],_lift:60},
+ fight:{shoulderR:[-60,0,-14],elbowR:[-105,0,0],shoulderL:[-50,0,10],elbowL:[-115,0,0],hipR:[-22,0,-14],kneeR:[30,0,0],hipL:[8,0,12],kneeL:[18,0,0],chest:[8,18,0]}};
+const PNAMES={normal:"Normal",tpose:"T pozu",star:"Yıldız",victory:"Zafer",sit:"Otur",squat:"Çömel",bow:"Eğil",hero:"Kahraman",ironman:"Iron Man",fly:"Uçuş",fight:"Dövüş"};
+const ANAMES={wave:"El salla",walk:"Yürü",run:"Koş",dance:"Dans",breathe:"Nefes",jump:"Zıpla"};
+function setPreset(k){if(!PRE[k])return;const p=PRE[k];tgt=Z();for(const n in p){if(n[0]==="_")continue;tgt[IDX[n]]=p[n].slice()}liftT=p._lift||0;anim=null;poseName=k;syncUI()}
+function animOff(t){const o=Z(),a=anim;let jy=0;if(!a)return{o,jy};const s=(f,p=0)=>Math.sin(t*f+p);
+ const set=(n,x,y,z)=>{const q=o[IDX[n]];q[0]+=x||0;q[1]+=y||0;q[2]+=z||0};
+ if(a==="wave"){set("shoulderR",0,0,-155-0);set("elbowR",0,0,28*s(7));set("elbowR",-35,0,0);o[IDX.shoulderR][2]+=0}
+ else if(a==="walk"||a==="run"){const f=a==="run"?8:4.6,A=a==="run"?52:30,K=a==="run"?80:36;
+  set("hipR",-A*s(f),0,0);set("hipL",A*s(f),0,0);set("kneeR",K*Math.max(0,s(f+1.6)),0,0);set("kneeL",K*Math.max(0,-s(f+1.6)),0,0);
+  set("shoulderR",A*.9*s(f),0,-6);set("shoulderL",-A*.9*s(f),0,6);set("elbowR",-(a==="run"?85:25)-8,0,0);set("elbowL",-(a==="run"?85:25)-8,0,0);set("chest",a==="run"?12:3,6*s(f),0);jy=Math.abs(s(f))*(a==="run"?9:3)}
+ else if(a==="dance"){set("shoulderR",0,0,-95-45*s(5));set("shoulderL",0,0,95+45*s(5,1.6));set("elbowR",-30*s(10),0,0);set("elbowL",-30*s(10,1),0,0);set("pelvis",0,14*s(3),10*s(3,.8));set("chest",0,-22*s(3),-6*s(3,.8));set("neck",0,26*s(3,1.3),0);set("hipR",-14*Math.max(0,s(6)),0,0);set("hipL",-14*Math.max(0,-s(6)),0,0);set("kneeR",22*Math.max(0,s(6)),0,0);set("kneeL",22*Math.max(0,-s(6)),0,0);jy=Math.abs(s(6))*5}
+ else if(a==="breathe"){set("shoulderR",0,0,-2.5*s(1.4));set("shoulderL",0,0,2.5*s(1.4));set("chest",2*s(1.4),0,0)}
+ else if(a==="jump"){const j=Math.abs(s(3.2)),c=1-j;set("hipR",-34*c,0,0);set("hipL",-34*c,0,0);set("kneeR",70*c,0,0);set("kneeL",70*c,0,0);set("shoulderR",0,0,-150*j);set("shoulderL",0,0,150*j);jy=j*48}
+ return{o,jy}}
+// ------------------------------------------------------------------ iskelet hesabı
+let POS=[],ROT=[];
+function fk(t){const {o,jy}=animOff(t);const k=Math.min(1,.16);liftT===lift||(lift+=(liftT-lift)*.1);
+ for(let i=0;i<N.length;i++){const c=cur[i],g=tgt[i];for(let a=0;a<3;a++)c[a]+=(g[a]-c[a])*k}
+ for(let i=0;i<N.length;i++){const n=N[i];const r=cur[i].map((v,a)=>v+o[i][a]);const b=n[0].replace(/[RL]$/,"");const lim=LIM[b];if(lim)r[0]=Math.max(lim[0],Math.min(lim[1],r[0]));
+  const L=mul(RZ(r[2]*D2R),mul(RX(r[0]*D2R),RY(r[1]*D2R)));
+  if(!n[1]){ROT[i]=L;POS[i]=sub(n[2],[0,0,0])}else{const p=IDX[n[1]];ROT[i]=mul(ROT[p],L);POS[i]=add(POS[p],mv(ROT[p],n[2]))}}
+ let mn=1e9;for(const p of POS)mn=Math.min(mn,p[1]);const dy=-(mn-3)+jy+lift;for(const p of POS)p[1]+=dy}
+// ------------------------------------------------------------------ renk
+const hex2=h=>{h=h.replace("#","");if(h.length===3)h=h.split("").map(c=>c+c).join("");return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
+function hsl2rgb(h,s,l){h=((h%360)+360)%360;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60)[r,g,b]=[c,x,0];else if(h<120)[r,g,b]=[x,c,0];else if(h<180)[r,g,b]=[0,c,x];else if(h<240)[r,g,b]=[0,x,c];else if(h<300)[r,g,b]=[x,0,c];else[r,g,b]=[c,0,x];return[(r+m)*255,(g+m)*255,(b+m)*255].map(Math.round)}
+function partRGB(part,y,t){if(rainbow)return hsl2rgb(y*2.4+t*70,.9,.58);return hex2(colors.parts[part]||BASE)}
+function jointRGB(name,part,y,t){if(rainbow)return hsl2rgb(y*2.4+t*70+60,.95,.7);const j=colors.joints[name];if(j)return hex2(j);const b=partRGB(part,y,t);return b.map(v=>Math.min(255,v*.4+150))}
+const rgba=(c,a)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
+function applyColor(target,side,hex){const sides=side==="R"?["R"]:side==="L"?["L"]:["R","L"];
+ if(target==="all"){for(const p of parts)colors.parts[p]=hex;for(const j of JOINTS)colors.joints[j]=hex;rainbow=false;return}
+ if(target==="joints"){for(const j of JOINTS)colors.joints[j]=hex;rainbow=false;return}
+ if(target.startsWith("joint:")){const b=target.slice(6);if(["neck","chest","head","pelvis"].includes(b))colors.joints[b]=hex;else for(const s of sides)colors.joints[b+s]=hex;rainbow=false;return}
+ const map={head:["head"],neck:["neck"],torso:["torso"],arms:sides.flatMap(s=>["arm"+s,"hand"+s]),hands:sides.map(s=>"hand"+s),legs:sides.flatMap(s=>["leg"+s,"foot"+s]),feet:sides.map(s=>"foot"+s)};
+ for(const p of map[target]||[])colors.parts[p]=hex;rainbow=false}
+// ------------------------------------------------------------------ çizim
+const view=()=>mul(RX(pitch),RY(yaw));
+let VM=I3;const CAM=620;
+function proj(p){const c=[p[0],p[1]-95,p[2]];const q=mv(VM,c);const k=(H*.66/190)*CAM/(CAM-q[2]);const z=zoom;return[W/2-(innerWidth>900?140:0)+q[0]*k*z,H/2+(-q[1])*k*z+26,k*z,q[2]]}
+function frame(now){requestAnimationFrame(frame);if(!innerWidth||!innerHeight)return;if(W!==innerWidth||H!==innerHeight)fit();const t=now/1000,dt=Math.min(.05,t-(frame.t||t));frame.t=t;
+ if(yawT!==null){let d=((yawT-yaw+Math.PI*3)%(Math.PI*2))-Math.PI;yaw+=d*.12;pitch+=(pitchT-pitch)*.12;if(Math.abs(d)<.01&&Math.abs(pitchT-pitch)<.01)yawT=null}else yaw+=spin*dt;
+ zoom+=(zoomT-zoom)*.12;fk(t);VM=view();
+ ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);ctx.globalCompositeOperation="lighter";
+ drawFloor(t);
+ const sy=scanT>=0?scanT*200-6:-1e9;
+ for(const b of BONES)drawBone(b,t,sy);
+ drawJoints(t);drawDust(t);
+ if(scanT>=0){scanT+=dt/3.4;ring3(sy,95,[120,255,255],.9);$("scantxt").style.display="block";$("scantxt").textContent="TARAMA "+Math.min(100,Math.round(scanT*100))+"%";if(scanT>1.08){scanT=-1;$("scantxt").style.display="none";log("Tarama tamamlandı efendim: 15 eklem, hareket serbestliği normal.")}}
+ ctx.globalCompositeOperation="source-over";infoTick(t)}
+function ring3(y,r,c,a){ctx.beginPath();for(let i=0;i<=48;i++){const q=proj([Math.cos(i/48*6.283)*r,y,Math.sin(i/48*6.283)*r]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])}ctx.strokeStyle=rgba(c,a);ctx.lineWidth=2;ctx.stroke()}
+function drawFloor(t){if(!T.grid)return;const base=hex2(colors.parts.torso||BASE);for(let r=30;r<=120;r+=30){ctx.beginPath();for(let i=0;i<=48;i++){const q=proj([Math.cos(i/48*6.283)*r,0,Math.sin(i/48*6.283)*r]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])}ctx.strokeStyle=rgba(rainbow?hsl2rgb(t*70+r,.9,.5):base,.22);ctx.lineWidth=1;ctx.stroke()}
+ ctx.beginPath();for(let i=0;i<16;i++){const a=i/16*6.283+t*.15,p1=proj([Math.cos(a)*30,0,Math.sin(a)*30]),p2=proj([Math.cos(a)*120,0,Math.sin(a)*120]);ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1])}ctx.strokeStyle=rgba(base,.12);ctx.stroke();
+ const c=proj([0,0,0]);const g=ctx.createRadialGradient(c[0],c[1],5,c[0],c[1],130*c[2]);g.addColorStop(0,rgba(base,.22));g.addColorStop(1,rgba(base,0));ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(c[0],c[1],130*c[2],50*c[2]*Math.max(.25,Math.abs(Math.cos(pitch))),0,0,6.283);ctx.fill()}
+function drawBone(b,t,sy){const A=POS[IDX[b[0]]],B=POS[IDX[b[1]]],pi=IDX[b[0]];const part=b[4];const L=len(sub(B,A));if(L<.01)return;const u=sc(sub(B,A),1/L);
+ let ref=mv(ROT[pi],[0,0,1]);let e1=cross(u,ref);if(len(e1)<.2){ref=mv(ROT[pi],[1,0,0]);e1=cross(u,ref)}e1=nrm(e1);const e2=nrm(cross(u,e1));
+ const mid=(A[1]+B[1])/2;const col=partRGB(part,mid,t);
+ const sphere=b[5]==="sphere",K=sphere?9:Math.max(3,Math.min(7,Math.round(L/8))),M=sphere?16:b[7]<.7&&b[2]>14?18:12;
+ const hi=[],rings=[];ctx.lineJoin="round";
+ const skel=style==="skeleton"||style==="xray";
+ if(style!=="skeleton"){for(let i=0;i<K;i++){const f=K===1?.5:i/(K-1);let r=b[2]+(b[3]-b[2])*f;if(sphere)r=b[2]*Math.sin(Math.PI*(.06+.88*f))*1.05;const C=add(A,sc(u,L*f));const rx=r*b[6],rz=r*b[7];const pts=[];
+   for(let m=0;m<M;m++){const a=m/M*6.283,p=add(C,add(sc(e1,rx*Math.cos(a)),sc(e2,rz*Math.sin(a))));pts.push(p)}rings.push({C,pts})}}
+ const xr=style==="xray"?.2:1;const al=(style==="solid"?.62:.78)*xr;
+ if(rings.length){const sp=rings.map(r=>r.pts.map(proj));
+  ctx.beginPath();for(let i=0;i<sp.length;i++){const s=sp[i];if(style==="points"){for(const q of s){ctx.moveTo(q[0]+1.4,q[1]);ctx.arc(q[0],q[1],1.4,0,6.283)}continue}ctx.moveTo(s[0][0],s[0][1]);for(let m=1;m<=s.length;m++){const q=s[m%s.length];ctx.lineTo(q[0],q[1])}}
+  if(style!=="points")for(let m=0;m<M;m+=(M>12?3:3)){for(let i=0;i<sp.length-1;i++){ctx.moveTo(sp[i][m][0],sp[i][m][1]);ctx.lineTo(sp[i+1][m][0],sp[i+1][m][1])}}
+  if(style==="points"){ctx.fillStyle=rgba(col,.85*xr);ctx.fill()}else{ctx.strokeStyle=rgba(col,.12*xr);ctx.lineWidth=3.4;ctx.stroke();ctx.strokeStyle=rgba(col,al);ctx.lineWidth=1.05;ctx.stroke()}
+  if(style==="solid"){ctx.fillStyle=rgba(col,.05);for(const s of sp){ctx.beginPath();s.forEach((q,m)=>m?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fill()}
+   for(let i=0;i<sp.length-1;i++){ctx.beginPath();for(let m=0;m<=M;m++){const q=sp[i][m%M];m?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])}for(let m=M;m>=0;m--){const q=sp[i+1][m%M];ctx.lineTo(q[0],q[1])}ctx.closePath();ctx.fillStyle=rgba(col,.035);ctx.fill()}}
+  if(sy>-1e8){ctx.beginPath();for(let i=0;i<rings.length;i++)if(Math.abs(rings[i].C[1]-sy)<7){const s=sp[i];ctx.moveTo(s[0][0],s[0][1]);for(let m=1;m<=s.length;m++){const q=s[m%s.length];ctx.lineTo(q[0],q[1])}}ctx.strokeStyle="rgba(190,255,255,.95)";ctx.lineWidth=2.4;ctx.stroke()}}
+ if(skel||style==="wire"&&false){const a=proj(A),c=proj(B);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(c[0],c[1]);ctx.strokeStyle=rgba(style==="xray"?[235,250,255]:col,.95);ctx.lineWidth=style==="xray"?3.2:2.6;ctx.stroke()}
+ if(style==="xray"&&part==="torso"){for(let i=1;i<6;i++){const C=add(A,sc(u,L*(.2+.12*i)));const r=(b[2]+(b[3]-b[2])*(.2+.12*i))*.78;ctx.beginPath();for(let m=0;m<=10;m++){const a=-1.25+m/10*2.5,p=add(C,add(sc(e1,r*Math.sin(a)),sc(e2,r*Math.cos(a)*.72)));const q=proj(p);m?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])}ctx.strokeStyle="rgba(230,250,255,.5)";ctx.lineWidth=1.3;ctx.stroke()}}}
+function drawJoints(t){const sp={};
+ if(T.joints||style==="skeleton"||style==="xray"){for(const n of JOINTS){const i=IDX[n],q=proj(POS[i]);sp[n]=q;const part=N[i][3];const c=jointRGB(n,part,POS[i][1],t);const r=(n===sel?7.5+Math.sin(t*7)*1.5:4.2)*Math.min(1.5,q[2]/(H*.66/190)*.9+.2);
+  const g=ctx.createRadialGradient(q[0],q[1],0,q[0],q[1],r*3);g.addColorStop(0,rgba(c,.9));g.addColorStop(.35,rgba(c,.35));g.addColorStop(1,rgba(c,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(q[0],q[1],r*3,0,6.283);ctx.fill();
+  ctx.beginPath();ctx.arc(q[0],q[1],r,0,6.283);ctx.fillStyle=rgba(c.map(v=>Math.min(255,Math.round(v*.82+34))),.97);ctx.fill();
+  if(n===sel||n===hover){ctx.beginPath();ctx.arc(q[0],q[1],r+6,0,6.283);ctx.strokeStyle=rgba(c,.9);ctx.lineWidth=1.5;ctx.stroke()}
+  if(T.labels||n===sel||n===hover){ctx.globalCompositeOperation="source-over";ctx.font="12px Consolas";ctx.fillStyle="rgba(220,250,255,.95)";ctx.fillText(jname(n),q[0]+r+8,q[1]+4);ctx.globalCompositeOperation="lighter"}}}
+ // yüz: burun çizgisi
+ const hq=proj(POS[IDX.head]),nq=proj(POS[IDX.nose]);const hc=partRGB("head",POS[IDX.head][1],t);ctx.beginPath();ctx.arc(nq[0],nq[1],2.4,0,6.283);ctx.fillStyle=rgba(hc,.95);ctx.fill();
+ ctx.beginPath();ctx.moveTo(hq[0],hq[1]);ctx.lineTo(nq[0],nq[1]);ctx.strokeStyle=rgba(hc,.5);ctx.lineWidth=1;ctx.stroke();
+ JS=sp}
+let JS={};
+const dust=Array.from({length:70},()=>({a:Math.random()*6.283,r:20+Math.random()*100,y:Math.random()*210,v:6+Math.random()*16}));
+function drawDust(t){const c=hex2(colors.parts.torso||BASE);for(const d of dust){d.y+=d.v*.016;if(d.y>215)d.y=0;const q=proj([Math.cos(d.a+t*.2)*d.r,d.y,Math.sin(d.a+t*.2)*d.r]);ctx.fillStyle=rgba(rainbow?hsl2rgb(d.y*3+t*60,.9,.6):c,.35);ctx.fillRect(q[0],q[1],1.6,1.6)}}
+// ------------------------------------------------------------------ bilgi paneli
+let infoLast=0;
+function infoTick(t){if(t-infoLast<.25)return;infoLast=t;const hp=Math.max(...POS.map(p=>p[1]))-Math.min(...POS.map(p=>p[1]));const bpm=Math.round(70+4*Math.sin(t*.8)+(anim==="run"?60:anim==="walk"?18:anim==="dance"?35:0));
+ $("info").innerHTML=`<div>Duruş: <b>${anim?ANAMES[anim]:PNAMES[poseName]||"Özel"}</b></div><div>Eklem: <b>${JOINTS.length}</b> · kemik: <b>${BONES.length}</b></div><div>Yükseklik: <b>${Math.round(hp)} cm</b></div>${T.hud?`<div style="opacity:.7">Nabız (simülasyon): <b>${bpm}</b> bpm</div>`:""}<div>Görünüm: <b>${({wire:"tel kafes",solid:"dolu",skeleton:"iskelet",points:"nokta",xray:"röntgen"})[style]}</b></div>`}
+// ------------------------------------------------------------------ etkileşim
+let drag=null;
+cv.addEventListener("mousedown",e=>{drag={x:e.clientX,y:e.clientY,moved:false};cv.classList.add("dr")});
+addEventListener("mouseup",e=>{cv.classList.remove("dr");if(drag&&!drag.moved){const n=pick(e.clientX,e.clientY);select(n)}drag=null});
+addEventListener("mousemove",e=>{if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;if(drag.moved){yaw+=dx*.008;pitch=Math.max(-1.2,Math.min(1.2,pitch+dy*.006));yawT=null;spin=0;drag.x=e.clientX;drag.y=e.clientY}}else{hover=pick(e.clientX,e.clientY)}});
+cv.addEventListener("wheel",e=>{e.preventDefault();zoomT=Math.max(.5,Math.min(3,zoomT*(e.deltaY<0?1.1:.9)))},{passive:false});
+cv.addEventListener("dblclick",()=>{yawT=0;pitchT=.12});
+function pick(x,y){let best=null,bd=18;for(const n in JS){const q=JS[n];const d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;best=n}}return best}
+function select(n){sel=n;buildJsel()}
+function buildJsel(){const box=$("jsl"),lab=$("jsel");box.innerHTML="";if(!sel){lab.textContent="Bir eklem noktasına tıklayın.";return}lab.innerHTML="<b style='color:#fff;font-size:15px'>"+jname(sel)+"</b>";const i=IDX[sel];
+ [["X","bük (ileri-geri)",0],["Y","çevir",1],["Z","yana aç",2]].forEach(([a,tt,k])=>{const d=document.createElement("div");d.className="sl";d.title=tt;d.innerHTML=`<span>${a}</span><input type="range" min="-180" max="180" step="1" value="${Math.round(tgt[i][k])}"><output>${Math.round(tgt[i][k])}°</output>`;const r=d.querySelector("input"),o=d.querySelector("output");r.oninput=()=>{tgt[i][k]=+r.value;cur[i][k]=+r.value;o.textContent=r.value+"°";anim=null;poseName="custom"};box.appendChild(d)});
+ const rs=document.createElement("button");rs.textContent="EKLEMİ SIFIRLA";rs.onclick=()=>{tgt[i]=[0,0,0];buildJsel()};box.appendChild(rs)}
+function jset(o){const base=o.j,n=(["neck","chest","head","pelvis"].includes(base)?[base]:[base+(o.s||"")]);for(const nm of n){const i=IDX[nm];if(i===undefined)continue;for(const [k,a] of [["rx",0],["ry",1],["rz",2]])if(o[k]!==undefined)tgt[i][a]=Math.max(-180,Math.min(180,o[k]));sel=nm}anim=null;poseName="custom";buildJsel()}
+// ------------------------------------------------------------------ arayüz düğmeleri
+function mk(box,label,fn,id){const b=document.createElement("button");b.textContent=label;b.onclick=fn;if(id)b.dataset.k=id;$(box).appendChild(b);return b}
+[["wire","TEL KAFES"],["solid","DOLU"],["skeleton","İSKELET"],["points","NOKTA"],["xray","RÖNTGEN"]].forEach(([k,l])=>mk("g_style",l,()=>{style=k;syncUI()},k));
+[["joints","EKLEMLER"],["labels","ETİKET"],["grid","IZGARA"],["hud","BİLGİ"]].forEach(([k,l])=>mk("g_tog",l,()=>{T[k]=!T[k];syncUI()},"t_"+k));
+mk("g_tog","TARA",()=>{scanT=0});mk("g_tog","DÖN/DUR",()=>{spin=spin?0:.6});
+for(const k in PNAMES)mk("g_pose",PNAMES[k].toUpperCase(),()=>setPreset(k),"p_"+k);
+for(const k in ANAMES)mk("g_anim",ANAMES[k].toUpperCase(),()=>{anim=anim===k?null:k;animT0=performance.now()/1000;syncUI()},"a_"+k);
+mk("g_anim","DURDUR",()=>{anim=null;syncUI()});
+const TG=[["all","Tüm hologram"],["head","Kafa"],["neck","Boyun"],["torso","Gövde"],["armsR","Sağ kol"],["armsL","Sol kol"],["legsR","Sağ bacak"],["legsL","Sol bacak"],["hands","Eller"],["feet","Ayaklar"],["joints","Tüm eklemler"],["sel","Seçili eklem"]];
+TG.forEach(([k,l])=>{const o=document.createElement("option");o.value=k;o.textContent=l;$("ctarget").appendChild(o)});
+function colorTo(hex){const k=$("ctarget").value;if(k==="sel"){if(sel)colors.joints[sel]=hex;rainbow=false;return}
+ if(k==="armsR")applyColor("arms","R",hex);else if(k==="armsL")applyColor("arms","L",hex);else if(k==="legsR")applyColor("legs","R",hex);else if(k==="legsL")applyColor("legs","L",hex);else applyColor(k,"B",hex)}
+["#00e5ff","#ffffff","#ffd84a","#ff9a3c","#ff5a5a","#ff7ac8","#b58cff","#5aa8ff","#3fe0d0","#5ee08a","#39ff14","#9aa4ad"].forEach(c=>{const b=document.createElement("button");b.className="sw";b.style.background=c;b.title=c;b.onclick=()=>colorTo(c);$("g_col").appendChild(b)});
+$("cpick").oninput=e=>colorTo(e.target.value);$("crain").onclick=()=>{rainbow=!rainbow;syncUI()};$("creset").onclick=()=>{colors.parts={};colors.joints={};rainbow=false;syncUI()};
+function syncUI(){document.querySelectorAll("[data-k]").forEach(b=>{const k=b.dataset.k;b.classList.toggle("on",k===style||(k.startsWith("t_")&&T[k.slice(2)])||(k.startsWith("p_")&&!anim&&poseName===k.slice(2))||(k.startsWith("a_")&&anim===k.slice(2)))});$("crain").classList.toggle("on",rainbow)}
+// ------------------------------------------------------------------ iletişim
+let ws;function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function log(s){$("jl").textContent="Jarvis: "+s}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"hologram"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.type==="cmdbuf"){const it=m.items||[];$("mem").textContent=it.length?`anlık komut kaydı: işleniyor → “${it[it.length-1].text}” (bitince silinecek)`:"anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)";return}
+  if(m.kind!=="hologram")return;if(m.type==="scene_do")handleDo(m.do||{})};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function handleDo(d){
+ if(d.msg)log(d.msg);
+ if(d.reset){cur=Z();tgt=Z();setPreset("normal");colors.parts={};colors.joints={};rainbow=false;style="wire";T={joints:true,labels:false,grid:true,hud:true};sel=null;yaw=.5;pitch=.12;yawT=null;zoom=zoomT=1;spin=.4;buildJsel()}
+ if(d.colorReset){colors.parts={};colors.joints={};rainbow=false}
+ if(d.scan)scanT=0;
+ if(d.rainbow!==undefined)rainbow=!!d.rainbow;
+ if(d.view){const v={front:[0,.12],back:[Math.PI,.12],side:[Math.PI/2,.12],top:[yaw,1.15]}[d.view];if(v){yawT=v[0];pitchT=v[1];spin=0}}
+ if(d.spin!==undefined)spin=d.spin;
+ if(d.zoom)zoomT=Math.max(.5,Math.min(3,zoomT*d.zoom));
+ if(d.style)style=d.style;
+ if(d.toggle)Object.assign(T,d.toggle);
+ if(d.color)applyColor(d.color.target,d.color.side||"B",d.color.hex);
+ if(d.anim!==undefined){anim=d.anim;animT0=performance.now()/1000}
+ if(d.joint)for(const o of d.joint)jset(o);
+ if(d.preset)setPreset(d.preset);
+ syncUI()}
+// ------------------------------------------------------------------ üst çubuk, komut kutusu, çıkış
+function shut(){send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){send({type:"text",text:e.target.value.trim()});$("jl").textContent="› komut uygulanıyor…";e.target.value=""}else if(e.key==="Escape")shut()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)){a.blur();return}shut()}});
+setPreset("normal");buildJsel();syncUI();requestAnimationFrame(frame);connect();setTimeout(()=>$("cmd").focus(),400);window.focus();
+</script></body></html>

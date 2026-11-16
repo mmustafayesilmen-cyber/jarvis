@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS E-KİTAP</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#e8b86a;--c2:#b87a2a;--ln:rgba(232,184,106,.25);--hi:rgba(232,184,106,.12);--card:rgba(28,18,8,.72)}
+html,body{background:radial-gradient(ellipse at 50% 30%,#3a2412 0%,#0d0704 72%)}
+#stage{display:grid;grid-template-columns:270px 1fr;gap:18px}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto}
+.bk{padding:9px 10px;border:1px solid var(--ln);border-radius:10px;cursor:pointer;margin-bottom:6px;background:rgba(0,0,0,.25)}.bk:hover{border-color:var(--c)}.bk b{display:block;font:600 13px "Segoe UI";color:#fff}.bk small{color:var(--mut);font:11px "Segoe UI"}.bk i{display:block;height:3px;background:var(--ln);margin-top:6px;border-radius:2px}.bk i u{display:block;height:100%;background:var(--c);border-radius:2px}
+#mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:0;position:relative}
+#book{--pw:420px;--ph:600px;--paper:#f3e6c8;--ink:#3b2a14;--edge:#d9c79c;position:relative;width:calc(var(--pw)*2);height:var(--ph);perspective:2600px;filter:drop-shadow(0 30px 40px rgba(0,0,0,.65))}
+#book.koyu{--paper:#1d1d22;--ink:#d8d3c4;--edge:#2c2c33}#book.acik{--paper:#fbfbf7;--ink:#222;--edge:#ddd}
+.pg{position:absolute;top:0;width:var(--pw);height:var(--ph);background:var(--paper);color:var(--ink);padding:34px 36px 40px;font-family:Georgia,"Palatino Linotype",serif;line-height:1.55;overflow:hidden;text-align:justify;hyphens:auto;box-sizing:border-box}
+.pg p{margin:0 0 .7em}.pg p:first-child{text-indent:0}.pg .no{position:absolute;bottom:14px;left:0;right:0;text-align:center;font:11px Georgia;opacity:.5}
+#pl{left:0;border-radius:10px 0 0 10px;background-image:linear-gradient(90deg,rgba(0,0,0,.05),transparent 8%,transparent 90%,rgba(0,0,0,.28))}
+#pr{left:var(--pw);border-radius:0 10px 10px 0;background-image:linear-gradient(270deg,rgba(0,0,0,.05),transparent 8%,transparent 90%,rgba(0,0,0,.2)),linear-gradient(90deg,rgba(0,0,0,.28),transparent 8%)}
+#book::before{content:"";position:absolute;left:-10px;right:-10px;top:8px;bottom:-8px;background:var(--edge);border-radius:12px;z-index:-1}
+.leaf{position:absolute;top:0;width:var(--pw);height:var(--ph);transform-style:preserve-3d;z-index:5}
+.leaf .f,.leaf .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.leaf .b{transform:rotateY(180deg)}
+.leaf.fw{left:var(--pw);transform-origin:left center;transition:transform .85s cubic-bezier(.45,.05,.25,1)}.leaf.fw.go{transform:rotateY(-180deg)}
+.leaf.bw{left:0;transform-origin:right center;transition:transform .85s cubic-bezier(.45,.05,.25,1)}.leaf.bw.go{transform:rotateY(180deg)}
+.leaf::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.22),transparent 40%);opacity:0;pointer-events:none}
+.cover{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%}.cover h1{font:700 30px Georgia;margin:0 0 14px}.cover h2{font:italic 18px Georgia;margin:0;opacity:.7}.cover hr{width:60px;border:0;border-top:2px solid currentColor;opacity:.3;margin:24px 0}
+#bar2{width:min(900px,92%);display:flex;align-items:center;gap:12px}#bar2 input{flex:1;accent-color:var(--c)}#pgn{font:12px Consolas;color:var(--mut);min-width:150px;text-align:right}
+#wait{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:9;pointer-events:none;font:600 18px "Segoe UI";color:#fff;text-shadow:0 0 20px #000}#wait.on{display:flex}
+#empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mut);font:16px/1.6 "Segoe UI";padding:40px}
+.tp{font:italic 11px "Segoe UI";opacity:.55;margin-bottom:8px}
+.sp{display:inline-block;width:18px;height:18px;border:3px solid var(--ln);border-top-color:var(--c);border-radius:50%;animation:r 1s linear infinite;margin-right:10px;vertical-align:middle}@keyframes r{to{transform:rotate(360deg)}}
+</style></head><body>
+<div id="stage"><div class="col"><div class="card"><h3>KİTAPLIĞIM</h3><div id="lib"></div></div><div class="card" id="cc" style="display:none"><h3>ADAYLAR</h3><div id="cl"></div></div>
+ <div class="card"><h3>GÖRÜNÜM</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><button data-t="sepya">SEPYA</button><button data-t="acik">AÇIK</button><button data-t="koyu">KOYU</button></div><div style="display:flex;gap:6px;margin-top:8px"><button id="fm">A−</button><button id="fp">A+</button></div>
+ <button id="trb" style="margin-top:8px;width:100%">TÜRKÇE METİN</button><div class="mut" id="trs" style="margin-top:6px;font:11px 'Segoe UI'"></div><div class="mut" id="src" style="margin-top:10px;font:11px/1.4 'Segoe UI'"></div></div></div>
+ <div id="mid"><div id="book"><div class="pg" id="pl"></div><div class="pg" id="pr"></div></div><div id="bar2"><button id="pv">◀</button><input type="range" id="sl" min="0" max="0" value="0"><button id="nx">▶</button><span id="pgn"></span></div>
+ <div id="empty">Okumak istediğiniz kitabın adını söyleyin ya da aşağıdaki kutuya yazın.<br>Örneğin: <i>Alice Harikalar Diyarında</i>, <i>Sefiller</i>, <i>Dorian Gray'in Portresi</i><br><small>Yalnızca telif süresi dolmuş (kamu malı) eserler bulunur.</small></div><div id="wait"><span class="sp"></span><span id="wt"></span></div></div></div>
+<script>
+let PT={},trOn=true;let M=null,P=[],sp=0,busy=false,scale=1,theme="sepya",ac=null,want=null,lib=[];const bk=$("book");
+function sz(){const st=$("mid").getBoundingClientRect();let h=Math.min(st.height-90,720),w=Math.min((st.width-30)/2,h*.74);h=Math.min(h,w/.7);bk.style.setProperty("--ph",Math.round(h)+"px");bk.style.setProperty("--pw",Math.round(w)+"px");
+ const fs=Math.max(11,Math.min(22,Math.sqrt((w-72)*(h-74)/ (1300*.82)))*scale);bk.style.fontSize=fs.toFixed(1)+"px"}
+function html(i){if(!M)return"";if(i<0||i>=M.n)return"";let t=P[i];if(t===undefined)return'<div class="cover"><span class="sp"></span></div>';let pend="";
+ if(trOn&&M.trneed){if(PT[i]!==undefined)t=PT[i];else pend='<div class="tp"><span class="sp" style="width:12px;height:12px;border-width:2px"></span>Türkçeye çevriliyor…</div>'}
+ return pend+t.split("\n\n").map(p=>"<p>"+Mode.esc(p)+"</p>").join("")+'<div class="no">'+(i+1)+"</div>"}
+function leftIdx(s){return 2*s-1}function rightIdx(s){return 2*s}
+function cover(){return '<div class="cover"><h1>'+Mode.esc(M.title)+'</h1><hr><h2>'+Mode.esc(M.author||"")+'</h2></div>'}
+function paint(s){$("pl").innerHTML=s===0?"":html(leftIdx(s));$("pr").innerHTML=s===0?cover()+"":html(rightIdx(s));if(s===0)$("pr").innerHTML=cover();upd(s)}
+function upd(s){if(!M)return;const i=Math.min(M.n-1,Math.max(0,rightIdx(s)));$("sl").max=maxS();$("sl").value=s;$("pgn").textContent="Sayfa "+(i+1)+" / "+M.n+" · %"+Math.round((i+1)/M.n*100);Mode.pill(M.title.slice(0,24).toUpperCase());Mode.send({type:"text",text:"§pos|"+M.id+"|"+i})}
+function maxS(){return Math.ceil((M.n-1)/2)}
+function whoosh(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume();const n=ac.sampleRate*.45,b=ac.createBuffer(1,n,ac.sampleRate),x=b.getChannelData(0);for(let i=0;i<n;i++)x[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/n);
+ const s=ac.createBufferSource();s.buffer=b;const f=ac.createBiquadFilter();f.type="bandpass";f.Q.value=.8;f.frequency.setValueAtTime(900,ac.currentTime);f.frequency.exponentialRampToValueAtTime(3200,ac.currentTime+.4);const g=ac.createGain();g.gain.value=.22;s.connect(f);f.connect(g);g.connect(ac.destination);s.start()}catch(e){}}
+function flip(t){if(!M||busy)return;t=Math.max(0,Math.min(maxS(),t));if(t===sp)return;busy=true;whoosh();const fw=t>sp;const leaf=document.createElement("div");leaf.className="leaf "+(fw?"fw":"bw");
+ const face=(i,c)=>`<div class="pg ${c}" style="left:0;width:100%;position:absolute;border-radius:${fw?"0 10px 10px 0":"10px 0 0 10px"}">${i}</div>`;
+ const oldPg=fw?(sp===0?cover():html(rightIdx(sp))):html(leftIdx(sp)),newPg=fw?html(leftIdx(t)):(t===0?cover():html(rightIdx(t)));
+ leaf.innerHTML=face(oldPg,"f")+face(newPg,"b");bk.appendChild(leaf);
+ if(fw){$("pr").innerHTML=html(rightIdx(t))}else{$("pl").innerHTML=t===0?"":html(leftIdx(t))}
+ requestAnimationFrame(()=>requestAnimationFrame(()=>leaf.classList.add("go")));
+ setTimeout(()=>{sp=t;paint(sp);leaf.remove();busy=false},900)}
+function show(){$("empty").style.display=M?"none":"flex"}
+function load(d){if(d.book){M=d.book;P=new Array(M.n);sp=0;want=M.pos;$("src").textContent="Kaynak: "+(M.src==="gutenberg"?"Project Gutenberg":"Vikikaynak")+" · kamu malı";show();sz();paint(0);$("wait").classList.add("on");$("wt").textContent="Sayfalar yükleniyor…"}
+ if(d.chunk&&M){d.chunk.pages.forEach((t,i)=>P[d.chunk.from+i]=t);if(want!==null&&P[Math.min(M.n-1,want)]!==undefined){sp=Math.ceil(Math.min(M.n-1,want)/2);want=null;$("wait").classList.remove("on")}paint(sp)}}
+function libui(){$("lib").innerHTML=lib.map(b=>`<div class="bk" data-i="${Mode.esc(b.id)}"><b>${Mode.esc(b.title)}</b><small>${Mode.esc(b.author)}</small><i><u style="width:${b.n?Math.round(b.pos/b.n*100):0}%"></u></i></div>`).join("")||'<div class="mut" style="font:12px Segoe UI">Henüz kitap yok.</div>';
+ $("lib").querySelectorAll(".bk").forEach(e=>e.onclick=()=>Mode.send({type:"text",text:"§kit|"+e.dataset.i}))}
+function trui(){const n=Object.keys(PT).length;$("trb").textContent=M&&M.trneed?(trOn?"TÜRKÇE ✓":"ORİJİNAL"):"TÜRKÇE METİN";$("trs").textContent=M&&M.trneed&&trOn?"Çevrilen sayfa: "+n+" / "+M.n:""}
+function take(d){if(d.lib){lib=d.lib;libui()}if(d.book){PT={};}if(d.book||d.chunk)load(d);
+ if(d.trmode!==undefined){trOn=!!d.trmode;trui();if(M)paint(sp)}
+ if(d.trbulk){Object.entries(d.trbulk).forEach(([k,v])=>PT[+k]=v);trui();if(M)paint(sp)}
+ if(d.tr){PT[d.tr.i]=d.tr.t;trui();if(d.tr.i===leftIdx(sp)||d.tr.i===rightIdx(sp))paint(sp)}
+ if(d.book)trui();
+ if(d.busy!==undefined){if(d.busy){$("wait").classList.add("on");$("wt").textContent="Hazırlanıyor…"}else if(!(M&&want!==null))$("wait").classList.remove("on")}
+ if(d.cands){$("cc").style.display="block";$("cl").innerHTML=d.cands.map(c=>`<div class="bk" data-i="${c.i}"><b>${c.i+1}. ${Mode.esc(c.title)}</b><small>${Mode.esc(c.author)} · ${Mode.esc(c.lang)}</small></div>`).join("");$("cl").querySelectorAll(".bk").forEach(e=>e.onclick=()=>Mode.send({type:"text",text:"§kit|"+e.dataset.i}))}
+ if(d.none){$("empty").style.display="flex";$("empty").innerHTML="“"+Mode.esc(d.none)+"” kamu malı kaynaklarda yok.<br><small>Telif hakkı süren kitapların metnini getiremem; telifi bitmiş bir eser deneyin.</small><br><br><button id=\"kt\">KİTAPTİK'TE ARA (tarayıcıda açar)</button>";$("kt").onclick=()=>Mode.cmd("kitaptik'te ara")}
+ if(d.nav==="next")flip(sp+1);else if(d.nav==="prev")flip(sp-1);else if(d.nav==="goto"&&M){const t=Math.ceil((d.n-1)/2);if(P[d.n-1]===undefined){want=d.n-1}else flip(t)}
+ if(d.theme){theme=d.theme;bk.className=theme==="sepya"?"":theme}
+ if(d.font){scale=Math.max(.7,Math.min(1.3,scale+(d.font==="+"?.08:-.08)));sz();paint(sp)}
+ if(d.showlib)$("lib").scrollIntoView()}
+Mode.start({kind:"ekitap",title:"E-KİTAP",placeholder:"Kitap adı söyleyin/yazın: Alice Harikalar Diyarında · sonraki sayfa · 52. sayfaya git · yüzde 80'e git · sayfayı oku · kitaplığım · ikinci adayı aç",init:d=>{take(d);sz()},act:take});
+$("trb").onclick=()=>{if(M&&M.trneed){trOn=!trOn;trui();paint(sp);Mode.send({type:"text",text:"§tr|"+(trOn?1:0)})}};setInterval(()=>{if(M)Mode.send({type:"text",text:"§hb|"+M.id})},30000);
+$("nx").onclick=()=>flip(sp+1);$("pv").onclick=()=>flip(sp-1);$("sl").onchange=()=>flip(+$("sl").value);$("pl").onclick=()=>flip(sp-1);$("pr").onclick=()=>flip(sp+1);
+document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>take({theme:b.dataset.t}));$("fp").onclick=()=>take({font:"+"});$("fm").onclick=()=>take({font:"-"});
+addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" ")flip(sp+1);if(e.key==="ArrowLeft"||e.key==="PageUp")flip(sp-1)});
+addEventListener("resize",()=>{sz();if(M)paint(sp)});setTimeout(sz,60);
+</script></body></html>

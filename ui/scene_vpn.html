@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS VPN</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#3fe8ff;--g:#5ee08a;--w:#ffb454;--r:#ff6b5a;--txt:#e2f7fb;--mut:rgba(226,247,251,.58);--ln:rgba(63,232,255,.22);--card:rgba(6,18,28,.7);--st:#6f8f9b}
+body.on{--st:var(--g)}body.busy{--st:var(--w)}body.bad{--st:var(--r)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse 55% 55% at 50% 45%,color-mix(in srgb,var(--st) 14%,transparent),transparent 70%),radial-gradient(ellipse at 50% -10%,#08303f 0%,#020a10 62%);color:var(--txt);font-family:"Segoe UI",Bahnschrift,sans-serif;user-select:none;transition:background .8s}
+#top{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:12px;padding:0 22px;z-index:5;background:linear-gradient(#000d,transparent)}
+#title{font:600 15px Bahnschrift,Consolas;letter-spacing:.42em;color:#fff}#title b{color:var(--c);font-weight:600}
+#pill{font:600 11px Consolas;letter-spacing:.22em;padding:5px 12px;border:1px solid var(--st);color:var(--st);border-radius:20px;background:color-mix(in srgb,var(--st) 10%,transparent);transition:all .5s}
+#sp{flex:1}
+button{font:600 12px Bahnschrift,Consolas;letter-spacing:.08em;padding:8px 14px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,14,20,.6);border-radius:10px;white-space:nowrap;transition:background .15s,border-color .15s}
+button:hover{background:rgba(63,232,255,.12);border-color:var(--c)}button:disabled{opacity:.4;cursor:default}
+#close{border-color:rgba(255,120,84,.55);color:#ff9a7a}
+#wrap{position:fixed;top:66px;bottom:92px;left:22px;right:22px;display:grid;grid-template-columns:minmax(300px,360px) 1fr minmax(320px,400px);gap:20px}
+.col{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto;padding:2px}
+.box{background:var(--card);border:1px solid var(--ln);border-radius:18px;padding:14px 16px;backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+h3{margin:0 0 10px;font:600 11.5px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--c);display:flex;align-items:center;gap:8px}h3 small{margin-left:auto;font:11px Consolas;letter-spacing:.04em;color:var(--mut)}
+.inp{width:100%;min-width:0;padding:9px 11px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:10px;color:#fff;font:13.5px "Segoe UI",sans-serif;outline:0;user-select:text}
+.inp:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(63,232,255,.13)}.inp::placeholder{color:rgba(226,247,251,.35)}select.inp{appearance:none}
+.f{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.f .w{grid-column:1/-1}
+label.l{display:block;font-size:11px;color:var(--mut);margin:0 0 3px}
+.mut{color:var(--mut);font-size:12.5px;line-height:1.55}
+/* sunucular */
+.sv{display:grid;grid-template-columns:44px 1fr auto;gap:2px 12px;align-items:center;padding:10px 12px;border-radius:14px;border:1px solid transparent;background:rgba(0,0,0,.25);margin-bottom:8px;cursor:pointer}
+.sv:hover{border-color:var(--ln)}.sv.act{border-color:var(--c);background:rgba(63,232,255,.07)}.sv.live{border-color:var(--g);background:rgba(94,224,138,.08);box-shadow:0 0 18px rgba(94,224,138,.15)}
+.cc{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font:700 15px Bahnschrift,Consolas;color:#fff;background:linear-gradient(135deg,#1f4f7a,#2a7cff);grid-row:1/3}
+.sv b{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sv span.h{font:11.5px Consolas;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv .ac{grid-row:1/3;grid-column:3;display:flex;flex-direction:column;gap:4px}.sv .ac button{padding:4px 9px;font-size:11px}
+.fp{grid-column:2/-1;font:10.5px Consolas;color:rgba(226,247,251,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+/* merkez */
+#center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:0}
+#orb{position:relative;width:min(34vh,300px);aspect-ratio:1}
+#orb svg{position:absolute;inset:0;width:100%;height:100%}
+.ring{fill:none;stroke:var(--st);stroke-width:2;opacity:.5}.core{fill:color-mix(in srgb,var(--st) 18%,#04101a);stroke:var(--st);stroke-width:3;filter:drop-shadow(0 0 14px var(--st))}
+.sweep{transform-origin:150px 150px;animation:rot 6s linear infinite}body.busy .sweep{animation-duration:1.4s}body:not(.on):not(.busy) .sweep{animation:none;opacity:0}
+@keyframes rot{to{transform:rotate(360deg)}}
+.dot{fill:var(--st)}
+#lock{position:absolute;inset:0;display:grid;place-items:center;font-size:min(9vh,80px);filter:drop-shadow(0 0 12px var(--st))}
+#state{font:700 26px Bahnschrift,Consolas;letter-spacing:.2em;color:var(--st);text-shadow:0 0 18px var(--st)}
+#where{font-size:22px;color:#fff;text-align:center}#where small{display:block;font-size:13px;color:var(--mut);margin-top:3px}
+#big{padding:15px 54px;font-size:15px;letter-spacing:.14em;border-radius:14px;border:0;color:#021016;background:linear-gradient(135deg,#5ee08a,#3fe8ff)}
+body:not(.on):not(.busy) #big{background:linear-gradient(135deg,#3fe8ff,#2a7cff)}body.on #big{background:linear-gradient(135deg,#ff9a7a,#ff6b5a)}body.busy #big{background:linear-gradient(135deg,#ffd27a,#ffb454)}
+#err{max-width:560px;text-align:center;font-size:13px;color:var(--w);line-height:1.5;min-height:18px}
+#cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(560px,100%)}
+.cm{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:11px 14px}.cm small{display:block;font:600 10.5px Bahnschrift;letter-spacing:.2em;color:var(--mut);margin-bottom:5px}
+.cm b{font-size:16px;font-weight:600}.cm span{display:block;font:11.5px Consolas;color:var(--mut);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm.t{border-color:color-mix(in srgb,var(--g) 50%,transparent)}
+#meta{display:flex;gap:18px;font:12.5px Consolas;color:var(--mut);flex-wrap:wrap;justify-content:center}#meta b{color:#fff;font-weight:400}
+/* sağ */
+.step{display:grid;grid-template-columns:28px 1fr;gap:10px;margin-bottom:12px}.step i{width:26px;height:26px;border-radius:50%;background:rgba(63,232,255,.15);border:1px solid var(--ln);display:grid;place-items:center;font:700 12px Consolas;font-style:normal;color:var(--c)}
+.step p{margin:0;font-size:13px;line-height:1.55}.step p b{color:#fff}
+.code{display:block;margin-top:6px;padding:8px 10px;background:rgba(0,0,0,.45);border:1px solid var(--ln);border-radius:9px;font:11.5px/1.5 Consolas;color:#bfe;word-break:break-all;user-select:text}
+.row{display:flex;gap:8px;align-items:center}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13.5px;cursor:pointer;padding:6px 0}.sw .t{width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,.1);border:1px solid var(--ln);position:relative;flex:none}
+.sw .t::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#9fb6bf;transition:.2s}.sw.on .t{background:color-mix(in srgb,var(--c) 35%,transparent);border-color:var(--c)}.sw.on .t::after{left:20px;background:#fff}
+.sw small{display:block;font-size:11.5px;color:var(--mut)}
+#bar{position:fixed;left:22px;right:22px;bottom:14px;z-index:9;display:flex;flex-direction:column;gap:6px}
+#cmdw{display:flex;align-items:center;gap:10px;background:rgba(0,10,16,.75);border:1px solid var(--ln);border-radius:14px;padding:4px 6px 4px 14px}#cmdw span{font:600 13px Consolas;color:var(--c)}
+#cmd{flex:1;padding:9px 0;background:transparent;border:0;color:#fff;font:14px Consolas;outline:0;user-select:text}
+#log{font:12.5px Consolas;color:#cfeeff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;opacity:.9}
+@media(max-width:1250px){#wrap{display:flex;flex-direction:column;overflow:auto}}
+</style></head><body>
+<div id="top"><span id="title">JARVIS <b>VPN</b></span><span id="pill">KAPALI</span><span id="sp"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="wrap">
+ <div class="col">
+  <div class="box"><h3>SUNUCULARIM <small id="sc"></small></h3><div id="servers"></div>
+   <div class="mut" id="noserver" style="display:none">Henüz sunucu yok. Aşağıdan ekleyin; nasıl kuracağınızı sağdaki rehberde anlattım.</div></div>
+  <div class="box"><h3>SUNUCU EKLE</h3>
+   <div class="f"><div class="w"><label class="l">Adı (isteğe bağlı)</label><input class="inp" id="a_name" maxlength="30" placeholder="ör. ABD – Ashburn" autocomplete="off"></div>
+    <div class="w"><label class="l">Sunucu adresi (IP ya da alan adı)</label><input class="inp" id="a_host" maxlength="253" placeholder="ör. 203.0.113.7" spellcheck="false" autocomplete="off"></div>
+    <div><label class="l">Kullanıcı</label><input class="inp" id="a_user" maxlength="32" value="root" spellcheck="false" autocomplete="off"></div>
+    <div><label class="l">SSH portu</label><input class="inp" id="a_port" maxlength="5" value="22" inputmode="numeric" autocomplete="off"></div>
+    <div class="w"><label class="l">Sunucunun bulunduğu ülke</label><select class="inp" id="a_cc"></select></div></div>
+   <button id="a_add" style="width:100%;margin-top:10px">SUNUCUYU EKLE</button></div>
+ </div>
+ <div id="center">
+  <div id="orb"><svg viewBox="0 0 300 300"><circle class="ring" cx="150" cy="150" r="140"/><circle class="ring" cx="150" cy="150" r="118" stroke-dasharray="3 7"/><circle class="core" cx="150" cy="150" r="88"/>
+   <g class="sweep"><path d="M150 150 L150 12 A138 138 0 0 1 270 80 Z" fill="var(--st)" opacity=".1"/><circle class="dot" cx="150" cy="12" r="5"/></g></svg><div id="lock">🔓</div></div>
+  <div id="state">KAPALI</div>
+  <div id="where">Doğrudan bağlantı<small>Jarvis tarayıcısı Türkiye'den çıkıyor</small></div>
+  <div id="err"></div>
+  <button id="big">VPN'İ AÇ</button>
+  <div id="meta"></div>
+  <div id="cmp"><div class="cm"><small>DOĞRUDAN</small><b id="d1">–</b><span id="d2">ölçmek için TEST ET</span></div><div class="cm t"><small>TÜNELDEN</small><b id="t1">–</b><span id="t2">VPN açık değil</span></div></div>
+  <div class="row"><button id="test">TEST ET</button><button id="leak" title="Jarvis tarayıcısında IP, WebRTC ve DNS sızıntı testi sayfasını açar">SIZINTI TESTİ SAYFASI</button></div>
+ </div>
+ <div class="col">
+  <div class="box"><h3>JARVİS TARAYICISI</h3>
+   <div class="mut" id="bstat" style="margin-bottom:8px"></div>
+   <div class="sw" id="s_own"><div>Siteleri Jarvis tarayıcısında aç<small>“YouTube aç” gibi komutlar burada açılır; kapalıysa varsayılan tarayıcınız kullanılır</small></div><span class="t"></span></div>
+   <div class="row" style="margin-top:6px"><button id="b_open" style="flex:1">TARAYICIYI AÇ</button><button id="b_close" style="flex:1">KAPAT</button></div>
+   <div class="sw" id="s_auto" style="margin-top:8px"><div>Jarvis açılınca VPN otomatik bağlansın<small>Seçili sunucuya sessizce bağlanır</small></div><span class="t"></span></div></div>
+  <div class="box"><h3>KURULUM REHBERİ <small>kendi VPN’iniz</small></h3>
+   <div class="step"><i>1</i><p><b>Bir sunucu kiralayın.</b> İstediğiniz ülkede küçük bir sanal sunucu (VPS) yeterli: Ubuntu 22.04 ya da 24.04, en küçük plan. Vultr, DigitalOcean, Hetzner, AWS Lightsail gibi sağlayıcılar var; bazılarının ücretsiz deneme katmanı bulunur. Hesap açma ve ödeme size aittir, Jarvis bunları yapmaz.</p></div>
+   <div class="step"><i>2</i><p><b>Sunucuyu oluştururken SSH anahtarı ekleyin.</b> Sağlayıcı panelindeki “SSH key” alanına aşağıdaki <b>açık anahtarı</b> yapıştırın. Özel anahtar bu bilgisayardan çıkmaz.</p></div>
+   <div class="code" id="pub">anahtar hazırlanıyor…</div><div class="row" style="margin:6px 0 12px"><button id="copy" style="flex:1">ANAHTARI KOPYALA</button></div>
+   <div class="step"><i>3</i><p><b>Sunucuyu soldan ekleyin.</b> Sunucunun IP adresini, kullanıcıyı (genelde <b>root</b>) ve ülkesini yazıp BAĞLAN deyin. İlk bağlantıda sunucunun parmak izi kaydedilir; sonradan değişirse Jarvis bağlanmayı reddeder.</p></div>
+   <div class="step"><i>4</i><p><b>(Önerilir) Şifreyle girişi kapatın.</b> Sunucuda bir kez çalıştırın:</p></div>
+   <div class="code" id="harden">sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config &amp;&amp; sudo systemctl restart ssh</div>
+   <p class="mut" style="margin:10px 0 0">Sunucuda başka bir şey kurmanız gerekmez. Her ülke için ayrı bir sunucu eklersiniz; “VPN aç Almanya” gibi komutlarla seçersiniz. Trafiğiniz sunucudan çıkar: siteler sizi sunucunun ülkesinden görür, sunucu sağlayıcısı IP’nizi görür, HTTPS içeriği yine şifreli kalır. VPN yalnızca Jarvis tarayıcısına uygulanır; MEBİ, WhatsApp ve diğer programlar Türkiye’den normal çalışır.</p></div>
+ </div>
+</div>
+<div id="bar"><div id="cmdw"><span>›</span><input id="cmd" placeholder="Komut: VPN aç · Amerika'dan bağlan · VPN kapat · VPN durumu · hangi ülkedeyim · VPN testi · ülkeyi Almanya yap · çık" spellcheck="false" autocomplete="off"></div><div id="log">Jarvis: VPN yalnızca Jarvis tarayıcısına uygulanır; bağlantı koparsa gerçek IP’niz sızmasın diye tarayıcı internete çıkmaz.</div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+let ws,V=null,tick=null;
+function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function cmd(t){send({type:"text",text:t});$("log").textContent="› komut uygulanıyor…"}
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+const fmtUp=s=>{s=Math.max(0,Math.floor(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h} sa ${m} dk`:m?`${m} dk ${s%60} sn`:`${s} sn`};
+function render(v){V=v;const st=v.status,on=st.state==="on",busy=st.state==="connecting"||st.state==="reconnecting",bad=!!st.kill||(!!st.err&&st.state==="off"&&!st.manual&&false);
+ document.body.className=on?"on":busy?"busy":st.kill?"bad":"";
+ const cn=(st.server&&v.countries[st.server.cc])||(st.info&&st.info.country)||"";
+ $("pill").textContent=on?"BAĞLI":st.state==="connecting"?"BAĞLANIYOR":st.state==="reconnecting"?`YENİDEN DENİYOR ${st.tries||""}/5`:st.kill?"KORUMA AÇIK · BAĞLANTI YOK":"KAPALI";
+ $("state").textContent=on?"BAĞLI":busy?"BAĞLANIYOR…":st.kill?"ENGELLİ":"KAPALI";
+ $("lock").textContent=on?"🔒":busy?"⏳":st.kill?"⛔":"🔓";
+ if(on){const i=st.info||{};$("where").textContent=(i.country||cn)+(i.city?" · "+i.city:"");const sm=el("small",null,"Jarvis tarayıcısı "+(i.country||cn)+" üzerinden çıkıyor"+(i.isp?" · "+i.isp:""));$("where").appendChild(sm)}
+ else if(st.kill){$("where").textContent="Tarayıcı güvenlik için internete çıkmıyor";$("where").appendChild(el("small",null,"Gerçek IP’niz sızmasın diye bağlantı kesik; VPN’i açın ya da VPN kapat deyin"))}
+ else{$("where").textContent=busy?(st.server?st.server.name+" sunucusuna bağlanılıyor":"Bağlanılıyor"):"Doğrudan bağlantı";$("where").appendChild(el("small",null,busy?"Bu birkaç saniye sürebilir":"Jarvis tarayıcısı Türkiye’den çıkıyor"))}
+ $("err").textContent=st.err||"";
+ $("big").textContent=on||busy?"VPN’İ KAPAT":st.kill?"VPN’İ KAPAT (DOĞRUDAN)":"VPN’İ AÇ";$("big").disabled=false;
+ const m=$("meta");m.innerHTML="";if(on&&st.info){[["Gecikme",(st.info.ms||"?")+" ms"],["Süre",fmtUp(Date.now()/1000-st.since)],["Sunucu",st.server?st.server.name:""]].forEach(([k,x])=>{const s=el("span",null,k+" ");s.appendChild(el("b",null,x));m.appendChild(s)})}
+ clearInterval(tick);if(on)tick=setInterval(()=>{const u=m.children[1];if(u&&u.lastChild)u.lastChild.textContent=fmtUp(Date.now()/1000-st.since)},1000);
+ // karşılaştırma
+ const d=st.direct;$("d1").textContent=d?(d.country||"?"):"–";$("d2").textContent=d?[d.city,d.ip].filter(Boolean).join(" · "):"ölçmek için TEST ET";
+ if(on&&st.info){$("t1").textContent=st.info.country||"?";$("t2").textContent=[st.info.city,st.info.ip].filter(Boolean).join(" · ")}else{$("t1").textContent="–";$("t2").textContent="VPN açık değil"}
+ // sunucular
+ const L=$("servers");L.innerHTML="";$("sc").textContent=v.servers.length+" sunucu";$("noserver").style.display=v.servers.length?"none":"block";
+ v.servers.forEach(s=>{const live=on&&st.server&&st.server.id===s.id;const d=el("div","sv"+(v.active===s.id?" act":"")+(live?" live":""));
+  d.appendChild(el("div","cc",s.cc));d.appendChild(el("b",null,s.name));d.appendChild(el("span","h",`${s.user}@${s.host}`+(s.port!==22?":"+s.port:"")+" · "+(v.countries[s.cc]||s.cc)));
+  const ac=el("div","ac");const b1=el("button",null,live?"BAĞLI":"BAĞLAN");b1.disabled=live;b1.onclick=e=>{e.stopPropagation();send({type:"vpn_connect",id:s.id})};ac.appendChild(b1);
+  const b2=el("button",null,"SİL");b2.style.color="#ff9a7a";b2.onclick=e=>{e.stopPropagation();if(confirm(`"${s.name}" sunucusu listeden silinsin mi? (Sunucunun kendisi kapanmaz.)`))send({type:"vpn_remove",id:s.id})};ac.appendChild(b2);d.appendChild(ac);
+  if(s.fp){const f=el("div","fp","parmak izi: "+s.fp);f.title="Sağlayıcınızın panelindeki parmak iziyle karşılaştırabilirsiniz. Sunucu yeniden kurulduysa tıklayıp sıfırlayın.";f.style.cursor="pointer";f.onclick=e=>{e.stopPropagation();if(confirm("Bu sunucunun kayıtlı parmak izi silinsin mi?\nYalnızca sunucuyu siz yeniden kurduysanız yapın; aksi hâlde araya girilmiş olabilir."))send({type:"vpn_forget",id:s.id})};d.appendChild(f)}
+  d.onclick=()=>send({type:"vpn_select",id:s.id});L.appendChild(d)});
+ // sağ
+ $("pub").textContent=v.pub||"(anahtar üretilemedi: ssh-keygen bulunamadı)";$("s_own").classList.toggle("on",!!v.own);$("s_auto").classList.toggle("on",!!v.auto);
+ const b=v.browser||{};$("bstat").textContent=b.open?("Açık"+(b.proxy?" · VPN üzerinden":" · doğrudan")):"Kapalı";
+ if(!v.ssh)$("err").textContent="ssh bulunamadı: VPN için Git for Windows ya da Windows OpenSSH istemcisi gerekli."}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"vpn"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.kind!=="vpn")return;
+  if(m.type==="scene_init"&&m.data)render(m.data);
+  else if(m.type==="scene_do"){const d=m.do||{};if(d.data)render(d.data);if(d.msg)$("log").textContent="Jarvis: "+d.msg}};
+ ws.onclose=()=>setTimeout(connect,1500)}
+$("big").onclick=()=>{const s=V&&V.status.state;if(s==="on"||s==="connecting"||s==="reconnecting"||(V&&V.status.kill))send({type:"vpn_disconnect"});else send({type:"vpn_connect",id:V&&V.active||""})};
+$("a_add").onclick=()=>{const host=$("a_host").value.trim();if(!host){$("log").textContent="Jarvis: sunucu adresini yazın.";return}
+ send({type:"vpn_add",name:$("a_name").value,host,user:$("a_user").value,port:$("a_port").value,cc:$("a_cc").value});$("a_host").value="";$("a_name").value=""};
+$("test").onclick=()=>{$("d2").textContent="ölçülüyor…";send({type:"vpn_test"})};
+$("leak").onclick=()=>send({type:"vpn_browser",url:"https://browserleaks.com/ip"});
+$("b_open").onclick=()=>send({type:"vpn_browser",url:"https://www.google.com/"});$("b_close").onclick=()=>send({type:"vpn_browser_close"});
+$("s_own").onclick=()=>send({type:"vpn_pref",key:"own",on:!(V&&V.own)});$("s_auto").onclick=()=>send({type:"vpn_auto",on:!(V&&V.auto)});
+$("copy").onclick=()=>{const t=$("pub").textContent;const done=()=>{$("copy").textContent="KOPYALANDI ✓";setTimeout(()=>$("copy").textContent="ANAHTARI KOPYALA",1800)};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,()=>fb(t,done));else fb(t,done)};
+function fb(t,done){const a=document.createElement("textarea");a.value=t;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();try{document.execCommand("copy");done()}catch(e){}a.remove()}
+$("pub").addEventListener("click",()=>{const r=document.createRange();r.selectNodeContents($("pub"));const s=getSelection();s.removeAllRanges();s.addRange(r)});
+(()=>{const C={US:"ABD",DE:"Almanya",NL:"Hollanda",GB:"İngiltere",FR:"Fransa",JP:"Japonya",CA:"Kanada",SG:"Singapur",CH:"İsviçre",SE:"İsveç",FI:"Finlandiya",PL:"Polonya",IT:"İtalya",ES:"İspanya",AU:"Avustralya",BR:"Brezilya",IN:"Hindistan",KR:"Güney Kore",AE:"BAE",IE:"İrlanda",NO:"Norveç",AT:"Avusturya",BE:"Belçika",CZ:"Çekya",RO:"Romanya",HK:"Hong Kong"};
+ Object.entries(C).forEach(([k,n])=>{const o=document.createElement("option");o.value=k;o.textContent=`${n} (${k})`;$("a_cc").appendChild(o)})})();
+function shut(){send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){cmd(e.target.value.trim());e.target.value=""}else if(e.key==="Escape")e.target.blur()});
+document.querySelectorAll(".inp").forEach(i=>i.addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Escape")e.target.blur();if(e.key==="Enter"&&e.target.id.startsWith("a_"))$("a_add").click()}));
+addEventListener("keydown",e=>{const t=(document.activeElement||{}).tagName;if(t==="INPUT"||t==="SELECT")return;if(e.key==="Escape")shut()});
+connect();window.focus();
+</script></body></html>

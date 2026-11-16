@@ -1,0 +1,33 @@
+/* Yalnızca telefon (uzaktan erişim) sayfalarına remote._page ekler; PC pencerelerini etkilemez.
+   Sahne sayfaları masaüstü için yazılmış (3 sütun, sabit konum); dar ekranda tek sütun, sayfa kaydırılır. */
+html,body{max-width:100vw;-webkit-text-size-adjust:100%}
+@media(max-width:820px){
+ #kit-dock,#kit-cap,.kit-vig,#kit-toasts{display:none!important}
+ button{min-height:36px}
+ input,select,textarea{font-size:16px!important}
+ /* üst çubuk */
+ #top{padding:0 10px!important;gap:6px!important;height:50px!important;overflow:hidden}
+ #title,#clock,#top #sp+*:not(button){font-size:12px!important;letter-spacing:.2em!important}
+ #top button{padding:6px 9px!important;font-size:11px!important;letter-spacing:.04em!important}
+ #top #peek{display:none}
+ /* 3 sütunlu #wrap ailesi (satranç, kartlar, listeler, mola, pomodoro, vpn, gelişim) */
+ #wrap{display:flex!important;flex-direction:column!important;overflow:auto!important;gap:12px!important;left:10px!important;right:10px!important;top:56px!important;bottom:84px!important;-webkit-overflow-scrolling:touch}
+ #wrap>*{flex:none!important;min-height:0!important;width:auto!important;max-width:100%!important;min-width:0!important}
+ #wrap .col{overflow:visible!important;height:auto!important}
+ /* yan liste + sahne düzenleri (lab, bilim, gökyüzü, notlar, evim, ders, rapor) */
+ #main{display:flex!important;flex-direction:column!important;overflow:auto!important;top:50px!important}
+ #main>*{flex:none!important;width:auto!important;max-width:100%!important;min-width:0!important}
+ /* modes.css'siz #stage/#grid sayfaları */
+ #stage{left:10px!important;right:10px!important}
+ #bar{left:10px!important;right:10px!important}
+ table{max-width:100%}
+ img,canvas,svg,video{max-width:100%}
+ #main #list{max-height:24vh!important;overflow:auto!important;border-right:0!important;border-bottom:1px solid rgba(127,224,255,.2)}
+ #main #stage{height:64vh!important;min-height:300px;position:relative!important}
+ #main #card,#main #side,#main #detail{border-left:0!important;overflow:visible!important}
+ /* satranç: tahta en üstte */
+ #wrap>#center{order:-1}
+ #center{height:auto!important}#evb{display:none!important}
+ #bw{width:100%!important;height:auto!important;aspect-ratio:1!important}
+ .pc{font-size:min(9vw,44px)!important}
+}

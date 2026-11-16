@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JARVIS BRİFİNG</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><link rel="stylesheet" href="/kit/stark.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#6fb7ff;--c2:#2a7cff;--ln:rgba(111,183,255,.26);--hi:rgba(111,183,255,.12);--card:rgba(6,16,32,.7)}
+html,body{background:radial-gradient(ellipse at 80% -10%,#0d2a52 0%,#030812 64%)}
+.now{font:300 54px Bahnschrift;color:#fff;line-height:1}.now small{font-size:18px;color:var(--mut)}
+#sum{font-size:15.5px;line-height:1.65;color:#dbe9ff;user-select:text}
+.bad{color:var(--bad)}.a{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+</style></head><body>
+<div id="stage"><div class="hd"><h1>S.H.I.E.L.D. Brifingi</h1><span class="sub" id="dt"></span><span class="sp"></span><button id="rd" class="prim">BRİFİNGİ OKU</button><button id="rf">YENİLE</button><button id="au" aria-pressed="false">OTOMATİK YENİLEME: KAPALI</button></div>
+<div class="card"><h3>ÖZET <small id="sat"></small></h3><div id="sum" class="ld">Brifing hazırlanıyor…</div></div>
+<div class="sc">
+ <div class="card"><h3>ŞİMDİ</h3><div id="b_hava" class="ld">hava okunuyor…</div></div>
+ <div class="card"><h3>BUGÜN</h3><div id="b_gorev" class="ld">görevler okunuyor…</div></div>
+ <div class="card"><h3>SINAV</h3><div id="b_sinav" class="ld">okunuyor…</div></div>
+ <div class="card"><h3>KURLAR</h3><div id="b_kur" class="ld">okunuyor…</div></div>
+ <div class="card"><h3>HABERLER</h3><div class="empty">Haber kaynağı bağlı değil.<br><span class="tc">Jarvis'te güvenilir bir haber entegrasyonu yok; yeni sağlayıcı eklenmedi ve haber uydurulmaz.</span></div><div class="src">Kaynak: —</div></div>
+</div></div>
+<script>
+const E=Mode.esc;let SRC={},auto=false,tm=null;const tm_=t=>new Date(t*1000).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+const foot=(k,p)=>`<div class="src">Kaynak: ${E(SRC[k]||"")} · güncellendi ${tm_(p.at)}</div>`;
+function set(id,h){const e=$("b_"+id);e.className="";e.innerHTML=h}
+function fail(k,p){set(k,`<div class="err">Yüklenemedi: ${E(p.err||"bilinmeyen hata")}</div><div class="src">Kaynak: ${E(SRC[k]||"")} · deneme ${tm_(p.at)}. Diğer bölümler etkilenmedi.</div>`)}
+function part(k,p){if(!p)return;if(!p.ok)return fail(k,p);const v=p.v;
+ if(k==="hava")set("hava",`<div class="now">${v.temp}°<small> ${E(v.d)}</small></div><div class="tc" style="margin:8px 0">${E(v.city)} · hissedilen ${v.feels}° · rüzgâr ${v.wind} km/sa</div>`+v.days.map((x,i)=>`<div class="row"><span>${["Bugün","Yarın","Öbür gün"][i]} ${E(x.d)}</span><b>${x.lo}° / ${x.hi}° · %${x.pp}</b></div>`).join("")+(v.umbrella?'<div style="margin-top:8px">☂ Şemsiye alın</div>':"")+foot("hava",p));
+ else if(k==="gorev")set("gorev",(v.late.length?`<div class="err">${v.late.length} görevin zamanı geçti: ${E(v.late.map(x=>x.title).join(", "))}</div>`:"")+(v.today.map(x=>`<div class="row"><span>${E(x.title)}</span><b>${E(x.when)}</b></div>`).join("")||'<div class="tc">Bugün için açık görev yok.</div>')+v.cal.map(x=>`<div class="row"><span>📅 ${E(x.t)}</span><b>${E(x.w)}</b></div>`).join("")+foot("bugun",p));
+ else if(k==="sinav")set("sinav",(v.map(x=>`<div class="row"><span>${E(x.ders)}${x.konu?" · "+E(x.konu):""}</span><b>${x.kalan===0?"BUGÜN":x.kalan===1?"YARIN":x.kalan+" GÜN"}</b></div>`).join("")||'<div class="tc">Kayıtlı sınav yok.</div>')+foot("sinav",p));
+ else if(k==="kur")set("kur",(v.map(x=>`<div class="row"><span>${E(x.k)}</span><b>${x.v} ₺</b></div>`).join("")||'<div class="tc">Kur verisi yok.</div>')+foot("kur",p))}
+function summ(t){const s=$("sum");s.className="";s.textContent=t;$("sat").textContent="hazırlandı "+new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});Mode.pill("HAZIR")}
+function reset(){["hava","gorev","sinav","kur"].forEach(k=>{const e=$("b_"+k);e.className="ld";e.textContent="yükleniyor…"});$("sum").className="ld";$("sum").textContent="Brifing hazırlanıyor…";Mode.pill("YÜKLENİYOR")}
+function au(){$("au").textContent="OTOMATİK YENİLEME: "+(auto?"AÇIK (30 dk)":"KAPALI");$("au").setAttribute("aria-pressed",auto);clearInterval(tm);if(auto)tm=setInterval(()=>Mode.cmd("yenile"),1800000)}
+Mode.start({kind:"brifing",title:"BRİFİNG",placeholder:"Komut: brifingi oku · yenile · otomatik yenilemeyi aç",init:d=>{SRC=d.src||{};auto=!!d.auto;au();$("dt").textContent=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"});
+  Object.entries(d.data||{}).forEach(([k,p])=>part(k,p));if(d.summary)summ(d.summary)},
+ act:d=>{if(d.reset)reset();if(d.part)Object.entries(d.part).forEach(([k,p])=>part(k,p));if(d.summary)summ(d.summary);if(d.auto!==undefined){auto=d.auto;au()}}});
+$("rd").onclick=()=>Mode.cmd("brifingi oku");$("rf").onclick=()=>Mode.cmd("yenile");$("au").onclick=()=>Mode.cmd(auto?"otomatik yenilemeyi kapat":"otomatik yenilemeyi aç");
+</script></body></html>

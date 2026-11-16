@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS GÜNE BAŞLA</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ffcf7a;--c2:#ff9a3d;--ln:rgba(255,207,122,.25);--hi:rgba(255,207,122,.12);--card:rgba(30,18,6,.68)}
+html,body{background:radial-gradient(ellipse at 20% -10%,#5a3a10 0%,#120a03 62%)}
+#stage{display:flex;flex-direction:column;gap:14px}
+#hd{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}#hd h1{margin:0;font:300 40px Bahnschrift,"Segoe UI";color:#fff}#hd span{color:var(--mut);font-size:15px}
+#grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;align-content:start}
+.ld{color:var(--mut);font-size:13px;animation:bl 1.2s infinite}@keyframes bl{50%{opacity:.3}}
+.row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}.row b{color:var(--c);font:600 13px Consolas;white-space:nowrap}
+.t{font:300 54px Bahnschrift;color:#fff;line-height:1}.t small{font-size:20px;color:var(--mut)}
+.wa .nm{font-weight:600;color:#fff}.wa .pv{color:var(--mut);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
+.badge{background:var(--c);color:#201000;border-radius:10px;padding:1px 8px;font:700 12px Consolas}
+#sum{padding:14px 18px;font-size:15px;line-height:1.6;color:#f5e6c8;user-select:text}
+.mt{color:var(--mut);font-size:13px}
+</style></head><body>
+<div id="stage"><div id="hd"><h1 id="gr">Merhaba</h1><span id="dt"></span><span style="flex:1"></span><button id="rd" class="prim">🔊 ÖZETİ OKU</button><button id="rf">YENİLE</button><button id="wt">WHATSAPP: —</button></div>
+ <div id="grid">
+  <div class="card" id="c_hava"><h3>HAVA</h3><div id="b_hava" class="ld">yükleniyor…</div></div>
+  <div class="card" id="c_bugun"><h3>BUGÜN</h3><div id="b_bugun" class="ld">yükleniyor…</div></div>
+  <div class="card" id="c_dersler"><h3>DERSLER</h3><div id="b_dersler" class="mt">—</div></div>
+  <div class="card" id="c_sinav"><h3>SINAV</h3><div id="b_sinav" class="ld">yükleniyor…</div></div>
+  <div class="card wa" id="c_wa"><h3>WHATSAPP</h3><div id="b_wa" class="ld">okunuyor… (birkaç saniye sürebilir)</div></div>
+  <div class="card" id="c_kur"><h3>KURLAR</h3><div id="b_kur" class="ld">yükleniyor…</div></div>
+ </div><div class="card" id="sum"><span class="mt">Özet hazırlanıyor…</span></div></div>
+<script>
+let D={},waOn=true;const E=Mode.esc;
+Mode.start({kind:"gune",title:"GÜNE BAŞLA",placeholder:"Komut: özeti oku · yenile · WhatsApp'ı atla · WhatsApp'ı dahil et",init:d=>{const s=d.snap;D=s.data||{};waOn=s.wa_on;$("gr").textContent=s.greet+" efendim";$("dt").textContent=s.date;Object.keys(D).forEach(k=>part(k,D[k]));if(s.summary)sum(s.summary);wt()},
+ act:d=>{if(d.reset){D={};["hava","bugun","dersler","sinav","wa","kur"].forEach(k=>{$("b_"+k).className="ld";$("b_"+k).textContent="yükleniyor…"});$("sum").innerHTML='<span class="mt">Özet hazırlanıyor…</span>'}
+  if(d.wa_on!==undefined){waOn=d.wa_on;wt()}if(d.part)Object.entries(d.part).forEach(([k,v])=>part(k,v));if(d.summary)sum(d.summary)}});
+function wt(){$("wt").textContent="WHATSAPP: "+(waOn?"AÇIK":"KAPALI")}
+function sum(t){$("sum").textContent=t;Mode.pill("HAZIR")}
+function set(id,h){const e=$("b_"+id);e.className="";e.innerHTML=h}
+function part(k,v){D[k]=v;
+ if(k==="hava"){if(!v)return set("hava",'<span class="mt">Hava verisi alınamadı.</span>');set("hava",`<div class="t">${v.temp}°<small> ${E(v.d)}</small></div><div class="mt" style="margin:8px 0">${E(v.city)} · hissedilen ${v.feels}° · rüzgar ${v.wind} km/s</div>`+v.days.map((x,i)=>`<div class="row"><span>${["Bugün","Yarın","Öbür gün"][i]} ${E(x.d)}</span><b>${x.lo}° / ${x.hi}° · %${x.pp}</b></div>`).join("")+(v.umbrella?'<div style="margin-top:8px;color:#8fd3ff">☂ Şemsiye alın</div>':""))}
+ else if(k==="bugun"){if(!v)return set("bugun",'<span class="mt">Okunamadı.</span>');
+  set("bugun",(v.ev.map(x=>`<div class="row"><span>${E(x.t)}</span><b>${E(x.w)}</b></div>`).join("")+v.rem.map(x=>`<div class="row"><span>⏰ ${E(x.t)}</span><b>${E(x.w)}</b></div>`).join(""))||'<span class="mt">Bugün için ajanda ya da hatırlatma yok.</span>');
+  set("dersler",v.weekend?'<span class="mt">Bugün ders yok.</span>':(v.lessons||[]).map(x=>`<div class="row"><span>${x.n}. ${E(x.ad)}</span><b>${E(x.saat)}</b></div>`).join("")||'<span class="mt">—</span>')}
+ else if(k==="sinav")set("sinav",(v||[]).map(x=>`<div class="row"><span>${E(x.ders)}${x.konu?" · "+E(x.konu):""}</span><b>${x.kalan===0?"BUGÜN":x.kalan===1?"YARIN":x.kalan+" GÜN"}</b></div>`).join("")||'<span class="mt">Kayıtlı sınav yok.</span>');
+ else if(k==="kur")set("kur",(v||[]).map(x=>`<div class="row"><span>${E(x.k)}</span><b>${x.v} ₺</b></div>`).join("")||'<span class="mt">Alınamadı.</span>');
+ else if(k==="wa"){if(!v||v.off)return set("wa",'<span class="mt">WhatsApp özeti kapalı.</span>');if(v.error)return set("wa",'<span class="mt">Okunamadı — WhatsApp Web penceresi açık mı?</span>');
+  set("wa",v.chats.map(c=>`<div class="row"><span><span class="nm">${E(c.name)}</span> <span class="badge">${c.count}</span><div class="pv">${E(c.preview||"")}</div></span></div>`).join("")||'<span class="mt">Okunmamış mesaj yok.</span>')}}
+$("rd").onclick=()=>Mode.cmd("özeti oku");$("rf").onclick=()=>Mode.cmd("yenile");$("wt").onclick=()=>Mode.cmd(waOn?"whatsapp'ı atla":"whatsapp'ı dahil et");
+</script></body></html>

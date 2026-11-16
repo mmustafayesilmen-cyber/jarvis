@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS ZAMANLAYICI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src ws://127.0.0.1:8765">
+<style>
+:root{--c:#5fe6ff;--bg:#01050b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:radial-gradient(ellipse at center,#04182a 0%,#020b16 55%,#000204 100%);overflow:hidden;
+ font-family:"Segoe UI",Bahnschrift,Consolas,monospace;color:var(--c);-webkit-user-select:none;user-select:none;cursor:default}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+#label{position:fixed;top:5vh;left:0;right:0;text-align:center;font:600 3.2vmin Bahnschrift,"Segoe UI";letter-spacing:1.4vmin;
+ text-shadow:0 0 18px var(--c);opacity:.9}
+#digits{position:fixed;left:0;right:0;top:50%;transform:translateY(-56%);text-align:center;font:300 19vmin Bahnschrift,"Segoe UI";
+ letter-spacing:.8vmin;text-shadow:0 0 40px var(--c);font-variant-numeric:tabular-nums}
+#sub{position:fixed;left:0;right:0;top:calc(50% + 11vmin);text-align:center;font:2.4vmin Consolas;letter-spacing:.9vmin;opacity:.7}
+#bottom{position:fixed;left:0;right:0;bottom:4vh;text-align:center}
+#end{padding:1.6vmin 6vmin;border:1px solid rgba(95,230,255,.5);background:rgba(4,24,38,.7);color:var(--c);font:2.4vmin Consolas;
+ letter-spacing:.9vmin;cursor:pointer;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+#end:hover{background:rgba(10,50,75,.85)}
+#brk{display:flex;gap:1.4vmin;justify-content:center;align-items:center;margin-bottom:2vmin;font:1.9vmin Consolas;letter-spacing:.5vmin;opacity:.92}
+#brk button,#peek{padding:1vmin 3vmin;border:1px solid rgba(95,230,255,.4);background:rgba(4,24,38,.6);color:var(--c);font:1.9vmin Consolas;letter-spacing:.5vmin;cursor:pointer}
+#brk button:hover,#peek:hover{background:rgba(10,50,75,.85)}
+#peek{margin-left:1.4vmin}
+#hint{margin-top:1.6vmin;font:1.8vmin Consolas;letter-spacing:.5vmin;opacity:.45}
+#adj{display:flex;gap:1.2vmin;justify-content:center;align-items:center;margin-bottom:1.6vmin}
+#adj button{min-width:8vmin;padding:1vmin 2vmin;border:1px solid rgba(95,230,255,.4);background:rgba(4,24,38,.6);color:var(--c);font:1.9vmin Consolas;letter-spacing:.3vmin;cursor:pointer}
+#adj button:hover{background:rgba(10,50,75,.85)}
+#adj .sep{width:1px;height:3.4vmin;background:rgba(95,230,255,.25);margin:0 .6vmin}
+#adj #pp{min-width:14vmin}
+#gear{position:fixed;top:3vh;right:3vw;width:5.4vmin;height:5.4vmin;border:1px solid rgba(95,230,255,.4);background:rgba(4,24,38,.6);color:var(--c);font:3vmin "Segoe UI Symbol";cursor:pointer;z-index:6}
+#gear:hover{background:rgba(10,50,75,.85)}
+#set{position:fixed;top:0;right:0;bottom:0;width:min(380px,86vw);padding:3vh 22px;background:rgba(2,12,22,.96);border-left:1px solid rgba(95,230,255,.35);
+ transform:translateX(105%);transition:transform .25s;z-index:7;overflow:auto;font:15px "Segoe UI";letter-spacing:.3px}
+#set.open{transform:none}
+#set h3{margin:0 0 14px;font:600 16px Bahnschrift,"Segoe UI";letter-spacing:4px}
+#set .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid rgba(95,230,255,.12)}
+#set .seg{display:flex;gap:6px}
+#set .seg button,#set .sw{border:1px solid rgba(95,230,255,.4);background:rgba(4,24,38,.6);color:var(--c);padding:5px 11px;font:13px Consolas;cursor:pointer}
+#set .seg button.on{background:var(--c);color:#001018}
+#set .sw{width:26px;height:26px;padding:0;border-radius:50%}
+#set .sw.on{outline:2px solid #fff;outline-offset:2px}
+#set .tg{width:42px;height:22px;border-radius:11px;border:1px solid rgba(95,230,255,.5);background:rgba(4,24,38,.8);position:relative;cursor:pointer;padding:0}
+#set .tg::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--c);transition:left .15s}
+#set .tg.on{background:rgba(95,230,255,.3)}#set .tg.on::after{left:22px}
+#set .cl{margin-top:16px;width:100%;padding:9px;border:1px solid rgba(95,230,255,.4);background:none;color:var(--c);font:14px Consolas;cursor:pointer}
+body.noring #c{opacity:0}body.nolabel #label{visibility:hidden}body.nosub #sub{visibility:hidden}
+body.sz-s #digits{font-size:11vmin}body.sz-l #digits{font-size:27vmin}
+body.paused #digits{opacity:.5}
+body.done{--c:#ffb454}
+body.done #digits{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="label">ZAMANLAYICI</div>
+<div id="digits">00:00</div>
+<div id="sub">KALAN SÜRE</div>
+<button id="gear" title="Ayarlar">⚙</button>
+<div id="set"><h3>AYARLAR</h3>
+<div class="row"><span>Renk</span><div class="seg" id="s-col"></div></div>
+<div class="row"><span>Rakam boyutu</span><div class="seg" id="s-sz"><button data-v="s">K</button><button data-v="m">O</button><button data-v="l">B</button></div></div>
+<div class="row"><span>Halka ve çizimler</span><button class="tg" data-k="ring"></button></div>
+<div class="row"><span>Başlık</span><button class="tg" data-k="label"></button></div>
+<div class="row"><span>Alt yazı</span><button class="tg" data-k="sub"></button></div>
+<div class="row"><span>Son 10 sn tik sesi</span><button class="tg" data-k="tick"></button></div>
+<div class="row"><span>Düğmeler (süre ekle/çıkar)</span><button class="tg" data-k="ctl"></button></div>
+<div class="row"><span>Mola kısayolları</span><button class="tg" data-k="brk"></button></div>
+<button class="cl" id="reset">VARSAYILANA DÖN</button></div>
+<div id="bottom"><div id="adj"><button data-s="-300">−5</button><button data-s="-60">−1</button><button id="pp">⏸ DURAKLAT</button><button data-s="60">+1</button><button data-s="300">+5</button><button data-s="600">+10</button><span class="sep"></span><button id="rs">↻ BAŞTAN</button></div><div id="brk"><span>MOLAYA GEÇ</span><button data-m="5">5 DK</button><button data-m="10">10 DK</button><button data-m="15">15 DK</button></div><button id="end">BİTİR</button><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><div id="hint">ESC ile de kapatabilirsiniz</div></div>
+<script>
+"use strict";
+const P=new URLSearchParams(location.search),T=P.get('t');let END=+P.get('end'),DUR=Math.max(1,+P.get('dur')||1),DUE=P.get('due')||'0',pausedLeft=null;
+const LABEL=(P.get('label')||'ZAMANLAYICI').toUpperCase();
+document.getElementById('label').textContent=LABEL;document.title='JARVIS '+LABEL;
+const isBreak=/^(MOLA|GÖZ MOLASI)/.test(LABEL);
+const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,DPR;
+function rs(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;g.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',rs);rs();
+let done=false,t=0;
+function col(a){return done?`rgba(255,180,84,${a})`:`rgba(95,230,255,${a})`}
+// --- ayarlar (yalnızca bu bilgisayarda, localStorage) ---
+const DEF={col:'#5fe6ff',sz:'m',ring:1,label:1,sub:1,tick:0,ctl:1,brk:1},COLS=['#5fe6ff','#7dff9a','#ffb454','#c58bff','#ff6b8a','#ffffff'];
+let PREF=Object.assign({},DEF);try{Object.assign(PREF,JSON.parse(localStorage.getItem('jv_timer')||'{}'))}catch(e){}
+function savePref(){try{localStorage.setItem('jv_timer',JSON.stringify(PREF))}catch(e){}}
+function applyPref(){const b=document.body,r=document.documentElement;r.style.setProperty('--c',PREF.col);
+ b.classList.toggle('noring',!PREF.ring);b.classList.toggle('nolabel',!PREF.label);b.classList.toggle('nosub',!PREF.sub);
+ b.classList.remove('sz-s','sz-l');if(PREF.sz!=='m')b.classList.add('sz-'+PREF.sz);
+ document.getElementById('adj').style.display=PREF.ctl?'flex':'none';document.getElementById('brk').style.display=(PREF.brk&&!isBreak)?'flex':'none';
+ document.querySelectorAll('#set .tg').forEach(x=>x.classList.toggle('on',!!PREF[x.dataset.k]));
+ document.querySelectorAll('#s-sz button').forEach(x=>x.classList.toggle('on',x.dataset.v===PREF.sz));
+ document.querySelectorAll('#s-col .sw').forEach(x=>x.classList.toggle('on',x.dataset.v===PREF.col))}
+const sc=document.getElementById('s-col');COLS.forEach(c=>{const e=document.createElement('button');e.className='sw';e.dataset.v=c;e.style.background=c;e.onclick=()=>{PREF.col=c;savePref();applyPref()};sc.appendChild(e)});
+document.querySelectorAll('#s-sz button').forEach(x=>x.onclick=()=>{PREF.sz=x.dataset.v;savePref();applyPref()});
+document.querySelectorAll('#set .tg').forEach(x=>x.onclick=()=>{PREF[x.dataset.k]=PREF[x.dataset.k]?0:1;savePref();applyPref()});
+document.getElementById('reset').onclick=()=>{PREF=Object.assign({},DEF);savePref();applyPref()};
+document.getElementById('gear').onclick=()=>document.getElementById('set').classList.toggle('open');
+function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+document.querySelectorAll('#adj [data-s]').forEach(x=>x.onclick=()=>send({type:'timer_adj',due:+DUE,action:'add',seconds:+x.dataset.s}));
+document.getElementById('rs').onclick=()=>send({type:'timer_adj',due:+DUE,action:'restart'});
+document.getElementById('pp').onclick=()=>send({type:'timer_adj',due:+DUE,action:pausedLeft===null?'pause':'resume'});
+let lastTick=-1;
+function tick(s){if(!PREF.tick||s>10||s<1||s===lastTick)return;lastTick=s;try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),gn=a.createGain();o.frequency.value=s<=3?1000:760;gn.gain.value=.08;o.connect(gn);gn.connect(a.destination);o.start();o.stop(a.currentTime+.08);setTimeout(()=>a.close(),300)}catch(e){}}
+function frame(){t+=1/60;const left=pausedLeft!==null?pausedLeft*1000:Math.max(0,END-Date.now()),frac=Math.min(1,left/(DUR*1000));
+ if(left<=0&&!done){done=true;document.body.classList.add('done');document.getElementById('sub').textContent='SÜRE DOLDU';document.getElementById('label').textContent=LABEL+(isBreak?' · BİTTİ':' · MOLA ZAMANI')}
+ else if(left>0&&done){done=false;document.body.classList.remove('done');document.getElementById('sub').textContent='KALAN SÜRE';document.getElementById('label').textContent=LABEL}
+ const s=Math.ceil(left/1000),m=Math.floor(s/60),h=Math.floor(m/60);if(pausedLeft===null)tick(s);
+ document.getElementById('digits').textContent=(h?String(h).padStart(2,'0')+':':'')+String(m%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+ g.clearRect(0,0,W,H);const cx=W/2,cy=H/2,R=Math.min(W,H)*.33;
+ g.lineCap='round';
+ // altyapı halkaları
+ for(let k=0;k<3;k++){g.strokeStyle=col(.10-k*.025);g.lineWidth=1.2;g.beginPath();g.arc(cx,cy,R*(1.08+k*.07),0,6.2832);g.stroke()}
+ for(let i=0;i<120;i++){const a=i/120*6.2832-1.5708,l=i%10===0?R*.05:R*.022;g.strokeStyle=col(i%10===0?.5:.22);g.lineWidth=i%10===0?2:1;
+  g.beginPath();g.moveTo(cx+Math.cos(a)*R*1.01,cy+Math.sin(a)*R*1.01);g.lineTo(cx+Math.cos(a)*(R*1.01+l),cy+Math.sin(a)*(R*1.01+l));g.stroke()}
+ // ilerleme halkası (kalan süre)
+ g.strokeStyle=col(.14);g.lineWidth=R*.045;g.beginPath();g.arc(cx,cy,R*.93,0,6.2832);g.stroke();
+ g.shadowColor=col(1);g.shadowBlur=26;g.strokeStyle=col(.95);g.lineWidth=R*.045;g.beginPath();
+ g.arc(cx,cy,R*.93,-1.5708,-1.5708+6.2832*frac);g.stroke();g.shadowBlur=0;
+ // dönen ince yay
+ g.strokeStyle=col(.35);g.lineWidth=2;g.beginPath();g.arc(cx,cy,R*1.18,t*.5,t*.5+1.6);g.stroke();
+ g.beginPath();g.arc(cx,cy,R*1.18,t*.5+3.14,t*.5+4.6);g.stroke();
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+let ws;function conn(){ws=new WebSocket(`ws://127.0.0.1:8765/ws?t=${T}`);ws.onclose=()=>setTimeout(conn,1500);
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.type==='timer_state'&&Math.abs(+m.old-+DUE)<1){DUE=String(m.due);END=+m.end;DUR=Math.max(1,+m.dur);pausedLeft=m.paused?+m.left:null;lastTick=-1;
+   document.body.classList.toggle('paused',!!m.paused);document.getElementById('pp').textContent=m.paused?'▶ SÜRDÜR':'⏸ DURAKLAT'}}}conn();
+function finish(){if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'timer_close',due:+DUE}));setTimeout(()=>window.close(),300)}
+document.getElementById('end').addEventListener('click',finish);
+document.querySelectorAll('#brk button').forEach(b=>b.addEventListener('click',()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'timer_break',due:+DUE,minutes:+b.dataset.m}))}));
+document.getElementById('peek').addEventListener('click',()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'mode_peek'}))});
+addEventListener('keydown',e=>{if(e.key==='Escape'){const s=document.getElementById('set');if(s.classList.contains('open'))s.classList.remove('open');else finish()}
+ else if(e.key===' '){e.preventDefault();document.getElementById('pp').click()}});
+applyPref();window.focus();
+</script></body></html>

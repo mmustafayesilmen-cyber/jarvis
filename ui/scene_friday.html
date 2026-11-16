@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS FRIDAY</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765">
+<style>
+/* FRIDAY: Jarvis'in cyan HUD'undan ve Ultron'un kızıl terminalinden ayrı — sıcak amber + buz beyazı, yumuşak cam paneller, iş akışı zaman çizelgesi */
+:root{--bg:#0d0f1a;--glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.09);--ln:rgba(255,255,255,.12);--am:#ffb454;--am2:#ff8a3d;--ice:#cfe6ff;--txt:#f3efe8;--mut:#9aa0b4;--ok:#7be0a8;--bad:#ff7d7d}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;user-select:none}
+body::before{content:"";position:fixed;inset:0;z-index:0;background:
+ radial-gradient(ellipse 55% 50% at 18% 0%,rgba(255,138,61,.20),transparent 70%),
+ radial-gradient(ellipse 60% 55% at 100% 100%,rgba(120,150,255,.18),transparent 70%),
+ radial-gradient(circle at 50% 120%,rgba(255,180,84,.10),transparent 50%)}
+#grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:22px 22px}
+#top{position:fixed;top:0;left:0;right:0;height:70px;z-index:5;display:flex;align-items:center;gap:16px;padding:0 28px}
+#orb{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--am) 40%,var(--am2) 75%);box-shadow:0 0 0 6px rgba(255,180,84,.12),0 0 30px rgba(255,150,60,.6);animation:br 3.4s ease-in-out infinite}
+body.busy #orb{animation:br 1s ease-in-out infinite}@keyframes br{50%{transform:scale(1.14);box-shadow:0 0 0 10px rgba(255,180,84,.10),0 0 46px rgba(255,150,60,.8)}}
+#brand{font:300 28px/1 "Segoe UI Variable Display","Segoe UI",sans-serif;letter-spacing:.16em;color:#fff}#brand b{font-weight:600;color:var(--am)}
+#pill{font:600 11px "Segoe UI";letter-spacing:.14em;padding:5px 13px;border-radius:20px;background:var(--glass2);border:1px solid var(--ln);color:var(--am)}
+#sp{flex:1}#clock{font:13px "Segoe UI";color:var(--mut)}
+button{font:600 12px "Segoe UI";letter-spacing:.06em;padding:9px 16px;cursor:pointer;color:var(--txt);border:1px solid var(--ln);background:var(--glass);border-radius:12px;transition:.15s}
+button:hover{background:var(--glass2);border-color:var(--am)}button:active{transform:scale(.97)}
+button.pri{background:linear-gradient(135deg,var(--am),var(--am2));color:#1b1006;border:0}button.pri:hover{filter:brightness(1.08)}
+#stage{position:fixed;top:78px;bottom:88px;left:24px;right:24px;z-index:2;display:grid;grid-template-columns:1fr minmax(340px,430px);gap:20px;min-height:0}
+.pn{background:var(--glass);border:1px solid var(--ln);border-radius:22px;padding:18px 20px;display:flex;flex-direction:column;min-height:0;backdrop-filter:blur(14px);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.pn h3{margin:0 0 12px;font:600 12px "Segoe UI";letter-spacing:.22em;color:var(--am);display:flex;justify-content:space-between;align-items:center}.pn h3 small{font:11px "Segoe UI";letter-spacing:0;color:var(--mut)}
+/* sohbet */
+#chat{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:2px 6px 8px 0;user-select:text;scroll-behavior:smooth}
+.m{max-width:88%;padding:11px 16px;border-radius:20px;font-size:16px;line-height:1.6;word-wrap:break-word;overflow-wrap:anywhere}
+.m.u{align-self:flex-end;background:linear-gradient(135deg,rgba(255,180,84,.28),rgba(255,138,61,.16));border:1px solid rgba(255,180,84,.35);border-bottom-right-radius:6px}
+.m.f{align-self:flex-start;background:var(--glass2);border:1px solid var(--ln);border-bottom-left-radius:6px}.m.f.err{border-color:var(--bad)}
+.m.f.live .b::after{content:"●";color:var(--am);margin-left:6px;animation:bl 1s infinite}@keyframes bl{50%{opacity:.15}}
+.m pre{margin:8px 0 2px;padding:10px 12px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:12px;overflow-x:auto;font:13px Consolas;line-height:1.45;white-space:pre}
+.m code{font:13.5px Consolas;background:rgba(0,0,0,.3);padding:1px 6px;border-radius:6px}.m pre code{background:none;padding:0}
+#empty{margin:auto;max-width:520px;text-align:center;color:var(--mut);line-height:1.8}#empty h2{font:300 40px "Segoe UI Variable Display","Segoe UI";letter-spacing:.14em;color:#fff;margin:0 0 10px}#empty h2 b{font-weight:600;color:var(--am)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}.chips button{font-weight:400;font-size:12.5px;padding:7px 13px;border-radius:20px}
+/* işlem günlüğü */
+#side{display:flex;flex-direction:column;gap:20px;min-height:0}#side .pn{flex:1}#side .pn.small{flex:.7}
+#ops{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;position:relative}
+#ops::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--am),transparent);opacity:.35}
+.op{position:relative;margin-left:30px;padding:9px 12px;background:rgba(0,0,0,.25);border:1px solid var(--ln);border-radius:14px;animation:oin .35s}
+.op::before{content:"";position:absolute;left:-26px;top:14px;width:14px;height:14px;border-radius:50%;background:var(--am);box-shadow:0 0 0 4px rgba(255,180,84,.2)}
+.op.tamam::before{background:var(--ok);box-shadow:0 0 0 4px rgba(123,224,168,.18)}.op.hata::before{background:var(--bad);box-shadow:0 0 0 4px rgba(255,125,125,.18)}.op.çalışıyor::before{animation:bl .8s infinite}
+.op b{font-size:13.5px;color:#fff}.op .t{float:right;font-size:11px;color:var(--mut)}.op .a{font:11.5px Consolas;color:var(--ice);margin-top:4px;word-break:break-all;max-height:3.2em;overflow:hidden}
+.op .r{font-size:12px;color:var(--mut);margin-top:4px;line-height:1.45;max-height:4.4em;overflow:hidden}.op.open .a,.op.open .r{max-height:none}.op{cursor:pointer}
+@keyframes oin{from{opacity:0;transform:translateY(10px)}}
+#emptyo{color:var(--mut);font-size:13px;line-height:1.7;margin-left:4px}
+#lstat{font-size:12.5px;color:var(--ice);margin-bottom:8px}#lstat i{font-style:normal;color:var(--am)}
+#notes{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+.nt{padding:7px 11px;background:rgba(0,0,0,.22);border-radius:12px;cursor:pointer;font-size:12.5px}.nt b{color:#fff}.nt .o{display:none;color:var(--mut);margin-top:5px;line-height:1.5}.nt.open .o{display:block}
+#lbtn{display:flex;gap:8px;margin-top:10px}#lbtn button{flex:1;padding:8px 6px;font-size:11.5px}
+/* alt */
+#bar{position:fixed;left:24px;right:24px;bottom:18px;z-index:9;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.08);border:1px solid var(--ln);border-radius:20px;padding:6px 8px 6px 20px;backdrop-filter:blur(12px)}
+#bar:focus-within{border-color:var(--am);box-shadow:0 0 0 3px rgba(255,180,84,.18)}
+#cmd{flex:1;background:transparent;border:0;outline:0;color:#fff;font:16px "Segoe UI";padding:11px 0;user-select:text}
+#stopb{display:none;background:rgba(255,125,125,.15);border-color:var(--bad);color:#ffb0b0}body.busy #stopb{display:block}
+#log{position:fixed;left:44px;bottom:70px;z-index:9;font-size:12px;color:var(--mut);max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
+@media(max-width:1000px){#stage{grid-template-columns:1fr}#side{display:none}}
+</style></head><body>
+<div id="grain"></div>
+<div id="top"><span id="orb"></span><span id="brand">fri<b>day</b></span><span id="pill">HAZIR</span><span id="sp"></span><span id="clock"></span>
+ <button id="peek">MASAÜSTÜ</button><button id="back" class="pri">← JARVIS'E DÖN</button></div>
+<div id="stage">
+ <div class="pn"><h3>KONUŞMA <small id="tl"></small></h3>
+  <div id="chat"><div id="empty"><h2>fri<b>day</b></h2>Söyle, yapayım. Uygulama aç, dosya düzenle, PowerShell ya da Python ile iş çöz, araştır, müzik çal…<br>Geri dönüşsüz işlerde (silme, kapatma, indirme, mesaj gönderme) önce sana sorarım.
+   <div class="chips"><button data-c="bilgisayarımın durumu nasıl">sistem durumu</button><button data-c="masaüstümde ne var">masaüstüm</button><button data-c="bugün hava nasıl">hava</button><button data-c="ders çalışma müziği aç">çalışma müziği</button></div></div></div></div>
+ <div id="side">
+  <div class="pn"><h3>İŞLEM GÜNLÜĞÜ <small>her araç çağrısı · tıkla: ayrıntı</small></h3><div id="ops"><div id="emptyo">Henüz bir işlem yok. Bir şey yaptırdığında her adım burada görünür.</div></div></div>
+  <div class="pn small"><h3>ÖĞRENDİKLERİ <small id="lh"></small></h3><div id="lstat"></div><div id="notes"></div>
+   <div id="lbtn"><button id="ltog">ÖĞRENME: AÇIK</button><button id="lwipe">SİL</button></div></div>
+ </div>
+</div>
+<div id="log"></div>
+<div id="bar"><input id="cmd" placeholder="Friday'e söyle ya da yaz…" spellcheck="false" autocomplete="off"><button id="stopb">DURDUR</button></div>
+<script>
+const $=id=>document.getElementById(id);
+const TOK=new URLSearchParams(location.search).get("t");let ws,busy=false,cur=null,curTxt="",learn={on:true};
+const send=o=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
+const cmd=t=>{send({type:"text",text:t});$("log").textContent="› "+t};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function md(s){return String(s).split(/```/).map((p,i)=>{
+ if(i%2){const nl=p.indexOf("\n");const b=nl>=0&&/^[\w+#-]*$/.test(p.slice(0,nl).trim())?p.slice(nl+1):p;return "<pre><code>"+esc(b.replace(/\n$/,""))+"</code></pre>"}
+ return esc(p).replace(/`([^`\n]+)`/g,"<code>$1</code>").replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>").replace(/\n/g,"<br>")}).join("")}
+const chat=$("chat"),bottom=()=>{chat.scrollTop=chat.scrollHeight};
+function wire(){document.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>cmd(b.dataset.c))}wire();
+const EMPTY=$("empty").outerHTML;
+function add(role,text,cls){const e=$("empty");if(e)e.remove();const d=document.createElement("div");d.className="m "+(role==="user"?"u":"f")+(cls?" "+cls:"");
+ d.innerHTML='<span class="b">'+md(text)+"</span>";chat.appendChild(d);bottom();return d}
+function setBusy(b,tool){busy=b;document.body.classList.toggle("busy",b);$("pill").textContent=b?(tool?"UYGULUYOR · "+tool:"ÇALIŞIYOR"):"HAZIR"}
+function snap(s){chat.innerHTML="";cur=null;curTxt="";if(!s.msgs.length){chat.innerHTML=EMPTY;wire()}
+ s.msgs.forEach(m=>add(m.role,m.content));renderOps(s.log||[]);setBusy(false);if(s.busy){cur=add("assistant","","live");setBusy(true)}}
+/* ---- işlem günlüğü */
+function opEl(e){let d=document.getElementById("op"+e.id);if(!d){d=document.createElement("div");d.id="op"+e.id;d.onclick=()=>d.classList.toggle("open");$("ops").appendChild(d)}
+ d.className="op "+e.durum;d.innerHTML='<span class="t">'+esc(e.saat)+"</span><b>"+esc(e.ad)+"</b>"+(e.durum==="çalışıyor"?' <span class="r">çalışıyor…</span>':"")+'<div class="a">'+esc(e.args)+"</div>"+(e.sonuc?'<div class="r">'+esc(e.sonuc)+"</div>":"");return d}
+function renderOps(l){$("ops").innerHTML="";if(!l.length){$("ops").innerHTML='<div id="emptyo">Henüz bir işlem yok. Bir şey yaptırdığında her adım burada görünür.</div>';return}l.forEach(opEl);$("ops").scrollTop=1e9}
+function addOp(e){const x=$("emptyo");if(x)x.remove();opEl(e);$("ops").scrollTop=1e9}
+/* ---- öğrenme */
+function renderLearn(L){if(!L)return;learn=L;$("lh").textContent=L.total+" not";
+ $("lstat").innerHTML=(L.on?"":"<i>durduruldu</i> · ")+"şimdi: <i>"+esc(L.status)+"</i>"+(L.topic?" · "+esc(L.topic):"")+(L.host?" · "+esc(L.host):"")+" · bugün "+L.today+"/"+L.limit;
+ $("ltog").textContent="ÖĞRENME: "+(L.on?"AÇIK":"KAPALI");const n=$("notes");n.innerHTML="";
+ if(!L.notes.length)n.innerHTML='<div class="nt" style="cursor:default;color:var(--mut)">Henüz not yok. Arka planda pratik şeyler öğrenmeye başlayacağım.</div>';
+ L.notes.forEach(x=>{const d=document.createElement("div");d.className="nt";d.innerHTML="<b>"+esc(x.konu)+'</b> <span style="color:var(--mut)">· '+esc(x.kaynak||"")+'</span><div class="o">'+esc(x.ozet)+"</div>";d.onclick=()=>d.classList.toggle("open");n.appendChild(d)})}
+function onLearn(l){if(l.snap)renderLearn(l.snap);else if(l.phase){learn.status=l.phase;learn.topic=l.topic||"";learn.host=l.host||"";renderLearn(learn)}}
+/* ---- WebSocket */
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"friday"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.kind!=="friday")return;
+  if(m.type==="scene_init"&&m.data){snap(m.data);renderLearn(m.data.learn)}else if(m.type==="scene_do")doit(m.do||{})};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function doit(d){
+ if(d.msg)$("log").textContent="Friday: "+d.msg;
+ if(d.snap)snap(d.snap);
+ if(d.learn)onLearn(d.learn);
+ if(d.stop){if(cur)cur.classList.remove("live");cur=null;setBusy(false)}
+ if(d.user!==undefined){if(cur)cur.classList.remove("live");add("user",d.user);cur=add("assistant","","live");curTxt="";setBusy(true)}
+ if(d.tool)setBusy(true,d.tool);
+ if(d.op)addOp(d.op);
+ if(d.tok){if(!cur){cur=add("assistant","","live");curTxt=""}curTxt+=d.tok;cur.querySelector(".b").innerHTML=md(curTxt);bottom()}
+ if(d.done){if(!cur)cur=add("assistant","");cur.classList.remove("live");if(d.err)cur.classList.add("err");cur.querySelector(".b").innerHTML=md(d.text||curTxt);cur=null;curTxt="";setBusy(false);bottom()}}
+/* ---- girdi */
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){cmd(e.target.value.trim());e.target.value=""}else if(e.key==="Escape")e.target.blur()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){const a=document.activeElement;if(a&&a.tagName==="INPUT"){a.blur();return}send({type:"persona",who:"jarvis"})}});
+$("back").onclick=()=>send({type:"persona",who:"jarvis"});$("peek").onclick=()=>send({type:"mode_peek"});$("stopb").onclick=()=>cmd("sus");
+$("ltog").onclick=()=>cmd(learn.on?"öğrenmeyi durdur":"öğrenmeyi başlat");$("lwipe").onclick=()=>cmd("öğrendiklerini sil");
+setInterval(()=>{$("clock").textContent=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})},1000);
+connect();window.focus();
+</script></body></html>

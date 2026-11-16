@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS HIZLI BAŞLATICI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#3fe8ff}
+#stage{display:flex;flex-direction:column;gap:14px}
+#top2{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+#grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;align-content:start;padding-right:4px}
+.sc h3{display:flex;justify-content:space-between;align-items:center;font-size:14px;letter-spacing:.2em}.sc h3 span{text-transform:uppercase}
+.it{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--ln);border-radius:9px;margin-bottom:6px;font-size:13px;background:rgba(0,0,0,.25)}
+.it .tp{font:600 10px Consolas;letter-spacing:.1em;color:var(--c);width:56px}.it .v{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.it a{cursor:pointer;color:#ff8a70;padding:0 6px}
+.ad{display:flex;gap:6px;margin-top:8px}.ad select,.ad input,.hk{padding:8px;background:rgba(0,0,0,.45);border:1px solid var(--ln);border-radius:9px;color:#fff;font:13px "Segoe UI";outline:0;user-select:text}.ad input{flex:1;min-width:0}
+.hkrow{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--mut)}
+.hk{width:170px;text-align:center;font:600 13px Consolas;cursor:pointer;user-select:none}.hk:focus{border-color:var(--c);box-shadow:0 0 0 2px var(--hi)}
+.ok{color:#5ee08a}.no{color:#ff8a70}
+.empty{color:var(--mut);font-size:13px;padding:8px}
+</style></head><body>
+<div id="stage"><div class="card" id="top2"><div><h3 style="margin:0">MASAÜSTÜNE GEÇ KISAYOLU</h3><div class="mut" style="font-size:12px;margin-top:4px">Kutuya tıklayıp istediğiniz tuşlara basın. Backspace = kapat.</div></div>
+ <input class="hk" id="pk" readonly><span id="pks" style="font-size:12px"></span><span style="flex:1"></span>
+ <input id="nn" class="hk" style="width:200px;user-select:text;text-align:left;font-family:'Segoe UI'" placeholder="Yeni sahne adı"><button id="nb" class="prim">SAHNE OLUŞTUR</button></div>
+ <div id="grid"></div></div>
+<script>
+let S={scenes:[],peek:"",status:{},types:{}};
+Mode.start({kind:"baslatici",title:"HIZLI BAŞLATICI",placeholder:"Komut: yazılım ortamını aç · yeni sahne ders çalışma · ders çalışma sahnesine uygulama ekle spotify · sahneye kısayol ata ctrl alt 1",init:d=>render(d.snap),act:d=>{if(d.snap)render(d.snap)}});
+const E=Mode.esc,send=(...a)=>Mode.cmd("§"+a.join("|"));
+function combo(e){const k=e.key;if(["Control","Alt","Shift","Meta"].includes(k))return null;const m=[];if(e.ctrlKey)m.push("ctrl");if(e.altKey)m.push("alt");if(e.shiftKey)m.push("shift");if(e.metaKey)m.push("win");
+ let key=k.length===1?k.toLowerCase():k.toLowerCase().replace("arrow","").replace(" ","space");if(e.code&&/^Digit\d$/.test(e.code))key=e.code.slice(5);if(e.code&&/^Key[A-Z]$/.test(e.code))key=e.code.slice(3).toLowerCase();return m.concat(key).join("+")}
+function capture(inp,onset){inp.addEventListener("keydown",e=>{e.preventDefault();e.stopPropagation();if(e.key==="Escape"){inp.blur();return}if(e.key==="Backspace"||e.key==="Delete"){onset("");return}const c=combo(e);if(c)onset(c)});inp.addEventListener("keyup",e=>e.stopPropagation())}
+function stat(c){if(!c)return"";const s=S.status[c];return s===true?'<span class="ok">✓ kayıtlı</span>':s===false?'<span class="no">✗ başka uygulama kullanıyor</span>':""}
+function render(s){S=s;const pk=$("pk");if(document.activeElement!==pk)pk.value=s.peek||"(kapalı)";$("pks").innerHTML=stat(s.peek);
+ const g=$("grid");g.innerHTML="";
+ s.scenes.forEach(sc=>{const c=document.createElement("div");c.className="card sc";
+  c.innerHTML=`<h3><span>${E(sc.name)}</span><span><button class="run prim">▶ BAŞLAT</button> <button class="del" title="Sahneyi sil">🗑</button></span></h3>`+
+   (sc.items.map((it,i)=>`<div class="it"><span class="tp">${E((s.types[it.t]||it.t).toUpperCase())}</span><span class="v" title="${E(it.v)}">${E(it.v)}</span><a data-i="${i}">×</a></div>`).join("")||'<div class="empty">Henüz öğe yok — aşağıdan ekleyin.</div>')+
+   `<div class="ad"><select>${Object.entries(s.types).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><input placeholder="ad, adres ya da yol"><button class="add">EKLE</button></div>
+    <div class="hkrow">Kısayol: <input class="hk" readonly value="${E(sc.hotkey||"(yok)")}"> <span class="st">${stat(sc.hotkey)}</span></div>`;
+  c.querySelector(".run").onclick=()=>send("calistir",sc.name);c.querySelector(".del").onclick=()=>{if(confirm(sc.name+" sahnesi silinsin mi?"))send("sahnesil",sc.name)};
+  c.querySelectorAll(".it a").forEach(a=>a.onclick=()=>send("sil",sc.name,a.dataset.i));
+  const inp=c.querySelector(".ad input"),sel=c.querySelector(".ad select"),add=()=>{if(inp.value.trim()){send("ekle",sc.name,sel.value,inp.value.trim());inp.value=""}};
+  c.querySelector(".add").onclick=add;inp.addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")add()});
+  capture(c.querySelector(".hk"),v=>send("kisayol",sc.name,v));g.appendChild(c)});
+ if(!s.scenes.length)g.innerHTML='<div class="empty">Sahne yok. Sağ üstten bir sahne oluşturun.</div>';Mode.pill(s.scenes.length+" SAHNE")}
+capture($("pk"),v=>send("peek",v));
+$("nb").onclick=()=>{const v=$("nn").value.trim();if(v){send("yeni",v);$("nn").value=""}};$("nn").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("nb").click()});
+</script></body></html>

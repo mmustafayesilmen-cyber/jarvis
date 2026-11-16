@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS SİMYA ATÖLYESİ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ffb347;--c2:#d9731a;--ln:rgba(255,179,71,.25);--hi:rgba(255,179,71,.12);--card:rgba(32,18,6,.7)}
+html,body{background:radial-gradient(ellipse at 50% 0%,#3d1f5a 0%,#0b0613 68%)}
+#stage{display:grid;grid-template-columns:1fr 360px;gap:18px}
+#grid{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start;overflow:auto;padding:4px}
+.el{width:96px;padding:10px 4px;text-align:center;border:1px solid var(--ln);border-radius:14px;background:rgba(0,0,0,.35);cursor:pointer;transition:transform .12s,border-color .15s,box-shadow .2s;user-select:none}
+.el:hover{transform:translateY(-3px);border-color:var(--c)}.el.sel{border-color:var(--c);box-shadow:0 0 18px var(--c);background:var(--hi)}.el.new{animation:pop .8s}
+.el b{display:block;font-size:30px}.el span{font:600 12px Bahnschrift;letter-spacing:.08em;text-transform:uppercase}
+@keyframes pop{0%{transform:scale(.3);box-shadow:0 0 0 var(--c)}50%{transform:scale(1.25);box-shadow:0 0 40px var(--c)}}
+.slot{width:104px;height:104px;border:2px dashed var(--ln);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:44px}
+#mix{display:flex;align-items:center;justify-content:center;gap:14px;margin:12px 0}#res{font:700 24px Bahnschrift;color:#fff;text-align:center;min-height:62px;text-shadow:0 0 18px var(--c)}
+#pb{height:8px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden}#pb i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--c2));width:0;transition:width .5s}
+</style></head><body>
+<div id="stage"><div class="card" style="display:flex;flex-direction:column;min-height:0"><h3>ÖĞELERİN <small id="cn"></small></h3><div id="grid"></div></div>
+ <div class="card"><h3>KAZAN</h3><div id="mix"><div class="slot" id="sa"></div><span style="font-size:26px">+</span><div class="slot" id="sb"></div></div><button id="go" class="prim" style="width:100%;padding:12px">BİRLEŞTİR</button><div id="res"></div><div id="pb"><i></i></div>
+ <div style="display:flex;gap:8px;margin-top:14px"><button id="hi" style="flex:1">İPUCU</button><button id="rs" style="flex:1">SIFIRLA</button></div></div></div>
+<script>
+let S={found:[],total:0,n:0},EM={},A=null,B=null,flash=null;
+function slot(e,k){e.textContent=k?(EM[k]||"◆"):""}
+function ui(){$("cn").textContent=S.n+" / "+S.total;$("pb").firstChild.style.width=Math.min(100,S.n/S.total*100)+"%";Mode.pill(S.n+"/"+S.total);
+ $("grid").innerHTML=S.found.map(f=>`<div class="el ${f.ad===A||f.ad===B?"sel":""} ${f.ad===flash?"new":""}" data-k="${Mode.esc(f.ad)}"><b>${f.e}</b><span>${Mode.esc(f.ad)}</span></div>`).join("");
+ $("grid").querySelectorAll(".el").forEach(e=>e.onclick=()=>pick(e.dataset.k));slot($("sa"),A);slot($("sb"),B)}
+function pick(k){if(!A||(A&&B)){A=k;B=null}else B=k;if(A&&B)setTimeout(()=>$("go").click(),150);ui()}
+function take(d){if(d.snap){S=d.snap;S.found.forEach(f=>EM[f.ad]=f.e)}
+ if(d.made){$("res").textContent=(d.made.new?"✨ Yeni: ":"")+d.made.e+" "+d.made.ad.toUpperCase();flash=d.made.ad;A=B=null}
+ if(d.fail){$("res").textContent="✗ "+d.fail.join(" + ")+" — bir şey olmadı";A=B=null}
+ if(d.hint){$("res").textContent="💡 "+d.hint.join(" + ")+" deneyin"}ui();setTimeout(()=>{flash=null},900)}
+Mode.start({kind:"simya",title:"SİMYA ATÖLYESİ",placeholder:"Komut: ateş ile suyu birleştir · toprak ve hava · ipucu ver · keşfettiklerim · sıfırla",init:d=>{EM=d.emoji;take({snap:d.snap})},act:take});
+$("go").onclick=()=>{if(A&&B)Mode.cmd(A+" ile "+B+" birleştir");else $("res").textContent="İki öğe seçin"};$("hi").onclick=()=>Mode.cmd("ipucu ver");$("rs").onclick=()=>{if(confirm("Tüm keşifler silinsin mi?"))Mode.cmd("simyayı sıfırla")};
+</script></body></html>

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS GÖKYÜZÜ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#9fd0ff;--ln:rgba(159,208,255,.26);--hi:rgba(159,208,255,.16)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#01040b;color:#dcecff;font-family:"Segoe UI",Bahnschrift,Consolas,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:8px;padding:0 14px;z-index:5;background:linear-gradient(#000c,transparent);border-bottom:1px solid var(--ln)}
+#title{font:600 14px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--c);white-space:nowrap;margin-right:8px}
+#sp{flex:1}
+button{font:12.5px Consolas;letter-spacing:.1em;padding:7px 12px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,0,0,.5);white-space:nowrap}
+button:hover{background:var(--hi)}button.on{background:var(--hi);border-color:var(--c)}
+#close{border-color:rgba(255,120,84,.7);color:#ff9a7a}
+#main{position:fixed;top:50px;bottom:46px;left:0;right:0;display:flex}
+#stage{flex:1;position:relative;min-width:0}
+#cv{position:absolute;inset:0;width:100%;height:100%}
+#card{width:min(360px,32vw);overflow:auto;border-left:1px solid var(--ln);padding:12px 14px;background:rgba(0,0,0,.42);scrollbar-width:thin}
+#ct{margin:0 0 4px;font:600 17px Bahnschrift,Consolas;letter-spacing:.1em;color:var(--c)}
+#cb{font:13.5px/1.55 "Segoe UI";user-select:text}#cb h4{margin:12px 0 3px;font:600 12px Consolas;letter-spacing:.25em;color:var(--c)}
+#cb .k{opacity:.65}#cb table{width:100%;border-collapse:collapse;font:12.5px Consolas}#cb td{padding:2px 4px;border-bottom:1px solid rgba(255,255,255,.07)}#cb td:last-child{text-align:right}
+#cb tr.dn td{opacity:.45}
+#bar{position:fixed;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;gap:10px;padding:0 12px;border-top:1px solid var(--ln);background:rgba(0,0,0,.6);z-index:5}
+#cmd{flex:1;padding:8px 12px;background:rgba(0,0,0,.55);border:1px solid var(--ln);color:var(--c);font:14px Consolas;outline:0;user-select:text}
+#cmd:focus{border-color:var(--c)}#hint{font:11.5px Consolas;opacity:.55;white-space:nowrap}
+@media(max-width:1000px){#card{width:280px}#hint{display:none}}
+</style></head><body>
+<div id="top"><span id="title">GÖKYÜZÜ</span><button id="bm" title="1 saat geri">◀ 1 SA</button><button id="bp" title="1 saat ileri">1 SA ▶</button><button id="bn">ŞİMDİ</button><button id="bl" class="on">ÇİZGİLER</button><button id="bt" class="on">İSİMLER</button><span id="sp"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="main"><div id="stage"><canvas id="cv"></canvas></div><div id="card"><h3 id="ct">Gökyüzü</h3><div id="cb"></div></div></div>
+<div id="bar"><input id="cmd" placeholder="Komut yazın ya da söyleyin… (örn: büyük ayı · Jüpiter nerede · bu gece ne görünür · bir saat ileri · çizgileri göster)" spellcheck="false" autocomplete="off"><span id="hint">tıklayın: nesne bilgisi · Esc = çık</span></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const cv=$("cv"),ctx=cv.getContext("2d");let W=0,H=0,DPR=1;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);const r=$("stage").getBoundingClientRect();W=Math.max(10,r.width);H=Math.max(10,r.height);cv.width=W*DPR;cv.height=H*DPR}addEventListener("resize",resize);
+const TAU=Math.PI*2,rad=d=>d*Math.PI/180,deg=r=>r*180/Math.PI,esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const fm=(x,d)=>(+x.toPrecision(d||3)).toString();
+let D=null,planets=[],base=Date.now(),wall=performance.now(),showLines=true,showLabels=true,focus=null,hits=[],selected=null,reqT=0;
+const now=()=>base+(performance.now()-wall);
+// ------------------------------------------------------------------ iletişim
+let ws;function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"gokyuzu"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}if(m.kind!=="gokyuzu")return;
+  if(m.type==="scene_init"){D=m.data;$("title").textContent="GÖKYÜZÜ · "+String(D.place).toUpperCase();askSky();refreshCard()}
+  else if(m.type==="scene_do")handleDo(m.do||{})};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function askSky(){send({type:"sci_param",kind:"gokyuzu",ts:Math.round(now()/1000)});reqT=performance.now()}
+function setTime(ms){base=ms;wall=performance.now();askSky()}
+function handleDo(d){
+ if(d.sky){planets=d.sky;refreshCard()}
+ if(d.ts!==undefined){setTime(d.ts?d.ts*1000:Date.now())}
+ if(d.lines!==undefined){showLines=d.lines;$("bl").classList.toggle("on",showLines)}
+ if(d.labels!==undefined){showLabels=d.labels;$("bt").classList.toggle("on",showLabels)}
+ if(d.focus){focus=d.focus;focus.t0=performance.now();selected=null;refreshCard()}}
+// ------------------------------------------------------------------ gök hesapları
+function lstDeg(ms){const d=ms/86400000+2440587.5-2451545.0;return(((280.46061837+360.98564736629*d+D.lon)%360)+360)%360}
+function altaz(raDeg,decDeg,lst){const h=rad(lst-raDeg),de=rad(decDeg),la=rad(D.lat);const sa=Math.sin(de)*Math.sin(la)+Math.cos(de)*Math.cos(la)*Math.cos(h);const alt=Math.asin(Math.max(-1,Math.min(1,sa)));const y=-Math.sin(h)*Math.cos(de),x=Math.sin(de)*Math.cos(la)-Math.cos(de)*Math.sin(la)*Math.cos(h);return[deg(alt),(deg(Math.atan2(y,x))+360)%360]}
+function proj(alt,az,cx,cy,R){const r=(90-alt)/90*R;return[cx-r*Math.sin(rad(az)),cy-r*Math.cos(rad(az))]}
+// ------------------------------------------------------------------ çizim
+function phaseDisc(x,y,r,th){ctx.fillStyle="#1d2230";ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();const c=Math.cos(th),wax=th<Math.PI;ctx.fillStyle="#f1ead2";for(let dy=-r;dy<=r;dy++){const w=Math.sqrt(Math.max(0,r*r-dy*dy));let a,b;if(wax){a=w*c;b=w}else{a=-w;b=-w*c}if(b>a)ctx.fillRect(x+a,y+dy,b-a,1.2)}}
+function frame(){requestAnimationFrame(frame);if(!D||W<10)return;ctx.setTransform(DPR,0,0,DPR,0,0);const ms=now(),lst=lstDeg(ms);if(performance.now()-reqT>600000)askSky();
+ const cx=W/2,cy=H/2,R=Math.min(W,H)/2-34;if(R<40)return;let sunAlt=-30;const sun=planets.find(p=>p.name==="Güneş");if(sun)sunAlt=altaz(sun.ra,sun.dec,lst)[0];
+ const k=Math.max(0,Math.min(1,(sunAlt+8)/14));ctx.fillStyle="#01040b";ctx.fillRect(0,0,W,H);const g=ctx.createRadialGradient(cx,cy,R*.1,cx,cy,R);g.addColorStop(0,`rgb(${2+20*k|0},${6+60*k|0},${16+120*k|0})`);g.addColorStop(1,`rgb(${4+60*k|0},${10+70*k|0},${24+110*k|0})`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.fill();
+ {const tw=performance.now()/1000,nk=1-k;ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.clip();
+  if(nk>.05){ctx.save();ctx.translate(cx,cy);ctx.rotate(rad(lst)*.5+.6);const mw=ctx.createLinearGradient(0,-R*.3,0,R*.3);mw.addColorStop(0,"rgba(130,150,220,0)");mw.addColorStop(.5,`rgba(150,165,230,${.13*nk})`);mw.addColorStop(1,"rgba(130,150,220,0)");ctx.fillStyle=mw;ctx.fillRect(-R,-R*.3,2*R,R*.6);
+   for(let i=0;i<520;i++){const hh=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v)},a=hh(i+.5),b=hh(i*1.7+9),c=hh(i*2.3+31),off=(b+c-1)*R*.26,al=(.1+.38*((i*.123)%1))*nk*Math.max(.1,1-Math.abs(off)/(R*.3));ctx.fillStyle=`rgba(215,225,255,${al})`;ctx.fillRect((a-.5)*2*R,off,i%9?1:1.6,i%9?1:1.6)}
+   ctx.restore();
+   for(let i=0;i<340;i++){const q1=Math.sin(i*12.9898)*43758.5453,q2=Math.sin(i*78.233+4)*43758.5453,a=(q1-Math.floor(q1))*TAU+rad(lst)*.5,rr=Math.sqrt(q2-Math.floor(q2))*R*.985,al=(.14+.3*((i*.377)%1))*nk*(.6+.4*Math.sin(tw*(.6+(i%7)*.2)+i));ctx.fillStyle=`rgba(${i%5?"235,240,255":"255,226,190"},${al})`;ctx.fillRect(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr,i%11?1:1.6,i%11?1:1.6)}}
+  const hz=ctx.createRadialGradient(cx,cy,R*.72,cx,cy,R);hz.addColorStop(0,"rgba(0,0,0,0)");hz.addColorStop(1,k>.3?`rgba(255,190,120,${.16*k})`:"rgba(70,110,190,.2)");ctx.fillStyle=hz;ctx.fillRect(cx-R,cy-R,2*R,2*R);ctx.restore()}
+ ctx.strokeStyle="rgba(159,208,255,.5)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.stroke();ctx.lineWidth=1;[30,60].forEach(a=>{ctx.strokeStyle="rgba(159,208,255,.12)";ctx.beginPath();ctx.arc(cx,cy,(90-a)/90*R,0,TAU);ctx.stroke();ctx.fillStyle="rgba(159,208,255,.4)";ctx.font="10px Consolas";ctx.textAlign="left";ctx.fillText(a+"°",cx+3,cy-(90-a)/90*R-2)});
+ ctx.strokeStyle="rgba(159,208,255,.1)";for(let a=0;a<360;a+=45){const[x,y]=proj(0,a,cx,cy,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke()}
+ [["K",0],["KD",45],["D",90],["GD",135],["G",180],["GB",225],["B",270],["KB",315]].forEach(([n,a])=>{const[x,y]=proj(-7,a,cx,cy,R);ctx.fillStyle=a%90===0?"#ffd98f":"#9fd0ff99";ctx.font=(a%90===0?"600 14px":"11px")+" Consolas";ctx.textAlign="center";ctx.fillText(n,x,y+5)});
+ hits=[];const S=D.stars,pos={};for(const key in S){const[nm,ra,dec,mag,con]=S[key];const[alt,az]=altaz(ra*15,dec,lst);pos[key]=[alt,az];if(alt<0)continue;const[x,y]=proj(alt,az,cx,cy,R);const fade=Math.min(1,alt/8+.2);const r=Math.max(.9,3.6-mag*.75);const sa=(.55+.45*Math.min(1,(3.6-mag)/3.5))*fade*(1-.6*k),tw2=.82+.18*Math.sin(performance.now()/1000*(1.5+(ra%1)*2)+dec),sc2=mag<.6&&ra>4&&ra<8?"255,214,170":dec>30?"210,226,255":"255,250,235";if(mag<2.6){const hr=r*(mag<1?5.5:3.6),hg=ctx.createRadialGradient(x,y,0,x,y,hr);hg.addColorStop(0,`rgba(${sc2},${.5*sa*tw2})`);hg.addColorStop(1,`rgba(${sc2},0)`);ctx.fillStyle=hg;ctx.beginPath();ctx.arc(x,y,hr,0,TAU);ctx.fill()}if(mag<1.2){ctx.strokeStyle=`rgba(${sc2},${.4*sa*tw2})`;ctx.lineWidth=.8;const sl=r*4.2*tw2;ctx.beginPath();ctx.moveTo(x-sl,y);ctx.lineTo(x+sl,y);ctx.moveTo(x,y-sl);ctx.lineTo(x,y+sl);ctx.stroke()}ctx.fillStyle=`rgba(${sc2},${sa*tw2})`;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();ctx.fillStyle=`rgba(255,255,255,${sa})`;ctx.beginPath();ctx.arc(x,y,r*.45,0,TAU);ctx.fill();hits.push({x,y,r:Math.max(9,r+5),type:"star",key,name:nm,info:[`Takımyıldızı: ${con}`,`Görünür kadir: ${mag}`,`Yükseklik ${fm(alt)}° · azimut ${fm(az)}°`]});
+  if(showLabels&&mag<1.7&&k<.8){ctx.fillStyle="rgba(190,215,255,.75)";ctx.font="11px Segoe UI";ctx.textAlign="left";ctx.fillText(nm,x+r+3,y-r)}}
+ const fc=focus&&focus.kind==="con"?focus.key:null;for(const ck in D.cons){const c=D.cons[ck],on=ck===fc;if(!showLines&&!on)continue;ctx.strokeStyle=on?"rgba(255,207,127,.95)":"rgba(120,170,255,.35)";ctx.lineWidth=on?2.4:1;for(const line of c.lines){ctx.beginPath();let pen=false;for(const sk of line){const p=pos[sk];if(!p||p[0]<-2){pen=false;continue}const[x,y]=proj(Math.max(0,p[0]),p[1],cx,cy,R);pen?ctx.lineTo(x,y):ctx.moveTo(x,y);pen=true}ctx.stroke()}
+  if(showLabels||on){let sx=0,sy=0,n=0;for(const line of c.lines)for(const sk of line){const p=pos[sk];if(p&&p[0]>0){const[x,y]=proj(p[0],p[1],cx,cy,R);sx+=x;sy+=y;n++}}if(n){ctx.fillStyle=on?"#ffcf7f":"rgba(140,185,255,.5)";ctx.font=(on?"600 14px":"11px")+" Segoe UI";ctx.textAlign="center";ctx.fillText(c.name,sx/n,sy/n-14)}}}
+ const objs=planets.map(p=>{const[alt,az]=altaz(p.ra,p.dec,lst);return Object.assign({},p,{alt,az})});const colors={"Güneş":"#ffd34a","Ay":"#f1ead2","Merkür":"#c8c0b0","Venüs":"#fff2c8","Mars":"#ff7a4a","Jüpiter":"#ffe0b0","Satürn":"#e8d090"};
+ objs.forEach(o=>{if(o.alt<-2)return;const[x,y]=proj(Math.max(0,o.alt),o.az,cx,cy,R);if(o.name==="Ay"){phaseDisc(x,y,10,rad(o.elong))}else if(o.name==="Güneş"){const gg=ctx.createRadialGradient(x,y,2,x,y,26);gg.addColorStop(0,"#fff6c0");gg.addColorStop(.3,"#ffd34a");gg.addColorStop(1,"rgba(255,200,60,0)");ctx.fillStyle=gg;ctx.beginPath();ctx.arc(x,y,26,0,TAU);ctx.fill()}else{ctx.fillStyle=colors[o.name]||"#fff";ctx.beginPath();ctx.arc(x,y,o.name==="Venüs"||o.name==="Jüpiter"?5:3.6,0,TAU);ctx.fill();ctx.strokeStyle=colors[o.name];ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,9,0,TAU);ctx.stroke()}
+  if(showLabels||o.name==="Güneş"||o.name==="Ay"){ctx.fillStyle=colors[o.name]||"#fff";ctx.font="600 12px Segoe UI";ctx.textAlign="left";ctx.fillText(o.name,x+13,y+4)}
+  hits.push({x,y,r:16,type:"obj",key:o.name,name:o.name,info:[`Yükseklik ${fm(o.alt)}° · azimut ${fm(o.az)}°`].concat(o.phase_name?[`Evre: ${o.phase_name} (%${fm(o.phase*100)})`]:[])})});
+ // odak halkası
+ if(focus){let tgt=null;if(focus.kind==="obj"){const o=objs.find(q=>q.name===focus.name);if(o&&o.alt>-2)tgt=proj(Math.max(0,o.alt),o.az,cx,cy,R)}else if(focus.kind==="star"){const p=pos[focus.key];if(p&&p[0]>0)tgt=proj(p[0],p[1],cx,cy,R)}
+  if(tgt){const ph=((performance.now()-focus.t0)/900)%1,rr=14+ph*22;ctx.strokeStyle=`rgba(255,207,127,${1-ph})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(tgt[0],tgt[1],rr,0,TAU);ctx.stroke();ctx.strokeStyle="#ffcf7f";ctx.beginPath();ctx.arc(tgt[0],tgt[1],13,0,TAU);ctx.stroke()}
+  else if(focus.kind!=="con"){ctx.fillStyle="#ff9a7a";ctx.font="14px Segoe UI";ctx.textAlign="center";ctx.fillText((focus.name||(D.stars[focus.key]||[""])[0])+" şu an ufkun altında, görünmüyor",cx,H-10)}}
+ const dt=new Date(ms);ctx.fillStyle="#cfe6ff";ctx.font="13px Consolas";ctx.textAlign="left";ctx.fillText(dt.toLocaleString("tr-TR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"}),14,24);
+ ctx.fillStyle=sunAlt>0?"#ffd98f":sunAlt>-6?"#ffb070":"#9fd0ff";ctx.fillText(sunAlt>0?"gündüz":sunAlt>-6?"alacakaranlık":"gece",14,42);
+ if(performance.now()-(frame.lc||0)>1500){frame.lc=performance.now();refreshCard(objs,lst)}}
+function refreshCard(objs,lst){if(!D)return;lst=lst===undefined?lstDeg(now()):lst;objs=objs||planets.map(p=>{const[alt,az]=altaz(p.ra,p.dec,lst);return Object.assign({},p,{alt,az})});
+ if(selected){$("ct").textContent=selected.name;$("cb").innerHTML=selected.info.map(l=>`<p>${esc(l)}</p>`).join("")+`<p class="k">Başka bir nesne için tıklayın.</p>`;return}
+ let h=`<p class="k">${esc(D.place)} · enlem ${fm(D.lat,4)}° · boylam ${fm(D.lon,4)}°. Konumlar yaklaşıktır.</p><h4>GÜNEŞ SİSTEMİ</h4><table>`;objs.forEach(o=>{h+=`<tr class="${o.alt<0?"dn":""}"><td>${esc(o.name)}</td><td>${o.alt<0?"ufkun altında":fm(o.alt)+"° yükseklik"}</td></tr>`});h+=`</table>`;
+ const m=objs.find(o=>o.name==="Ay");if(m&&m.phase_name)h+=`<p>Ay: ${esc(m.phase_name)}, %${fm(m.phase*100)} aydınlık.</p>`;
+ if(focus&&focus.kind==="con"&&D.cons[focus.key])h+=`<h4>${esc(D.cons[focus.key].name.toUpperCase())}</h4><p>Vurgulanan takımyıldızı.</p>`+(D.cons[focus.key].lore||[]).map(l=>`<p>${esc(l)}</p>`).join("");
+ if(focus&&focus.kind==="star"&&D.facts&&D.facts[focus.key])h+=`<h4>${esc((D.stars[focus.key]||[""])[0].toUpperCase())}</h4><p>${esc(D.facts[focus.key])}</p>`;
+ h+=`<h4>İPUÇLARI</h4><p class="k">“Büyük Ayı”, “Vega”, “Jüpiter nerede”, “bu gece ne görünür”, “bir saat ileri”, “çizgileri göster” deyin.</p>`;$("ct").textContent="Gökyüzü";$("cb").innerHTML=h}
+cv.addEventListener("click",e=>{const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=null,bd=1e9;for(const h of hits){const d=Math.hypot(h.x-mx,h.y-my);if(d<h.r&&d<bd){bd=d;best=h}}
+ selected=best?{name:best.name,info:best.info}:null;if(best){focus=best.type==="star"?{kind:"star",key:best.key,t0:performance.now()}:{kind:"obj",name:best.key,t0:performance.now()}}refreshCard()});
+$("bm").onclick=()=>setTime(now()-3600000);$("bp").onclick=()=>setTime(now()+3600000);$("bn").onclick=()=>setTime(Date.now());
+$("bl").onclick=()=>{showLines=!showLines;$("bl").classList.toggle("on",showLines)};$("bt").onclick=()=>{showLabels=!showLabels;$("bt").classList.toggle("on",showLabels)};
+$("close").onclick=()=>send({type:"scene_close"});$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){send({type:"text",text:e.target.value.trim()});e.target.value=""}else if(e.key==="Escape")send({type:"scene_close"})});
+addEventListener("keydown",e=>{if(e.key==="Escape")send({type:"scene_close"})});
+setTimeout(()=>$("cmd").focus(),400);resize();connect();requestAnimationFrame(frame);window.focus();
+</script></body></html>

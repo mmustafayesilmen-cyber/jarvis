@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS MASA</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ffcf7a;--c2:#e0902a}
+html,body{background:#05070d}
+#stage{display:grid;grid-template-columns:1fr 250px;gap:18px}
+#scene{width:100%;height:100%;border-radius:18px;box-shadow:0 10px 50px #000a}
+#scene .click{cursor:pointer}#scene .click:hover{filter:brightness(1.15)}
+.rain line{stroke:#9fc8ff;stroke-width:1.6;animation:fall .7s linear infinite}@keyframes fall{from{transform:translateY(-40px)}to{transform:translateY(300px)}}
+.steam path{fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;opacity:.0;animation:st 3s ease-in-out infinite}@keyframes st{0%{opacity:0;transform:translateY(0)}40%{opacity:.5}100%{opacity:0;transform:translateY(-34px)}}
+.sl{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:13px}.sl input{flex:1;accent-color:var(--c)}.sl span{width:56px}
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tg button{padding:10px 4px}
+</style></head><body>
+<div id="stage">
+<svg id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet">
+ <defs><radialGradient id="glow" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#ffd98a" stop-opacity=".75"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop id="sk0" offset="0" stop-color="#0a1230"/><stop id="sk1" offset="1" stop-color="#26356a"/></linearGradient>
+  <clipPath id="win"><rect x="330" y="70" width="340" height="270" rx="6"/></clipPath></defs>
+ <rect width="1000" height="620" fill="#1b1410"/><rect id="wall" width="1000" height="430" fill="#2b2018"/>
+ <g class="click" id="gwin"><rect x="316" y="56" width="368" height="298" rx="10" fill="#4a3426"/><rect x="330" y="70" width="340" height="270" fill="url(#sky)"/>
+  <g clip-path="url(#win)"><g id="stars"></g><circle id="orb" cx="560" cy="130" r="26" fill="#fff6cf"/>
+   <g class="rain" id="rain"></g></g>
+  <rect x="496" y="70" width="8" height="270" fill="#4a3426"/><rect x="330" y="196" width="340" height="8" fill="#4a3426"/>
+  <g id="sash" opacity="0"><rect x="330" y="70" width="170" height="270" fill="#4a3426" opacity=".0"/></g></g>
+ <rect x="0" y="430" width="1000" height="190" fill="#3a2819"/><rect x="0" y="430" width="1000" height="10" fill="#5a3c25"/>
+ <rect x="120" y="470" width="760" height="26" rx="5" fill="#6b4529"/><rect x="150" y="496" width="22" height="124" fill="#54351f"/><rect x="830" y="496" width="22" height="124" fill="#54351f"/>
+ <ellipse id="lglow" cx="230" cy="380" rx="260" ry="200" fill="url(#glow)"/>
+ <g class="click" id="glamp"><rect x="200" y="446" width="64" height="24" rx="5" fill="#2f2f38"/><rect x="228" y="340" width="8" height="110" fill="#3a3a46"/><path d="M190 346 L276 346 L252 290 L214 290 Z" fill="#e0902a"/><ellipse id="bulb" cx="233" cy="350" rx="18" ry="6" fill="#fff3b0"/></g>
+ <g class="click" id="gbook"><path id="bk0" d="M390 470 L470 458 L550 470 L470 482 Z" fill="#3b6fa8"/><path id="bk1" d="M470 458 L470 482" stroke="#fff" opacity=".5"/><g id="bkopen"><path d="M392 466 L470 452 L548 466 L470 476 Z" fill="#f4ecd8"/><path d="M470 452 L470 476" stroke="#8a7a50"/><g stroke="#8a7a50" opacity=".6"><path d="M405 463 L458 455M405 466 L458 458M482 455 L535 463M482 458 L535 466"/></g></g></g>
+ <g class="click" id="gcup"><path d="M640 430 L690 430 L684 468 L646 468 Z" fill="#f4ecd8"/><path d="M690 440 q22 4 0 20" fill="none" stroke="#f4ecd8" stroke-width="6"/><ellipse cx="665" cy="432" rx="25" ry="5" fill="#4b2a14"/>
+  <g class="steam" id="steam"><path d="M655 420 q-8 -12 0 -24"/><path d="M668 418 q-8 -12 0 -24" style="animation-delay:.8s"/><path d="M680 420 q-8 -12 0 -24" style="animation-delay:1.6s"/></g></g>
+ <g class="click" id="gplant"><path d="M780 430 L830 430 L822 470 L788 470 Z" fill="#b45a38"/><g id="leaves" fill="#4caf5c"><ellipse cx="805" cy="395" rx="11" ry="30" transform="rotate(-20 805 420)"/><ellipse cx="805" cy="390" rx="11" ry="34"/><ellipse cx="805" cy="395" rx="11" ry="30" transform="rotate(20 805 420)"/></g></g>
+ <rect id="dark" width="1000" height="620" fill="#000" opacity="0" pointer-events="none"/>
+</svg>
+<div style="display:flex;flex-direction:column;gap:14px;overflow:auto">
+ <div class="card"><h3>SESLER</h3>
+  <div class="sl"><span>Yağmur</span><input type="range" id="r_rain" min="0" max="5"><b id="v_rain">0</b></div>
+  <div class="sl"><span>Kafe</span><input type="range" id="r_cafe" min="0" max="5"><b id="v_cafe">0</b></div>
+  <div class="sl"><span>Rüzgar</span><input type="range" id="r_wind" min="0" max="5"><b id="v_wind">0</b></div></div>
+ <div class="card"><h3>MASA</h3><div class="tg"><button id="b_lamp">LAMBA</button><button id="b_night">GECE / GÜNDÜZ</button><button id="b_win">PENCERE</button><button id="b_book">KİTAP</button><button id="b_cup">KAHVE</button><button id="b_plant">ÇİÇEK</button></div>
+  <button id="b_rs" style="margin-top:10px;width:100%">SIFIRLA</button></div>
+ <div class="card"><h3>İPUCU</h3><div class="mut" style="font-size:13px;line-height:1.5">Masadaki objelere tıklayın ya da söyleyin: "yağmur sesini seviye 3 yap", "lambayı söndür", "kahve fincanına dokun".</div></div></div></div>
+<script>
+let S=null,ac=null,nodes={};
+Mode.start({kind:"masa",title:"MASA",placeholder:"Komut: lambayı yak · yağmur sesini seviye 3 yap · gece yap · pencereyi aç · kahve fincanına dokun · çiçeği sula",init:d=>render(d.snap),act:d=>{if(d.snap)render(d.snap)}});
+const NS="http://www.w3.org/2000/svg";
+for(let i=0;i<40;i++){const l=document.createElementNS(NS,"line");const x=335+Math.random()*330;l.setAttribute("x1",x);l.setAttribute("x2",x-4);l.setAttribute("y1",60+Math.random()*60);l.setAttribute("y2",95+Math.random()*60);l.style.animationDelay=(-Math.random()*.7)+"s";l.style.animationDuration=(.5+Math.random()*.3)+"s";$("rain").appendChild(l)}
+for(let i=0;i<30;i++){const c=document.createElementNS(NS,"circle");c.setAttribute("cx",335+Math.random()*330);c.setAttribute("cy",75+Math.random()*120);c.setAttribute("r",Math.random()*1.4+.4);c.setAttribute("fill","#fff");c.setAttribute("opacity",Math.random()*.8+.2);$("stars").appendChild(c)}
+function render(s){S=s;const n=s.night;
+ $("sk0").setAttribute("stop-color",n?"#0a1230":"#6cb4ff");$("sk1").setAttribute("stop-color",n?"#26356a":"#cfe8ff");$("stars").style.opacity=n?1:0;
+ $("orb").setAttribute("fill",n?"#fff6cf":"#ffe14d");$("orb").setAttribute("r",n?22:30);$("orb").setAttribute("cx",n?580:430);
+ $("rain").style.opacity=s.rain?Math.min(1,.2+s.rain*.16):0;
+ $("lglow").style.opacity=s.lamp?1:0;$("bulb").setAttribute("fill",s.lamp?"#fff3b0":"#4a4a50");$("dark").setAttribute("opacity",s.lamp?(n?.18:0):(n?.62:.1));
+ $("bkopen").style.display=s.book?"":"none";$("bk0").style.display=s.book?"none":"";$("bk1").style.display=s.book?"none":"";
+ $("steam").style.display=s.coffee>0?"":"none";$("leaves").setAttribute("transform","scale("+(1+Math.min(s.plant,9)*.03)+") translate(-"+Math.min(s.plant,9)*.9+",-"+Math.min(s.plant,9)*1.4+")");
+ for(const k of["rain","cafe","wind"]){$("r_"+k).value=s[k];$("v_"+k).textContent=s[k]}
+ Mode.pill(s.lamp?"LAMBA AÇIK":"LAMBA KAPALI");audio()}
+function noise(ctx,type){const n=ctx.sampleRate*3,b=ctx.createBuffer(1,n,ctx.sampleRate),d=b.getChannelData(0);let l=0;for(let i=0;i<n;i++){const w=Math.random()*2-1;if(type==="white")d[i]=w*.5;else{l=(l+.02*w)/1.02;d[i]=l*3.5}}return b}
+function audio(){if(!S)return;try{if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();
+ const spec={rain:["white","bandpass",2200,.5],cafe:["brown","lowpass",900,.7],wind:["brown","lowpass",420,.8]};
+ for(const k in spec){const lv=S[k]*(S.window&&k!=="cafe"?1.5:1)/5*.3;if(!nodes[k]){const [t,ft,fq]=spec[k];const src=ac.createBufferSource();src.buffer=noise(ac,t);src.loop=true;const f=ac.createBiquadFilter();f.type=ft;f.frequency.value=fq;const g=ac.createGain();g.gain.value=0;src.connect(f);f.connect(g);g.connect(ac.destination);src.start();nodes[k]=g}
+  nodes[k].gain.setTargetAtTime(lv,ac.currentTime,.3)}}catch(e){}}
+const C=t=>()=>Mode.cmd(t);
+$("glamp").onclick=C("lambayı değiştir");$("b_lamp").onclick=C("lambayı değiştir");$("gcup").onclick=$("b_cup").onclick=C("kahve fincanına dokun");$("gplant").onclick=$("b_plant").onclick=C("çiçeği sula");
+$("gbook").onclick=$("b_book").onclick=()=>Mode.cmd(S&&S.book?"kitabı kapat":"kitabı aç");$("gwin").onclick=$("b_win").onclick=()=>Mode.cmd(S&&S.window?"pencereyi kapat":"pencereyi aç");
+$("orb").onclick=$("b_night").onclick=()=>Mode.cmd(S&&S.night?"gündüz yap":"gece yap");$("b_rs").onclick=C("masayı sıfırla");
+for(const [k,n] of[["rain","yağmur sesini"],["cafe","kafe sesini"],["wind","rüzgar sesini"]])$("r_"+k).onchange=e=>Mode.cmd(n+" seviye "+e.target.value+" yap");
+</script></body></html>

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS QUIZ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#6fd3ff;--ac:#ffd84a;--ok:#5ee08a;--no:#ff7a6a;--bg:#070d18;--ln:rgba(111,211,255,.26);--hi:rgba(111,211,255,.12)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#0f2038 0%,#070d18 70%);color:#e4eefb;font-family:"Segoe UI",Bahnschrift,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:8px;padding:0 14px;z-index:5;background:linear-gradient(#000c,transparent);border-bottom:1px solid var(--ln)}
+#title{font:600 14px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--c);white-space:nowrap;margin-right:8px}
+#crumb{font:12.5px Consolas;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#sp{flex:1}
+button,select,input[type=number]{font:12.5px Consolas;letter-spacing:.05em;padding:6px 11px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(2,10,22,.7);white-space:nowrap}
+button:hover{background:var(--hi)}button.on{background:var(--hi);border-color:var(--c)}button:disabled{opacity:.4;cursor:default}
+button.pri{background:var(--c);color:#02101c;border-color:var(--c);font-weight:700}button.pri:disabled{background:#3a5568}
+button.ac{border-color:var(--ac);color:var(--ac)}button.dg{border-color:rgba(255,120,100,.6);color:var(--no)}
+#close{border-color:rgba(255,120,84,.7);color:#ff9a7a}
+#main{position:fixed;top:50px;bottom:78px;left:0;right:0;overflow:auto;padding:16px 22px 30px;scrollbar-width:thin}
+h1{font:700 24px "Segoe UI";margin:0 0 4px}h2{font:600 12px Consolas;letter-spacing:.25em;color:var(--c);margin:20px 0 10px;text-transform:uppercase}
+.mut{opacity:.65;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.card{border:1px solid var(--ln);background:rgba(8,20,38,.72);padding:12px 14px}.card.click{cursor:pointer}.card.click:hover{background:var(--hi);border-color:var(--c)}
+.dcard{text-align:center;padding:18px 10px}.dcard .ik{font-size:34px}.dcard b{display:block;margin-top:6px;font-size:16px}
+.resume{border-color:var(--ac);background:rgba(60,48,8,.45)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;font:11px Consolas;padding:1px 7px;border:1px solid var(--ln);margin-left:6px;opacity:.85}.chip.p{border-color:rgba(94,224,138,.6);color:var(--ok)}.chip.o{border-color:rgba(255,216,74,.6);color:var(--ac)}
+.unit{margin:10px 0;border:1px solid var(--ln);background:rgba(8,20,38,.6)}.unit>b{display:flex;justify-content:space-between;padding:10px 14px;cursor:pointer;font-size:15px}.unit>b:hover{background:var(--hi)}
+.konu{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 14px 8px 28px;border-top:1px solid rgba(111,211,255,.1);cursor:pointer}.konu:hover{background:var(--hi)}
+.ticks i{display:inline-block;width:9px;height:9px;margin-left:3px;border:1px solid var(--ln)}.ticks i.d{background:var(--ok);border-color:var(--ok)}.ticks i.c{background:var(--ac);border-color:var(--ac)}
+#tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px}#tabs button{padding:8px 16px}
+#gen{font:12px Consolas;color:var(--ac);border:1px dashed rgba(255,216,74,.4);padding:6px 10px;margin:6px 0 10px;display:none}
+.sec{border-left:4px solid var(--c);padding:8px 14px;margin:10px 0;background:rgba(8,20,38,.6);line-height:1.65;font-size:16px}.sec.nr{border-color:var(--ac);background:rgba(60,48,8,.4)}.sec b{display:block;color:var(--c);margin-bottom:3px;font-size:14px}
+.pt{padding:5px 0 5px 4px;font-size:16px;line-height:1.5}.pt:before{content:"▸ ";color:var(--c)}.pt.nr{color:var(--ac)}
+.fx{display:inline-block;background:rgba(111,211,255,.1);border:1px solid var(--ln);padding:2px 10px;margin:3px 6px 3px 0;font:14px Consolas}
+.ans{display:none;margin-top:6px;color:var(--ok)}.ans.sh{display:block}
+.note{font:11.5px Consolas;opacity:.55;margin-top:14px}
+#qbox{max-width:980px;margin:0 auto}
+.qtxt{font-size:19px;line-height:1.6;margin:10px 0 14px}.opt{display:flex;gap:12px;padding:11px 14px;border:1px solid var(--ln);margin:8px 0;cursor:pointer;background:rgba(8,20,38,.6);font-size:16px;align-items:flex-start}
+.opt:hover{background:var(--hi)}.opt .l{font:700 15px Consolas;color:var(--c);width:22px}.opt.sel{border-color:var(--c);background:rgba(111,211,255,.18)}.opt.good{border-color:var(--ok);background:rgba(40,120,70,.35)}.opt.bad{border-color:var(--no);background:rgba(140,50,40,.35)}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.nav i{font-style:normal;width:30px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ln);font:12px Consolas;cursor:pointer}
+.nav i.a{background:rgba(111,211,255,.25)}.nav i.cur{border-color:var(--ac);color:var(--ac)}.nav i.g{background:rgba(40,120,70,.5)}.nav i.b{background:rgba(140,50,40,.5)}
+.bar{height:6px;background:rgba(255,255,255,.08);margin:6px 0 12px}.bar i{display:block;height:100%;background:var(--c)}
+.expl{border:1px solid rgba(94,224,138,.4);background:rgba(20,60,38,.35);padding:10px 14px;margin:10px 0;font-size:15px;line-height:1.55}
+.score{font:700 54px Bahnschrift;color:var(--ac)}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid rgba(111,211,255,.15);padding:7px 8px;text-align:left}tr.cl{cursor:pointer}tr.cl:hover{background:var(--hi)}
+input[type=text]{background:rgba(2,10,22,.7);border:1px solid var(--ln);color:#fff;font:14px "Segoe UI";padding:7px 10px;outline:0;user-select:text}input[type=text]:focus{border-color:var(--c)}
+#board{position:fixed;inset:50px 0 78px 0;z-index:8;background:rgba(3,10,8,.88);display:none;align-items:center;justify-content:center;padding:18px}
+#bd{width:min(1100px,100%);height:100%;display:flex;flex-direction:column;background:#0f2a22;border:10px solid #5a3f22;box-shadow:inset 0 0 40px #000a;padding:16px 24px;position:relative}
+#bd h3{margin:0 0 6px;color:#ffe9a8;font:600 15px Consolas;letter-spacing:.15em}#bq{font:15px/1.5 "Segoe UI";color:#cfe9db;opacity:.85;border-bottom:1px dashed rgba(255,255,255,.25);padding-bottom:8px;margin-bottom:8px}
+#bsteps{flex:1;overflow:auto;scrollbar-width:thin;font-family:"Segoe Script","Ink Free","Segoe UI",cursive}
+.bs{margin:10px 0;padding-left:12px;border-left:3px solid rgba(255,233,168,.5)}.bs .t{color:#ffe9a8;font:600 15px Consolas}.bs .i{color:#fff;font-size:24px;line-height:1.55;white-space:pre-wrap;overflow:hidden}.bs .a{color:#a9d9c0;font:14px "Segoe UI";opacity:.9;margin-top:2px}
+#bres{margin-top:8px;border:2px solid var(--ok);padding:8px 14px;color:#b8ffd0;font:600 18px "Segoe UI";display:none}
+#bg{position:absolute;right:22px;top:60px;width:300px;height:200px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);display:none}
+#bc{position:absolute;right:16px;top:12px;display:flex;gap:8px}
+#bar{position:fixed;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--ln);background:rgba(0,0,0,.65);z-index:9;padding:6px 12px}
+#cmd{width:100%;padding:8px 12px;background:rgba(0,0,0,.55);border:1px solid var(--ln);color:var(--c);font:14px Consolas;outline:0;user-select:text}#cmd:focus{border-color:var(--c)}
+#log{height:30px;margin-top:5px;font:12.5px Consolas;overflow:hidden;display:flex;gap:14px;align-items:center;white-space:nowrap}
+#log span.j{color:#cfeeff;overflow:hidden;text-overflow:ellipsis;max-width:62vw}#log span.mem{color:#9fe8a0;opacity:.85;margin-left:auto}
+</style></head><body>
+<div id="top"><span id="title">QUIZ MODU</span><span id="crumb"></span><span id="sp"></span><button id="bhome">ANA EKRAN</button><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="main"></div>
+<div id="board"><div id="bd"><div id="bc"><button id="bstop">DURDUR</button><button id="bagain">TEKRAR ANLAT</button><button id="bclose">KAPAT</button></div><h3>TAHTA · JARVİS ANLATIYOR</h3><div id="bq"></div><canvas id="bg"></canvas><div id="bsteps"></div><div id="bres"></div></div></div>
+<div id="bar"><input id="cmd" placeholder="Komut: matematik · ünite 2 · konu 1 · konuyu anlat · quiz başlat · B şıkkı · çözemedim · sonraki · kontrol et · devam et · soru sayısı 25 · çık" spellcheck="false" autocomplete="off"><div id="log"><span class="j" id="jl">Jarvis: dersi ekrandan ya da sesle seçebilirsiniz.</span><span class="mem" id="mem">anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)</span></div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const STG=[["anlatim","ANLATIM"],["ozet","ÖZET"],["etkinlik","ETKİNLİK"],["quiz","QUIZ"],["deneme","DENEME"]];
+let V=null,screen="home",dersId=null,openUnit=-1,cur=null,C=null,P=null,exam=null,review=null,narr=null,timer=0,saveT=0,boardData=null;
+// ------------------------------------------------------------------ iletişim
+let ws;function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function log(s){$("jl").textContent="Jarvis: "+s}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"ders"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.type==="cmdbuf"){const it=m.items||[];$("mem").textContent=it.length?"anlık komut kaydı: işleniyor (bitince silinecek)":"anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)";return}
+  if(m.kind!=="ders")return;
+  if(m.type==="scene_init"){V=m.data.view;render();if(m.data.auto)openAuto(m.data.auto)}
+  else if(m.type==="scene_do")handleDo(m.do||{})};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function handleDo(d){
+ if(d.msg)log(d.msg);
+ if(d.view){V=d.view;if(screen==="home"||screen==="units")render()}
+ if(d.settings){V.settings=d.settings;render()}
+ if(d.opened){cur=d.opened;C=d.content;P=V.progress[cur.key]||freshP();if(d.view)V=d.view;P.meta=cur.meta;screen="topic";render();if(cur.stage)goStage(cur.stage)}
+ if(d.progress&&cur&&d.progress.key===cur.key){if(d.progress.part&&C){C[{lesson:"lesson",ozet:"ozet",etkinlik:"etkinlik",quiz:"quiz",deneme:"deneme",kaynaklar:"kaynaklar"}[d.progress.part]]=d.progress.data;if(d.progress.part==="kaynaklar")C.kaynak_hata=d.progress.hata||""}C.status=d.progress.status||C.status;if(screen==="topic"||screen==="exam")render(true)}
+ if(d.content&&cur&&d.content.key===cur.key){C=d.content;render(true)}
+ if(d.narr){narr=d.narr;render(true);const n=document.querySelector(".nr");if(n)n.scrollIntoView({block:"center",behavior:"smooth"})}
+ if(d.narrEnd){narr=null;render(true)}
+ if(d.boardLoading!==undefined)boardLoading(d.boardLoading);
+ if(d.boardStart)boardStart(d.boardStart);
+ if(d.boardStep)boardStep(d.boardStep);
+ if(d.boardEnd)boardEnd(d.boardEnd);
+ if(d.flagged&&C){C.quiz=C.quiz.filter(q=>q.id!==d.flagged);C.deneme=C.deneme.filter(q=>q.id!==d.flagged);if(screen==="exam")render()}
+ // sesli komutlar
+ if(d.ders)goDers(d.ders);if(d.pickUnite)pickUnite(d.pickUnite);if(d.pickKonu)pickKonu(d.pickKonu);if(d.home)goHome();
+ if(d.resume)resumeLast();if(d.stage)goStage(d.stage);if(d.narrate)doNarrate(d.narrate);if(d.stopNarr){narr=null;render(true)}
+ if(d.help)helpCurrent();if(d.answer)answer(d.answer);if(d.check)checkNow();if(d.next)step(1);if(d.prev)step(-1);if(d.finish)finish(true);if(d.flag)flagCurrent();
+ if(d.setting)send({type:"ders_settings",name:d.setting.name,value:d.setting.value,key:cur?cur.key:""})}
+// ------------------------------------------------------------------ ilerleme
+function freshP(){return{stage:"anlatim",done:{anlatim:false,ozet:false,etkinlik:false,quiz:false,deneme:false},quiz:{answers:{},idx:0,finished:false,n:0,ids:[],checked:[],t0:0},deneme:{answers:{},idx:0,finished:false,n:0,ids:[],checked:[],t0:0},meta:null}}
+function saveP(){if(!cur||!P)return;V.progress[cur.key]=P;clearTimeout(saveT);saveT=setTimeout(()=>send({type:"ders_progress",key:cur.key,progress:P}),500)}
+const dersOf=id=>V.dersler.find(d=>d.id===id);
+// ------------------------------------------------------------------ gezinme
+function goHome(){review=null;exam=null;screen="home";dersId=null;cur=null;render()}
+function goDers(id){if(!dersOf(id))return;dersId=id;openUnit=-1;screen="units";render()}
+function pickUnite(n){if(screen!=="units"||!dersId)return;openUnit=n-1;render()}
+function pickKonu(n){if(screen!=="units"||!dersId||openUnit<0)return;const u=dersOf(dersId).uniteler[openUnit];if(u&&u.konular[n-1])openTopic(dersId,u.ad,u.konular[n-1].ad)}
+function openTopic(id,unite,konu,dersAd){const base=dersOf(id);send({type:"ders_open",ders:base?id:"ozel",dersAd:dersAd||(base?base.ad:""),unite,konu});log("İçerik hazırlanıyor, daha önce üretilenler hemen gelir.")}
+function openAuto(a){send({type:"ders_open",ders:a.ders,dersAd:a.dersAd,unite:a.unite,konu:a.konu,stage:a.stage});log("MEBİ konusu açılıyor, kazanımlara göre sorular hazırlanıyor.")}
+function resumeLast(){const k=V.last,p=V.progress[k];if(!p||!p.meta||!p.meta.konu){log("Devam edilecek bir çalışma yok efendim.");return}openTopic(p.meta.ders,p.meta.unite,p.meta.konu,p.meta.dersAd)}
+function goStage(s){if(!cur)return;if(s==="quiz"||s==="deneme"){P.stage=s;saveP();screen="topic";render();return}P.stage=s;saveP();screen="topic";render()}
+// ------------------------------------------------------------------ çizim
+function render(soft){if(!V)return;const m=$("main");const keep=m.scrollTop;
+ $("crumb").textContent=screen==="home"?"":(dersId?dersOf(dersId).ad:cur?cur.meta.dersAd:"")+(cur&&screen!=="units"?" › "+cur.meta.unite+" › "+cur.meta.konu:"");
+ ({home:rHome,units:rUnits,topic:rTopic,exam:rExam,result:rResult}[screen])(m);if(soft)m.scrollTop=keep}
+function ticks(p){if(!p)return"";return`<span class="ticks">${STG.map(([k])=>`<i class="${p.done&&p.done[k]?"d":p.stage===k?"c":""}" title="${k}"></i>`).join("")}</span>`}
+function rHome(m){
+ const last=V.progress[V.last];const recent=Object.entries(V.progress).filter(([k,p])=>p.meta&&p.meta.konu).sort((a,b)=>b[1].t-a[1].t).slice(0,6);
+ m.innerHTML=`<h1>Quiz Modu</h1><div class="mut">9. sınıf · Türkiye Yüzyılı Maarif Modeli · konu anlatımı → özet → etkinlik → quiz → deneme</div>`
+ +(last&&last.meta&&last.meta.konu?`<h2>Kaldığın yer</h2><div class="card click resume" id="rs"><b style="font-size:17px">${esc(last.meta.dersAd)} › ${esc(last.meta.konu)}</b><div class="mut">${esc(last.meta.unite)} · aşama: ${esc(stName(last.stage))}${examPos(last)}</div><div style="margin-top:8px"><button class="pri">DEVAM ET</button></div></div>`:"")
+ +`<h2>Ders seç</h2><div class="grid" id="dg"></div><h2>Ders, ünite ve konuyu elle yaz</h2><div class="card"><div class="row"><input type="text" id="cd" placeholder="Ders (örn. Matematik)" style="width:200px"><input type="text" id="cu" placeholder="Ünite (isteğe bağlı)" style="width:240px"><input type="text" id="ck" placeholder="Konu (örn. Üslü sayılar)" style="width:300px"><button id="cgo" class="pri">KONUYU AÇ</button></div><div class="mut" style="margin-top:6px">Müfredatta olmayan ders ya da konu için de içerik üretilir.</div></div>`
+ +(recent.length>1?`<h2>Son çalışmalar</h2><div class="grid" id="rg" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>`:"")
+ +`<h2>Ayarlar</h2><div class="card"><div class="row"><span>Quiz soru sayısı</span><button data-s="quiz_n" data-d="-5">−</button><b id="sq">${V.settings.quiz_n}</b><button data-s="quiz_n" data-d="5">+</button><span style="margin-left:22px">Deneme soru sayısı</span><button data-s="deneme_n" data-d="-10">−</button><b id="sd">${V.settings.deneme_n}</b><button data-s="deneme_n" data-d="10">+</button><span style="margin-left:22px">Kontrol</span><button id="ak" class="${V.settings.anlik_kontrol?"on":""}">${V.settings.anlik_kontrol?"HER SORUDA ANINDA":"SINAV SONUNDA"}</button><span style="margin-left:22px">İnternetten kaynak</span><button id="ik" class="${V.settings.internet_kaynak?"on":""}">${V.settings.internet_kaynak?"AÇIK":"KAPALI"}</button></div><div class="mut" style="margin-top:6px">Açıkken konu için güvenilir sitelerden (MEB, Vikipedi, Khan Academy, üniversiteler) bilgi okunur ve içerik buna dayandırılır. Dışarı yalnızca arama sorgusu (ders ve konu adı) gider; sayfalar kaydedilmez.</div></div>
+ <div class="note">İçerik yerel yapay zekâ ile üretilir ve bu bilgisayarda saklanır. Sayısal derslerde sorular ayrıca bağımsız çözümle doğrulanır; sözel derslerde doğrulama yoktur. Ünite/tema adları MEB programındandır, "öneri" etiketli konular resmî programla karşılaştırılmalıdır. Hatalı soruyu "HATALI" düğmesiyle bildirebilirsiniz.</div>`;
+ V.dersler.forEach(d=>{const c=document.createElement("div");c.className="card click dcard";c.innerHTML=`<div class="ik">${d.ikon}</div><b>${esc(d.ad)}</b><div class="mut">${d.uniteler.length} ünite/tema</div>`;c.onclick=()=>goDers(d.id);$("dg").appendChild(c)});
+ if($("rs"))$("rs").onclick=resumeLast;
+ if($("rg"))recent.forEach(([k,p])=>{const c=document.createElement("div");c.className="card click";c.innerHTML=`<b>${esc(p.meta.konu)}</b><div class="mut">${esc(p.meta.dersAd)} · ${ticks(p)}</div>`;c.onclick=()=>openTopic(p.meta.ders,p.meta.unite,p.meta.konu,p.meta.dersAd);$("rg").appendChild(c)});
+ $("cgo").onclick=()=>{const d=$("cd").value.trim(),u=$("cu").value.trim(),k=$("ck").value.trim();if(!d||!k){log("Ders ve konu adı gerekli efendim.");return}const b=V.dersler.find(x=>x.ad.toLowerCase()===d.toLowerCase());openTopic(b?b.id:"ozel",u||"Serbest ünite",k,d)};
+ ["cd","cu","ck"].forEach(i=>$(i).addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("cgo").click()}));
+ m.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const n=b.dataset.s,v=V.settings[n]+(+b.dataset.d);send({type:"ders_settings",name:n,value:v,key:cur?cur.key:""})});
+ $("ak").onclick=()=>send({type:"ders_settings",name:"anlik_kontrol",value:!V.settings.anlik_kontrol});$("ik").onclick=()=>send({type:"ders_settings",name:"internet_kaynak",value:!V.settings.internet_kaynak})}
+const stName=s=>(STG.find(x=>x[0]===s)||[0,s])[1];
+function examPos(p){const e=p.stage==="quiz"?p.quiz:p.stage==="deneme"?p.deneme:null;return e&&e.n?` · soru ${Math.min(e.n,(e.idx||0)+1)}/${e.n}${e.finished?" (bitti)":""}`:""}
+function rUnits(m){const d=dersOf(dersId);
+ m.innerHTML=`<div class="row"><button id="bk">← DERSLER</button><h1 style="margin:0">${d.ikon} ${esc(d.ad)}</h1></div><div class="mut" style="margin:6px 0">Ünite/tema adları MEB öğretim programından (9. sınıf). Konu etiketi “program” ise MEB kazanımından, “öneri” ise önerilen başlıktır.</div><div id="ul"></div>
+ <h2>Bu derse elle konu ekle</h2><div class="card"><div class="row"><input type="text" id="eu" placeholder="Ünite" style="width:240px"><input type="text" id="ek" placeholder="Konu" style="width:300px"><button id="ego" class="pri">KONUYU AÇ</button></div></div>`;
+ $("bk").onclick=goHome;const ul=$("ul");
+ d.uniteler.forEach((u,ui)=>{const el=document.createElement("div");el.className="unit";el.innerHTML=`<b><span>${ui+1}. ${esc(u.ad.replace(/^\d+\.\s*/,""))}${u.kaynak==="program"?'<span class="chip p">MEB</span>':""}</span><span class="mut">${u.konular.length} konu ${openUnit===ui?"▾":"▸"}</span></b>`;el.firstChild.onclick=()=>{openUnit=openUnit===ui?-1:ui;render()};ul.appendChild(el);
+  if(openUnit===ui)u.konular.forEach((k,ki)=>{const key=null;const kr=document.createElement("div");kr.className="konu";const pk=Object.values(V.progress).find(p=>p.meta&&p.meta.dersAd===d.ad&&p.meta.konu===k.ad);kr.innerHTML=`<span>${ki+1}. ${esc(k.ad)}<span class="chip ${k.kaynak==="program"?"p":"o"}">${k.kaynak}${k.kod?" · "+esc(k.kod):""}</span></span>${ticks(pk)}`;kr.onclick=()=>openTopic(d.id,u.ad,k.ad);el.appendChild(kr)})});
+ $("ego").onclick=()=>{const u=$("eu").value.trim(),k=$("ek").value.trim();if(!k){log("Konu adı gerekli efendim.");return}openTopic(d.id,u||"Serbest ünite",k)};
+ ["eu","ek"].forEach(i=>$(i).addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("ego").click()}))}
+function genBar(){const s=C&&C.status||{};if(!C)return"";const parts=[];
+ const nq=V.settings.quiz_n,nd=V.settings.deneme_n,q=(C.quiz||[]).length,d=(C.deneme||[]).length;
+ const need=!C.lesson||!C.ozet||!C.etkinlik||q<nq||d<nd;if(!need)return"";
+ return`<div id="gen" style="display:block">⏳ içerik hazırlanıyor (arka planda, siz çalışırken): ${s.kaynak==="aranıyor"&&!(C.kaynaklar||[]).length?"kaynak aranıyor · ":""}anlatım ${C.lesson?"✓":"…"} · özet ${C.ozet?"✓":"…"} · etkinlik ${C.etkinlik?"✓":"…"} · quiz ${q}/${nq} · deneme ${d}/${nd}${s.hata?" · ⚠ "+esc(s.hata):""}</div>`}
+function rTopic(m){const st=P.stage;
+ m.innerHTML=`<div class="row"><button id="bk">← ÜNİTE / KONULAR</button><h1 style="margin:0">${esc(cur.meta.konu)}</h1></div><div class="mut">${esc(cur.meta.dersAd)} · ${esc(cur.meta.unite)}</div>
+ <div id="tabs"></div><div id="gw">${genBar()}</div><div id="tc"></div>`;
+ $("bk").onclick=()=>{dersId=cur.meta.ders==="ozel"?null:cur.meta.ders;if(dersId){screen="units";render()}else goHome()};
+ STG.forEach(([k,l],i)=>{const b=document.createElement("button");b.className=st===k?"on":"";b.textContent=(P.done[k]?"✓ ":(i+1)+". ")+l;b.onclick=()=>goStage(k);$("tabs").appendChild(b)});
+ const tc=$("tc");({anlatim:tLesson,ozet:tOzet,etkinlik:tEtk,quiz:()=>tExam(tc,"quiz"),deneme:()=>tExam(tc,"deneme")}[st])(tc)}
+function wait(tc,what){tc.innerHTML=`<div class="card" style="margin-top:14px">⏳ ${what} hazırlanıyor… Model yerelde çalıştığı için ilk seferde birkaç on saniye sürebilir. Hazır olunca burada kendiliğinden görünür.${C&&C.status&&C.status.hata?`<div style="color:var(--no);margin-top:8px">${esc(C.status.hata)}</div>`:""}</div>`}
+function narrBtns(sec){return`<div class="row" style="margin:8px 0"><button class="ac" id="nb">🔊 JARVİS ANLATSIN</button><button id="ns">DURDUR</button></div>`}
+function bindNarr(sec){const b=$("nb");if(b)b.onclick=()=>send({type:"ders_narrate",key:cur.key,section:sec});const s=$("ns");if(s)s.onclick=()=>send({type:"ders_stop"})}
+function nextBtn(from,to,label){return`<div class="row" style="margin-top:16px"><button class="pri" id="nx">${label}</button></div>`}
+function bindNext(from,to){const b=$("nx");if(b)b.onclick=()=>{P.done[from]=true;P.stage=to;saveP();render()}}
+function tLesson(tc){if(!C.lesson)return wait(tc,"Konu anlatımı");const L=C.lesson;
+ tc.innerHTML=narrBtns("anlatim")+L.bolumler.map((b,i)=>`<div class="sec${narr&&narr.section==="anlatim"&&narr.i===i?" nr":""}"><b>${esc(b.baslik)}</b>${esc(b.metin)}</div>`).join("")
+ +(L.formuller&&L.formuller.length?`<h2>Temel formül / kurallar</h2>${L.formuller.map(f=>`<span class="fx">${esc(f)}</span>`).join("")}`:"")+srcList()+nextBtn("anlatim","ozet","ANLATIMI TAMAMLADIM → ÖZET")+`<div class="note">Bu metin yapay zekâ ile üretilmiştir${(C.kaynaklar||[]).length?" ve yukarıdaki internet kaynaklarına dayandırılmıştır":""}; resmî ders kitabıyla karşılaştırın.</div>`;bindNarr("anlatim");bindNext("anlatim","ozet");const rg=$("rg");if(rg)rg.onclick=()=>send({type:"ders_regen",key:cur.key})}
+function srcList(){const k=C.kaynaklar||[];let h="<h2>Kaynaklar</h2>";if(!k.length)return h+`<div class="mut">${V.settings.internet_kaynak?(C.kaynak_hata?"İnternet kaynağı kullanılamadı: "+esc(C.kaynak_hata):"Kaynak aranıyor ya da bulunamadı."):"İnternet kaynağı kapalı (ana ekrandan açabilirsiniz)."}</div>${V.settings.internet_kaynak&&C.lesson?'<div class="row" style="margin-top:6px"><button id="rg">KAYNAKLARLA YENİDEN ÜRET</button></div>':""}`;
+ return h+k.map((s,i)=>`<div class="pt"><b>[${i+1}] ${esc(s.baslik)}</b> <span class="mut">${esc(s.alan)}</span><div class="mut" style="font-size:12px;user-select:text">${esc(s.url)}</div></div>`).join("")+'<div class="row" style="margin-top:6px"><button id="rg">KAYNAKLARLA YENİDEN ÜRET</button></div>'}
+function tOzet(tc){if(!C.ozet)return wait(tc,"Özet");const O=C.ozet;
+ tc.innerHTML=narrBtns("ozet")+O.maddeler.map((t,i)=>`<div class="pt${narr&&narr.section==="ozet"&&narr.i===i?" nr":""}">${esc(t)}</div>`).join("")
+ +(O.anahtar_kavramlar.length?`<h2>Anahtar kavramlar</h2>${O.anahtar_kavramlar.map(f=>`<span class="fx">${esc(f)}</span>`).join("")}`:"")+(O.formuller.length?`<h2>Formül / kural</h2>${O.formuller.map(f=>`<span class="fx">${esc(f)}</span>`).join("")}`:"")+nextBtn("ozet","etkinlik","ÖZETİ TAMAMLADIM → ETKİNLİK");bindNarr("ozet");bindNext("ozet","etkinlik")}
+function tEtk(tc){if(!C.etkinlik)return wait(tc,"Etkinlik");const E=C.etkinlik;
+ tc.innerHTML=narrBtns("etkinlik")+`<div class="card"><b style="font-size:18px">${esc(E.baslik)}</b><div class="mut" style="margin:4px 0 8px">${esc(E.amac)}</div><div style="line-height:1.6">${esc(E.yonerge)}</div></div>`
+ +E.maddeler.map((x,i)=>`<div class="card" style="margin-top:8px"><div>${i+1}. ${esc(x.soru)}</div><button data-i="${i}" style="margin-top:6px">CEVABI GÖSTER</button><div class="ans" id="ea${i}">${esc(x.cevap)}</div></div>`).join("")+nextBtn("etkinlik","quiz","ETKİNLİĞİ TAMAMLADIM → QUIZ");
+ tc.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>$("ea"+b.dataset.i).classList.toggle("sh"));bindNarr("etkinlik");bindNext("etkinlik","quiz")}
+function bank(kind){return(C&&C[kind])||[]}
+function tExam(tc,kind){const E=P[kind],B=bank(kind),N=V.settings[kind+"_n"],lab=kind==="quiz"?"Quiz":"Deneme";
+ let h=`<div class="card" style="margin-top:12px;max-width:760px"><b style="font-size:18px">${lab} · ${N} soru</b><div class="mut" style="margin:4px 0 10px">Hazır soru: ${B.length}/${N} ${B.length<N?"(üretiliyor)":"✓"} · ${kind==="deneme"?"orta-zor, yeni nesil karma sorular":"temel ve orta düzey sorular"} · kontrol: ${V.settings.anlik_kontrol?"her soruda anında":"sınav sonunda"}</div>`;
+ const answered=Object.keys(E.answers||{}).length;
+ if(E.finished){const r=score(kind);h+=`<div class="score">${r.d}/${E.n}</div><div class="mut">doğru ${r.d} · yanlış ${r.y} · boş ${r.b}</div><div class="row" style="margin-top:12px"><button class="pri" id="rv">SONUÇLARI İNCELE</button><button id="rt">YENİDEN ÇÖZ</button></div>`}
+ else if(E.ids&&E.ids.length){h+=`<div class="mut">Kaldığın yer: soru ${Math.min(E.n,(E.idx||0)+1)}/${E.n} · işaretlenen ${answered}</div><div class="row" style="margin-top:12px"><button class="pri" id="go">DEVAM ET</button><button id="rt">BAŞTAN BAŞLA</button></div>`}
+ else{h+=`<div class="row"><button class="pri" id="go" ${B.length<Math.min(5,N)?"disabled":""}>${B.length>=N?"SINAVA BAŞLA":"MEVCUT "+B.length+" SORUYLA BAŞLA"}</button></div>${B.length<5?'<div class="mut" style="margin-top:8px">En az 5 soru hazır olunca başlayabilirsiniz.</div>':""}`}
+ h+=`</div>`+(kind==="deneme"?"":nextBtn("quiz","deneme","QUIZI TAMAMLADIM → DENEME").replace("QUIZI TAMAMLADIM → DENEME","DENEMEYE GEÇ →"));tc.innerHTML=h;
+ if($("go"))$("go").onclick=()=>startExam(kind);if($("rt"))$("rt").onclick=()=>{E.answers={};E.idx=0;E.finished=false;E.checked=[];E.ids=[];E.n=0;saveP();render()};if($("rv"))$("rv").onclick=()=>{exam={kind};review=null;screen="result";render()};
+ const nx=$("nx");if(nx)nx.onclick=()=>{P.stage="deneme";saveP();render()}}
+function startExam(kind){const E=P[kind],B=bank(kind),N=V.settings[kind+"_n"];
+ if(!E.ids||!E.ids.length){const pool=B.slice();if(kind==="deneme")pool.sort(()=>Math.random()-.5);const pick=pool.slice(0,N);E.ids=pick.map(q=>q.id);E.n=E.ids.length;E.idx=0;E.answers={};E.checked=[];E.finished=false;E.t0=Date.now();saveP()}
+ exam={kind};review=null;screen="exam";render()}
+function qs(kind){const E=P[kind],B=bank(kind);return E.ids.map(id=>B.find(q=>q.id===id)).filter(Boolean)}
+function score(kind){const E=P[kind],Q=qs(kind);let d=0,y=0,b=0;Q.forEach(q=>{const a=E.answers[q.id];if(!a)b++;else if(a===q.dogru)d++;else y++});return{d,y,b}}
+// ------------------------------------------------------------------ sınav
+function curQ(){if(!exam)return null;const E=P[exam.kind],Q=qs(exam.kind);return{E,Q,q:Q[Math.max(0,Math.min(Q.length-1,E.idx))]}}
+function rExam(m){const {E,Q,q}=curQ();if(!q){goStage(exam.kind);return}const kind=exam.kind,ans=E.answers[q.id],chk=E.checked.includes(q.id)||(review===true),show=chk;
+ m.innerHTML=`<div id="qbox"><div class="row"><button id="bk">← KONUYA DÖN</button><b>${kind==="quiz"?"Quiz":"Deneme"} · Soru ${E.idx+1}/${Q.length}</b><span class="mut" id="tm"></span><span style="flex:1"></span><button id="fl" class="dg" title="Bu soru hatalıysa bankadan çıkar">HATALI</button></div>
+ <div class="bar"><i style="width:${(E.idx+1)/Q.length*100}%"></i></div>${q.kazanim?`<div class="mut" style="margin:6px 0 2px">MEBİ kazanımı: <b>${esc(q.kazanim)}</b></div>`:""}<div class="qtxt">${esc(q.soru)}</div><div id="os"></div>
+ <div class="row" style="margin-top:12px"><button id="pv" ${E.idx===0?"disabled":""}>← ÖNCEKİ</button><button id="nxq" ${E.idx>=Q.length-1?"disabled":""}>SONRAKİ →</button>${V.settings.anlik_kontrol&&!chk?`<button id="ck" class="ac" ${ans?"":"disabled"}>KONTROL ET</button>`:""}<button id="hp" class="ac">ÇÖZEMEDİM · TAHTADA ANLAT</button><span style="flex:1"></span><button id="fin" class="pri">SINAVI BİTİR</button></div>
+ <div id="ex"></div><div class="nav" id="nv"></div></div>`;
+ "ABCDE".split("").forEach(L=>{const d=document.createElement("div");let c="opt";if(ans===L)c+=" sel";if(show){if(L===q.dogru)c+=" good";else if(ans===L)c+=" bad"}d.className=c;d.innerHTML=`<span class="l">${L}</span><span>${esc(q.siklar[L])}</span>`;d.onclick=()=>{if(chk&&!review)return;answer(L)};$("os").appendChild(d)});
+ if(show)$("ex").innerHTML=`<div class="expl"><b>${ans?(ans===q.dogru?"✓ Doğru":"✗ Yanlış — doğru cevap "+q.dogru):"Boş bırakıldı — doğru cevap "+q.dogru}</b><div style="margin-top:6px">${esc(q.aciklama||"")}</div><ol style="margin:8px 0 0 18px;padding:0">${q.cozum_adimlari.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div>`;
+ Q.forEach((x,i)=>{const a=E.answers[x.id],c=document.createElement("i");let cl="";if(E.checked.includes(x.id)||review===true)cl=a?(a===x.dogru?"g":"b"):"";else if(a)cl="a";if(i===E.idx)cl+=" cur";c.className=cl;c.textContent=i+1;c.onclick=()=>{E.idx=i;saveP();render()};$("nv").appendChild(c)});
+ $("bk").onclick=()=>{review=null;screen="topic";render()};$("pv").onclick=()=>step(-1);$("nxq").onclick=()=>step(1);if($("ck"))$("ck").onclick=checkNow;$("hp").onclick=helpCurrent;$("fin").onclick=()=>finish(false);$("fl").onclick=flagCurrent;tickTimer()}
+function tickTimer(){clearInterval(timer);const E=P&&exam?P[exam.kind]:null;if(!E||!E.t0||E.finished||review===true)return;const f=()=>{const el=$("tm");if(!el){clearInterval(timer);return}const s=Math.floor((Date.now()-E.t0)/1000);el.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")};f();timer=setInterval(f,1000)}
+function answer(L){if(screen!=="exam"||!exam)return;const {E,q}=curQ();if(!q||review===true)return;if(E.checked.includes(q.id))return;E.answers[q.id]=L;saveP();render(true)}
+function checkNow(){if(screen!=="exam")return;const {E,q}=curQ();if(!q||!E.answers[q.id])return;if(!E.checked.includes(q.id))E.checked.push(q.id);saveP();render(true)}
+function step(d){if(screen!=="exam")return;const {E,Q}=curQ();E.idx=Math.max(0,Math.min(Q.length-1,E.idx+d));saveP();render()}
+function finish(fromVoice){if(screen!=="exam")return;const {E,Q}=curQ();const empty=Q.filter(q=>!E.answers[q.id]).length;if(empty&&!fromVoice&&!confirm(empty+" soru boş. Sınavı bitirelim mi?"))return;E.finished=true;P.done[exam.kind]=true;saveP();screen="result";render()}
+function flagCurrent(){if(screen!=="exam")return;const {q}=curQ();if(q)send({type:"ders_flag",key:cur.key,qid:q.id})}
+function rResult(m){const kind=exam.kind,E=P[kind],Q=qs(kind),r=score(kind);
+ m.innerHTML=`<div class="row"><button id="bk">← KONUYA DÖN</button><h1 style="margin:0">${kind==="quiz"?"Quiz":"Deneme"} sonucu</h1></div><div class="row" style="margin:10px 0"><div class="score">${r.d}/${Q.length}</div><div class="mut" style="margin-left:14px">doğru ${r.d} · yanlış ${r.y} · boş ${r.b}<br>başarı %${Q.length?Math.round(r.d/Q.length*100):0}</div></div>
+ <div class="mut">Bir satıra tıklayınca soru, doğru cevap ve çözüm açılır; oradan tahtada anlattırabilirsiniz.</div><table><tr><th>#</th><th>Soru</th><th>Cevabın</th><th>Doğru</th><th></th></tr>${Q.map((q,i)=>{const a=E.answers[q.id];return`<tr class="cl" data-i="${i}"><td>${i+1}</td><td>${esc(q.soru.slice(0,90))}${q.soru.length>90?"…":""}</td><td>${a||"—"}</td><td>${q.dogru}</td><td style="color:${!a?"#aaa":a===q.dogru?"var(--ok)":"var(--no)"}">${!a?"boş":a===q.dogru?"✓":"✗"}</td></tr>`}).join("")}</table>
+ <div class="row" style="margin-top:14px"><button id="rt">YENİDEN ÇÖZ</button><button id="wo" class="ac">YANLIŞ VE BOŞLARI İNCELE</button></div>`;
+ $("bk").onclick=()=>{review=null;screen="topic";render()};m.querySelectorAll("tr.cl").forEach(tr=>tr.onclick=()=>{E.idx=+tr.dataset.i;review=true;screen="exam";render()});
+ $("rt").onclick=()=>{E.answers={};E.idx=0;E.finished=false;E.checked=[];E.ids=[];E.n=0;P.done[kind]=false;saveP();review=null;screen="topic";render()};
+ $("wo").onclick=()=>{const i=Q.findIndex(q=>E.answers[q.id]!==q.dogru);if(i<0){log("Hepsi doğru efendim, tebrikler.");return}E.idx=i;review=true;screen="exam";render()}}
+// ------------------------------------------------------------------ tahta
+function helpCurrent(){if(screen!=="exam"||!exam){log("Çözüm için önce bir soru açın efendim.");return}const {E,q}=curQ();if(!q)return;send({type:"ders_help",key:cur.key,qid:q.id,secili:E.answers[q.id]||""});openBoard(q)}
+function openBoard(q){$("board").style.display="flex";$("bq").textContent=q.soru;$("bsteps").innerHTML="";$("bres").style.display="none";$("bg").style.display="none";boardData={qid:q.id}}
+function boardLoading(x){if(x){$("bsteps").innerHTML='<div class="bs"><div class="t">Çözüm hazırlanıyor…</div></div>'}}
+function boardStart(b){if($("board").style.display!=="flex"&&screen==="exam"){const {q}=curQ();if(q)openBoard(q)}$("bsteps").innerHTML="";$("bres").style.display="none";
+ if(b.grafik){const c=$("bg");c.style.display="block";drawGraph(c,b.grafik)}else $("bg").style.display="none"}
+function boardStep(s){const el=document.createElement("div");el.className="bs";el.innerHTML=`<div class="t">${s.i+1}. ${esc(s.baslik||"Adım")}</div><div class="i"></div><div class="a">${esc(s.anlat)}</div>`;$("bsteps").appendChild(el);
+ const out=el.querySelector(".i"),txt=(s.islem||[]).join("\n");let k=0;const iv=setInterval(()=>{k+=2;out.textContent=txt.slice(0,k);if(k>=txt.length)clearInterval(iv)},28);el.scrollIntoView({block:"end",behavior:"smooth"})}
+function boardEnd(e){const r=$("bres");r.textContent="Sonuç: "+e.sonuc;r.style.display="block"}
+function drawGraph(c,pts){const d=devicePixelRatio||1,w=300,h=200;c.width=w*d;c.height=h*d;const x=c.getContext("2d");x.scale(d,d);x.clearRect(0,0,w,h);
+ const v=pts.filter(p=>p);let ys=v.map(p=>p[1]);let lo=Math.min(...ys,0),hi=Math.max(...ys,0);if(hi-lo<2){hi+=1;lo-=1}const X=u=>w/2+u/8*(w/2-8),Y=u=>h-8-(u-lo)/(hi-lo)*(h-16);
+ x.strokeStyle="rgba(255,255,255,.4)";x.lineWidth=1;x.beginPath();x.moveTo(0,Y(0));x.lineTo(w,Y(0));x.moveTo(X(0),0);x.lineTo(X(0),h);x.stroke();
+ let i=0;const iv=setInterval(()=>{x.strokeStyle="#ffe9a8";x.lineWidth=2;x.beginPath();let on=false;for(let k=0;k<=i&&k<pts.length;k++){const p=pts[k];if(!p){on=false;continue}on?x.lineTo(X(p[0]),Y(p[1])):x.moveTo(X(p[0]),Y(p[1]));on=true}x.stroke();i+=6;if(i>pts.length)clearInterval(iv)},30)}
+$("bclose").onclick=()=>{$("board").style.display="none";send({type:"ders_stop"})};$("bstop").onclick=()=>send({type:"ders_stop"});$("bagain").onclick=()=>{if(boardData)send({type:"ders_help",key:cur.key,qid:boardData.qid,secili:""})};
+// ------------------------------------------------------------------ anlatım komutu
+function doNarrate(w){if(!cur||screen!=="topic"){log("Önce bir konu açın efendim.");return}const sec=w==="cur"?(["anlatim","ozet","etkinlik"].includes(P.stage)?P.stage:"anlatim"):w;send({type:"ders_narrate",key:cur.key,section:sec})}
+// ------------------------------------------------------------------ üst çubuk
+function shut(){send({type:"ders_stop"});send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});$("bhome").onclick=goHome;
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){send({type:"text",text:e.target.value.trim()});$("jl").textContent="› komut uygulanıyor…";e.target.value=""}else if(e.key==="Escape")shut()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){if($("board").style.display==="flex"){$("bclose").click();return}const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)){a.blur();return}shut()}
+ else if(screen==="exam"&&!/INPUT/.test((document.activeElement||{}).tagName||"")){const k=e.key.toUpperCase();if("ABCDE".includes(k)&&k.length===1)answer(k);else if(e.key==="ArrowRight")step(1);else if(e.key==="ArrowLeft")step(-1)}});
+setTimeout(()=>$("cmd").focus(),400);connect();window.focus();
+</script></body></html>

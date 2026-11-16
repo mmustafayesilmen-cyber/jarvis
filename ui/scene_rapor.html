@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS RAPOR</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#ff9a3c;--bg:#0c0804;--ln:rgba(255,154,60,.28);--hi:rgba(255,154,60,.14);--ok:#5ee08a;--dg:#ff7a6a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:#f6e9da;font-family:"Segoe UI",Bahnschrift,Consolas,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:8px;padding:0 14px;z-index:5;background:linear-gradient(#000c,transparent);border-bottom:1px solid var(--ln)}
+#title{font:600 14px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--c);white-space:nowrap;margin-right:10px}
+#to{font:12.5px Consolas;color:#d9c3a8;border:1px solid var(--ln);padding:5px 10px;background:rgba(0,0,0,.4)}#to b{color:var(--ok);font-weight:400}
+#sp{flex:1}
+button,select{font:12.5px Consolas;letter-spacing:.06em;padding:6px 10px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,0,0,.5);white-space:nowrap}
+button:hover{background:var(--hi)}button:disabled{opacity:.4;cursor:default}
+button.pri{background:var(--c);color:#1a0d00;border-color:var(--c);font-weight:700}button.pri:disabled{background:#7a5a36}
+button.dg{border-color:rgba(255,120,100,.6);color:var(--dg)}
+option{background:#1c1108;color:#ffe3c4}
+#close{border-color:rgba(255,120,84,.7);color:#ff9a7a}
+#main{position:fixed;top:50px;bottom:78px;left:0;right:0;display:flex}
+#side{width:270px;border-right:1px solid var(--ln);background:rgba(0,0,0,.35);display:flex;flex-direction:column}
+#side .row{display:flex;gap:6px;padding:8px}
+#list{flex:1;overflow:auto;padding:0 8px 8px;scrollbar-width:thin}
+.rp{border:1px solid var(--ln);border-left:5px solid var(--c);padding:7px 9px;margin:6px 0;cursor:pointer;background:rgba(255,255,255,.03)}
+.rp:hover,.rp.act{background:var(--hi)}.rp.act{border-color:var(--c)}
+.rp b{display:block;font:600 14px "Segoe UI";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp small{display:block;font:11.5px Consolas;opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp .cat{display:inline-block;background:var(--c);color:#1a0d00;font:10px Consolas;padding:1px 6px;margin-bottom:3px}
+.rp .st{color:var(--dg)}
+#ed{flex:1;display:flex;flex-direction:column;min-width:0;padding:12px 16px}
+.meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px}
+.meta label{font:11.5px Consolas;letter-spacing:.1em;color:var(--c);margin-right:4px}
+input,textarea{background:rgba(0,0,0,.5);border:1px solid var(--ln);color:#fff;font:15px "Segoe UI";outline:0;user-select:text}
+input:focus,textarea:focus{border-color:var(--c)}
+#ttl{width:100%;padding:9px 11px;font:600 19px "Segoe UI";margin-bottom:8px}
+#body{flex:1;width:100%;padding:12px 14px;font:16px/1.55 "Segoe UI";resize:none;scrollbar-width:thin}
+#nc{padding:6px 9px;width:150px;font:13px Consolas}#dt{padding:5px 8px;font:13px Consolas}
+#foot{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+#stat{font:12.5px Consolas;opacity:.85;margin-left:auto}
+#prev{margin-top:8px;border:1px dashed var(--ln);padding:8px 12px;font:12.5px/1.5 Consolas;white-space:pre-wrap;max-height:130px;overflow:auto;color:#cdb79c;display:none}
+#ov{position:fixed;inset:50px 0 78px 0;background:rgba(0,0,0,.78);z-index:8;display:none;align-items:center;justify-content:center;text-align:center}
+#ov div{max-width:520px;border:1px solid var(--c);padding:26px 30px;background:#120a04;font-size:17px;line-height:1.6}
+#ov b{display:block;font:600 15px Bahnschrift;letter-spacing:.3em;color:var(--c);margin-bottom:10px}
+#bar{position:fixed;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--ln);background:rgba(0,0,0,.65);z-index:9;padding:6px 12px}
+#cmd{width:100%;padding:8px 12px;background:rgba(0,0,0,.55);border:1px solid var(--ln);color:var(--c);font:14px Consolas;outline:0;user-select:text}#cmd:focus{border-color:var(--c)}
+#log{height:30px;margin-top:5px;font:12.5px Consolas;overflow:hidden;display:flex;gap:14px;align-items:center;white-space:nowrap}
+#log span.j{color:#cfeeff;overflow:hidden;text-overflow:ellipsis;max-width:62vw}#log span.mem{color:#9fe8a0;opacity:.85;margin-left:auto}
+</style></head><body>
+<div id="top"><span id="title">RAPOR</span><span id="to">ALICI (sabit): <b id="toN">…</b></span><span id="sp"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="main">
+ <div id="side"><div class="row"><button id="nw" style="flex:1">+ YENİ RAPOR</button></div><div id="list"></div></div>
+ <div id="ed">
+  <div class="meta"><label>ŞABLON</label><select id="tpl"></select><button id="tps" title="Açık raporu şablon olarak kaydet">ŞABLON OLARAK KAYDET</button><input id="tpn" placeholder="şablon adı" maxlength="30" style="display:none;padding:6px 9px;width:140px;font:13px Consolas"><span id="rem" style="font:12px Consolas;color:#9fe8a0;margin-left:10px"></span></div>
+  <div class="meta"><label>KATEGORİ</label><select id="cat"></select><input id="nc" placeholder="yeni kategori adı" maxlength="30"><button id="nca">+ OLUŞTUR</button><button id="ncd" class="dg" title="Seçili kategoriyi sil (raporlar silinmez)">KATEGORİYİ SİL</button><label style="margin-left:14px">TARİH</label><input type="date" id="dt"></div>
+  <input id="ttl" placeholder="Rapor başlığı" maxlength="120" autocomplete="off" spellcheck="false">
+  <textarea id="body" placeholder="Raporunuzu buraya yazın ya da sesle söyleyin: yaz: bugün matematik dersinde …" maxlength="12000" spellcheck="true"></textarea>
+  <div id="prev"></div>
+  <div id="foot"><button id="send" class="pri">GÖNDER (WHATSAPP, ARKA PLANDA)</button><button id="pv">ÖNİZLE</button><button id="del" class="dg">SİL</button><span id="stat"></span></div>
+ </div>
+</div>
+<div id="ov"><div><b id="ovt">GÖNDERİLİYOR</b><span id="ovm"></span></div></div>
+<div id="bar"><input id="cmd" placeholder="Komut: yeni rapor · başlık: … · yaz: … · kategori oluştur ders · kategori ders · tarih bugün · raporu gönder · raporu sil · çık" spellcheck="false" autocomplete="off"><div id="log"><span class="j" id="jl">Jarvis: taslaklar yalnızca bu bilgisayarda; gönderilince tamamen silinir.</span><span class="mem" id="mem">anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)</span></div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const MON=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"],DAY=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+let D={categories:[],reports:[],to:"",today:""},cur=null,dirty=false,saveT=0,sending=false,delArm=0;
+let ws;function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"rapor"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.type==="cmdbuf"){const it=m.items||[];$("mem").textContent=it.length?"anlık komut kaydı: işleniyor (bitince silinecek)":"anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)";return}
+  if(m.kind!=="rapor")return;
+  if(m.type==="scene_init"){D=m.data;$("toN").textContent=D.to;fillCats();fillTpl();renderList();newReport()}
+  else if(m.type==="scene_do")handleDo(m.do||{})};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function log(s){$("jl").textContent="Jarvis: "+s}
+function handleDo(d){
+ if(d.msg)log(d.msg);
+ if(d.data){D=d.data;fillCats();fillTpl();renderList()}
+ if(d.saved){cur=d.saved.id;dirty=false;stat("kaydedildi ✓");renderList()}
+ if(d.closeEditor)newReport(true);
+ if(d.new)newReport();
+ if(d.title!==undefined){$("ttl").value=d.title;touch()}
+ if(d.append){const b=$("body");b.value=(b.value&&!b.value.endsWith("\n")?b.value+"\n":b.value)+d.append;b.scrollTop=b.scrollHeight;touch()}
+ if(d.undoLine){const l=$("body").value.replace(/\n+$/,"").split("\n");l.pop();$("body").value=l.join("\n");touch()}
+ if(d.setCat!==undefined){$("cat").value=d.setCat;touch()}
+ if(d.date){$("dt").value=d.date;touch()}
+ if(d.deleteCurrent)delCurrent(true);
+ if(d.requestSend)doSend();
+ if(d.applyTemplate)applyTpl(d.applyTemplate);
+ if(d.saveTemplate)saveTpl(d.saveTemplate);
+ if(d.sendState)sendState(d.sendState,d.msg||"")}
+// ------------------------------------------------------------------ liste / editör
+function fillTpl(){const s=$("tpl");s.innerHTML='<option value="">— şablondan başla —</option>'+(D.templates||[]).map((t,i)=>`<option value="${i}">${esc(t.name)}</option>`).join("");$("rem").textContent=D.reminder?"⏰ hatırlatıcı: "+D.reminder:""}
+function fillCats(){const s=$("cat"),v=s.value;s.innerHTML='<option value="">— kategori yok —</option>'+D.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");s.value=D.categories.includes(v)?v:""}
+function fmtDate(iso){const d=new Date(iso+"T12:00:00");return isNaN(d)?iso:d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear()}
+function renderList(){const l=$("list");l.innerHTML="";if(!D.reports.length){l.innerHTML='<div style="padding:14px;opacity:.6;font:13px Consolas">taslak yok — “+ YENİ RAPOR” ya da “yeni rapor” deyin</div>';return}
+ D.reports.forEach(r=>{const d=document.createElement("div");d.className="rp"+(r.id===cur?" act":"");d.innerHTML=(r.cat?`<span class="cat">${esc(r.cat)}</span>`:"")+`<b>${esc(r.title||"Başlıksız rapor")}</b><small>${esc(fmtDate(r.date))}${r.time?" · "+esc(r.time):""}</small>${r.status?`<small class="st">${esc(r.status)}</small>`:""}`;d.onclick=()=>openReport(r.id);l.appendChild(d)})}
+function stat(s){$("stat").textContent=s}
+function newReport(skipSave){if(dirty&&!skipSave)saveNow();cur=null;$("ttl").value="";$("body").value="";$("cat").value="";$("dt").value=D.today||new Date().toISOString().slice(0,10);dirty=false;stat("yeni rapor");$("prev").style.display="none";renderList();$("body").focus()}
+function openReport(id){const r=D.reports.find(x=>x.id===id);if(!r)return;if(dirty)saveNow();cur=r.id;$("ttl").value=r.title;$("body").value=r.body;$("cat").value=D.categories.includes(r.cat)?r.cat:"";$("dt").value=r.date;dirty=false;stat(r.status||"");renderList()}
+function fields(){return{id:cur||"",title:$("ttl").value,body:$("body").value,cat:$("cat").value,date:$("dt").value}}
+function touch(){dirty=true;stat("kaydedilmedi…");clearTimeout(saveT);saveT=setTimeout(saveNow,1500)}
+function saveNow(){clearTimeout(saveT);const f=fields();if(!f.title.trim()&&!f.body.trim()&&!cur){dirty=false;return}send({type:"rapor_save",...f});dirty=false}
+function delCurrent(now){if(!cur){newReport(true);return}if(!now&&!delArm){delArm=1;$("del").textContent="SİLMEK İÇİN TEKRAR TIKLA";setTimeout(()=>{delArm=0;$("del").textContent="SİL"},3000);return}send({type:"rapor_delete",id:cur});delArm=0;$("del").textContent="SİL";newReport(true)}
+["ttl","body"].forEach(k=>$(k).addEventListener("input",touch));$("cat").onchange=touch;$("dt").onchange=touch;
+$("nw").onclick=()=>newReport();$("del").onclick=()=>delCurrent(false);
+$("nca").onclick=()=>{const n=$("nc").value.trim();if(n){send({type:"rapor_cat_add",name:n});$("nc").value="";setTimeout(()=>{$("cat").value=n;touch()},400)}};
+$("ncd").onclick=()=>{const c=$("cat").value;if(!c)return;if($("ncd").dataset.arm===c){send({type:"rapor_cat_del",name:c});$("ncd").dataset.arm="";$("ncd").textContent="KATEGORİYİ SİL"}else{$("ncd").dataset.arm=c;$("ncd").textContent="EMİN MİSİN?";setTimeout(()=>{$("ncd").dataset.arm="";$("ncd").textContent="KATEGORİYİ SİL"},3000)}};
+$("nc").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("nca").click()});
+function applyTpl(t){if(dirty)saveNow();newReport(true);$("ttl").value=t.title||"";$("body").value=t.body||"";$("cat").value=D.categories.includes(t.cat)?t.cat:"";touch();$("body").focus()}
+$("tpl").onchange=()=>{const t=(D.templates||[])[+$("tpl").value];$("tpl").value="";if(t)applyTpl(t)};
+function saveTpl(name){const f=fields();if(!name||(!f.title.trim()&&!f.body.trim())){log("Şablon için önce bir şeyler yazın.");return}send({type:"rapor_tpl_save",name:name,title:f.title,body:f.body,cat:f.cat})}
+$("tps").onclick=()=>{const i=$("tpn");if(i.style.display==="none"){i.style.display="inline-block";i.focus();return}const n=i.value.trim();if(n){saveTpl(n);i.value=""}i.style.display="none"};
+$("tpn").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("tps").click()});
+// ------------------------------------------------------------------ önizleme ve gönderme
+function previewText(){const f=fields();const rr=D.reports.find(x=>x.id===cur),tm=rr&&rr.date===f.date&&rr.time?rr.time:"";let dt;try{const d=new Date(f.date+"T12:00:00");dt=d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear()+" "+DAY[d.getDay()]}catch(e){dt=f.date}
+ return(f.cat?"Kategori: "+f.cat+"\n":"")+"Rapor tarihi: "+dt+(tm?", "+tm:"")+"\n\n"+(f.title.trim()?"*"+f.title.trim()+"*\n\n":"")+f.body}
+$("pv").onclick=()=>{const p=$("prev");if(p.style.display==="block"){p.style.display="none";return}p.textContent=previewText();p.style.display="block"};
+function doSend(){if(sending)return;const f=fields();if(!f.title.trim()&&!f.body.trim()){log("Rapor boş, göndermedim.");return}
+ sending=true;$("send").disabled=true;clearTimeout(saveT);send({type:"rapor_send",...f});sendState("sending")}
+$("send").onclick=doSend;
+function sendState(s,msg){const ov=$("ov");
+ if(s==="sending"){ov.style.display="flex";$("ovt").textContent="GÖNDERİLİYOR";$("ovm").textContent="WhatsApp arka planda açılıyor. Birkaç saniye klavye ve fareye dokunmayın.";return}
+ sending=false;$("send").disabled=false;
+ if(s==="sent"){newReport(true)}
+ ov.style.display="none";stat(s==="sent"?"iletildi ve silindi ✓":s==="unverified"?"doğrulanamadı, WhatsApp'ı kontrol edin":"gönderilemedi")}
+// ------------------------------------------------------------------ üst çubuk, komut kutusu, çıkış
+function shut(){if(dirty)saveNow();setTimeout(()=>send({type:"scene_close"}),dirty?200:0)}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){send({type:"text",text:e.target.value.trim()});$("jl").textContent="› (komut gönderildi)";e.target.value=""}else if(e.key==="Escape")shut()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){a.blur();return}shut()}});
+setTimeout(()=>$("cmd").focus(),400);connect();window.focus();
+</script></body></html>

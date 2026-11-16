@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS ODAK</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765">
+<link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ffb454;--c2:#ff7a45;--ln:rgba(255,180,84,.26);--hi:rgba(255,180,84,.12);--card:rgba(30,18,6,.68)}
+html,body{background:radial-gradient(ellipse 60% 55% at 50% 45%,rgba(255,122,69,.09),transparent 70%),radial-gradient(ellipse at 50% -10%,#3a2008 0%,#0d0703 64%)}
+#stage{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:22px}
+.col{display:flex;flex-direction:column;gap:16px;min-height:0;overflow:auto}
+.wl{display:flex;flex-direction:column;max-height:46vh;overflow:auto}.w{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid rgba(255,255,255,.06);font-size:14px;cursor:pointer}
+.w input{width:18px;height:18px;accent-color:var(--c)}.w b{font-weight:600}.w small{color:var(--mut);margin-left:auto;font:11px Consolas}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.presets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.presets button{padding:10px 2px}
+#center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+#ringw{position:relative;width:min(52vh,460px);aspect-ratio:1}#ringw svg{position:absolute;inset:0;width:100%;height:100%}
+.trk{fill:none;stroke:rgba(255,255,255,.06);stroke-width:8}#arc{fill:none;stroke:url(#gr);stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 0 10px var(--c));transition:stroke-dashoffset .5s linear}
+#mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+#time{font:700 min(11vh,96px) Bahnschrift,Consolas;color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 0 28px rgba(255,180,84,.5)}#sub{font-size:14px;color:var(--mut);text-align:center;max-width:70%}
+body.run #ringw{animation:breathe 8s ease-in-out infinite}@keyframes breathe{50%{transform:scale(1.02)}}
+#ctl{display:flex;gap:12px}#ctl button{height:46px;padding:0 22px;border-radius:23px}
+.note{font-size:13px;color:var(--mut);line-height:1.5}
+</style></head><body>
+<div id="stage">
+ <div class="col"><div class="card"><h3>AÇIK PENCERELER <small id="wc"></small></h3><div class="wl" id="wl"></div>
+   <div class="note" style="margin-top:10px">Kapatılanlara normal "kapat" iletisi gider; kaydedilmemiş işi olan uygulama size sorar, hiçbir şey zorla kapanmaz. Jarvis ve Claude listede yoktur.</div>
+   <div class="row"><button class="prim" id="go">SEÇİLENLERİ KAPAT VE BAŞLAT</button><button id="mn">SADECE KÜÇÜLT</button><button id="no">DOKUNMADAN BAŞLAT</button><button id="rf">YENİLE</button></div></div>
+  <div class="card"><h3>SÜRE <small>dakika</small></h3><div class="presets" id="presets"></div></div></div>
+ <div id="center"><div id="ringw"><svg viewBox="0 0 200 200"><defs><linearGradient id="gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb454"/><stop offset="1" stop-color="#ff7a45"/></linearGradient></defs><circle class="trk" cx="100" cy="100" r="90"/><circle id="arc" cx="100" cy="100" r="90" transform="rotate(-90 100 100)"/></svg>
+  <div id="mid"><div id="time">45:00</div><div id="sub">Süreyi seçin, açık pencereleri gözden geçirip başlatın.</div></div></div>
+  <div id="ctl"><button id="ps">DURAKLAT</button><button id="en">BİTİR</button></div></div>
+</div>
+<script>
+let S=null,endAt=0,sel=new Set(),pend=45,lastWin="",first0=true;const CIRC=2*Math.PI*90;$("arc").style.strokeDasharray=CIRC;
+Mode.start({kind:"odak",title:"DERİN ODAK",placeholder:"Komut: başlat · 60 dakika · evet · sadece küçült · kapatmadan başla · duraklat · ne kadar kaldı · bitir",init:render,act:d=>{if(d.snap)render(d.snap);if(d.pending)pend=d.pending},tick:paint});
+const mm=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")};
+const left=()=>!S||!S.on?0:S.paused?S.left:Math.max(0,(endAt-Date.now())/1000);
+function sync(){Mode.send({type:"scene_state",kind:"odak",state:{odak_sel:[...sel]}})}
+function render(s){const first=!S;if(first)pend=s.default||45;S=s;endAt=s.on&&!s.paused?Date.now()+s.left*1000:0;
+ if(!$("presets").children.length)s.presets.forEach(m=>{const b=document.createElement("button");b.textContent=m;b.onclick=()=>{pend=m;[...$("presets").children].forEach(x=>x.classList.toggle("cur",x===b));paint()};$("presets").appendChild(b)});
+ if(s.windows){const ids=s.windows.map(w=>w.hwnd);if(first||ids.join()!==lastWin){lastWin=ids.join();sel=new Set(ids)}
+  $("wc").textContent=s.windows.length+" pencere";$("wl").innerHTML=s.windows.length?s.windows.map(w=>'<label class="w"><input type="checkbox" data-h="'+w.hwnd+'" '+(sel.has(w.hwnd)?"checked":"")+'><b>'+Mode.esc(w.app)+'</b><span class="mut" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%">'+Mode.esc(w.title)+'</span><small>'+(w.min?"küçük":"açık")+'</small></label>').join(""):'<div class="mut" style="padding:12px 0">Kapatılacak pencere yok.</div>';
+  $("wl").querySelectorAll("input").forEach(i=>i.onchange=()=>{const h=Number(i.dataset.h);i.checked?sel.add(h):sel.delete(h);sync()});sync()}
+ paint()}
+function paint(){if(!S)return;const l=left(),run=S.on&&!S.paused,fin=S.on&&!S.paused&&l<=0;
+ document.body.classList.toggle("run",run&&!fin);Mode.pill(!S.on?"HAZIR":S.paused?"DURAKLATILDI":fin?"BİTTİ":"ODAKTA");
+ $("time").textContent=S.on?mm(l):mm((pend||S.default)*60);$("arc").style.strokeDashoffset=CIRC*(1-(S.on&&S.len?Math.min(1,l/(S.len*60)):1));
+ $("sub").textContent=!S.on?"Süreyi seçin, açık pencereleri gözden geçirip başlatın.":fin?"Odak süreniz bitti, harikaydınız.":S.paused?"Duraklatıldı.":S.len+" dakikalık odak · bitince Jarvis haber verir";
+ $("ps").textContent=S.paused?"DEVAM":"DURAKLAT";$("ps").style.visibility=$("en").style.visibility=S.on?"visible":"hidden"}
+$("go").onclick=()=>{sync();Mode.cmd("kapat ve başla "+pend+" dakika")};$("mn").onclick=()=>{sync();Mode.cmd("sadece küçült "+pend+" dakika")};$("no").onclick=()=>Mode.cmd("kapatmadan başla "+pend+" dakika");$("rf").onclick=()=>Mode.cmd("listeyi yenile");
+$("ps").onclick=()=>Mode.cmd(S&&S.paused?"devam":"duraklat");$("en").onclick=()=>Mode.cmd("bitir");
+</script></body></html>

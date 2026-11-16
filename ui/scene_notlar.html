@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS NOTLAR</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#ffd84a;--bg:#0a0904;--ln:rgba(255,216,74,.24);--hi:rgba(255,216,74,.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:#f4ecdd;font-family:"Segoe UI",Bahnschrift,Consolas,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:8px;padding:0 14px;z-index:5;background:linear-gradient(#000c,transparent);border-bottom:1px solid var(--ln)}
+#title{font:600 14px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--c);white-space:nowrap;margin-right:10px}
+#sp{flex:1}
+button,select{font:12.5px Consolas;letter-spacing:.06em;padding:6px 10px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,0,0,.5);white-space:nowrap}
+button:hover{background:var(--hi)}button.on{background:var(--hi);border-color:var(--c)}
+select{max-width:150px}option{background:#1a1608;color:#ffe9a0}
+#close{border-color:rgba(255,120,84,.7);color:#ff9a7a}
+#main{position:fixed;top:50px;bottom:78px;left:0;right:0;display:flex}
+#side{width:280px;border-right:1px solid var(--ln);background:rgba(0,0,0,.35);display:flex;flex-direction:column}
+#side .row{display:flex;gap:6px;padding:8px}
+#q{flex:1;padding:7px 9px;background:rgba(0,0,0,.5);border:1px solid var(--ln);color:var(--c);font:13px Consolas;outline:0;user-select:text}
+#list{flex:1;overflow:auto;padding:0 8px 8px;scrollbar-width:thin}
+.nt{border:1px solid var(--ln);border-left:5px solid var(--c);padding:7px 9px;margin:6px 0;cursor:pointer;background:rgba(255,255,255,.03);position:relative}
+.nt:hover{background:var(--hi)}.nt.act{background:var(--hi);border-color:var(--c)}
+.nt b{display:block;font:600 14px "Segoe UI";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:46px}
+.nt small{display:block;font:11.5px Consolas;opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nt .bd{position:absolute;right:6px;top:6px;font:10px Consolas;color:#1a1000;background:var(--c);padding:1px 5px}
+.nt .x{position:absolute;right:6px;bottom:5px;padding:1px 7px;font-size:11px;border-color:rgba(255,120,84,.5);color:#ff9a7a}
+#ed{flex:1;display:flex;flex-direction:column;min-width:0}
+#tb{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--ln);background:rgba(0,0,0,.4)}
+#tb .sep{width:1px;height:22px;background:var(--ln);margin:0 3px}
+.sw{width:20px;height:20px;padding:0;border:1px solid rgba(255,255,255,.35)}
+.sw:hover{transform:scale(1.2)}
+input[type=color]{width:26px;height:26px;padding:0;border:1px solid var(--ln);background:none;cursor:pointer}
+#ttl{margin:10px 14px 4px;padding:8px 10px;background:rgba(0,0,0,.4);border:1px solid var(--ln);color:#fff;font:600 20px "Segoe UI";outline:0;user-select:text}
+#ttl:focus{border-color:var(--c)}
+#pg{flex:1;margin:6px 14px 10px;padding:16px 20px;overflow:auto;border:1px solid var(--ln);background:#14110a;color:#f4ecdd;font:17px/1.6 "Segoe UI";outline:0;user-select:text;scrollbar-width:thin}
+#pg blockquote{border-left:4px solid var(--c);margin:8px 0;padding:2px 12px;opacity:.9}
+#pg h1{font-size:30px;margin:8px 0}#pg h2{font-size:24px;margin:8px 0}#pg h3{font-size:20px;margin:6px 0}
+#pg ul,#pg ol{margin:6px 0 6px 24px;padding:0}
+#pg hr{border:0;border-top:2px solid var(--c);margin:12px 0}
+#facts{flex:1;overflow:auto;padding:14px 18px;display:none}
+.fc{display:flex;gap:10px;align-items:center;border:1px solid var(--ln);padding:8px 12px;margin:6px 0;background:rgba(255,255,255,.03)}
+.fc span{flex:1;font:15px "Segoe UI";user-select:text}.fc small{font:11.5px Consolas;opacity:.6}
+#stat{font:12px Consolas;opacity:.75;margin-left:auto;padding:0 8px;white-space:nowrap}
+#bar{position:fixed;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--ln);background:rgba(0,0,0,.65);z-index:5;padding:6px 12px}
+#cmdrow{display:flex;gap:10px;align-items:center}
+#cmd{flex:1;padding:8px 12px;background:rgba(0,0,0,.55);border:1px solid var(--ln);color:var(--c);font:14px Consolas;outline:0;user-select:text}
+#cmd:focus{border-color:var(--c)}
+#log{height:30px;margin-top:5px;font:12.5px Consolas;overflow:hidden;display:flex;gap:14px;align-items:center;white-space:nowrap}
+#log span.j{color:#cfeeff;overflow:hidden;text-overflow:ellipsis;max-width:60vw}#log span.mem{color:#9fe8a0;opacity:.85;margin-left:auto}
+@media(max-width:1000px){#side{width:210px}}
+</style></head><body>
+<div id="top"><span id="title">NOTLAR</span><button id="tn" class="on">NOTLAR</button><button id="tf">JARVİS'İN HATIRALARI</button><span id="sp"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="main">
+ <div id="side"><div class="row"><input id="q" placeholder="Notlarda ara…" autocomplete="off" spellcheck="false"><button id="nw">+ YENİ</button></div><div id="list"></div></div>
+ <div id="ed">
+  <div id="tb"></div>
+  <input id="ttl" placeholder="Başlık" maxlength="120" autocomplete="off" spellcheck="false">
+  <div id="pg" contenteditable="true" spellcheck="true"></div>
+  <div id="facts"></div>
+ </div>
+</div>
+<div id="bar"><div id="cmdrow"><input id="cmd" placeholder="Komut: yeni not · başlık: … · yaz: … · kalın yaz: … · kırmızı yaz: … · madde: … · yıldız ekle · kaydet · notu sil · çık" spellcheck="false" autocomplete="off"><span id="stat"></span></div><div id="log"><span class="j" id="jl">Jarvis: sesli komutlar açık, yazarak da verebilirsiniz.</span><span class="mem" id="mem">anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)</span></div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const pg=$("pg"),ttl=$("ttl");
+let D=null,notes=[],facts=[],cur=null,bg="",dirty=false,saveT=0,lastRange=null,tab="notes",delArm=null;
+const PAL=["#ffffff","#ffd84a","#ff9a3c","#ff5a5a","#ff7ac8","#b58cff","#5aa8ff","#3fe0d0","#5ee08a","#9aa4ad","#111111","#8a5a32"];
+const BGS=["#14110a","#10233f","#10301f","#3a1414","#26143f","#1f2124","#fff6c8","#d8ecff","#dcf5df","#ffe0ee","#f5ecd7","#ffffff"];
+// ------------------------------------------------------------------ iletişim
+let ws;function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"notlar"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.type==="cmdbuf"){const it=m.items||[];$("mem").textContent=it.length?`anlık komut kaydı: işleniyor → “${it[it.length-1].text}” (bitince silinecek)`:"anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)";return}
+  if(m.kind!=="notlar")return;
+  if(m.type==="scene_init"){D=m.data;notes=D.notes;facts=D.facts;buildTb();renderList();renderFacts();newNote()}
+  else if(m.type==="scene_do")handleDo(m.do||{})};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function handleDo(d){
+ if(d.msg)$("jl").textContent="Jarvis: "+d.msg;
+ if(d.notes){notes=d.notes;if(d.closeEditor)newNote();renderList()}
+ if(d.facts){facts=d.facts;renderFacts()}
+ if(d.saved){cur=d.saved.id;setStat("kaydedildi ✓");dirty=false;renderList()}
+ if(d.tab)setTab(d.tab);
+ if(d.new)newNote();
+ if(d.title!==undefined){setTab("notes");ttl.value=d.title;touch()}
+ if(d.append)appendText(d.append);
+ if(d.insert)insertSpecial(d.insert,d.sym);
+ if(d.fmt)applyFmt(d.fmt);
+ if(d.bg){setBg(d.bg);touch()}
+ if(d.save)saveNow();
+ if(d.delete_current)delCurrent(true);
+ if(d.open)openNote(d.open)}
+// ------------------------------------------------------------------ liste
+function fmtDate(s){if(!s)return"";const d=new Date(s);return d.toLocaleString("tr-TR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}
+function plain(h){const t=document.createElement("div");t.innerHTML=h;return(t.textContent||"").replace(/\s+/g," ").trim()}
+function renderList(){const q=$("q").value.trim().toLowerCase(),l=$("list");l.innerHTML="";const arr=notes.filter(n=>!q||n.title.toLowerCase().includes(q)||plain(n.html).toLowerCase().includes(q));
+ if(!arr.length){l.innerHTML='<div style="padding:14px;opacity:.6;font:13px Consolas">'+(notes.length?"eşleşen not yok":"henüz not yok — “+ YENİ” ya da “yeni not” deyin")+"</div>";return}
+ arr.forEach(n=>{const d=document.createElement("div");d.className="nt"+(n.id===cur?" act":"");d.style.borderLeftColor=n.bg&&n.bg.length>3?n.bg:"var(--c)";d.innerHTML=`<b>${esc(n.title)}</b><small>${esc(plain(n.html).slice(0,60))}</small><small>${esc(fmtDate(n.mod||n.ts))}</small>${n.src==="jarvis"?'<span class="bd">JARVİS</span>':""}`;
+  const x=document.createElement("button");x.className="x";x.textContent=delArm===n.id?"EMİN MİSİN?":"✕";x.onclick=e=>{e.stopPropagation();if(delArm===n.id){send({type:"notes_delete",id:n.id});if(cur===n.id)newNote();delArm=null}else{delArm=n.id;renderList();setTimeout(()=>{if(delArm===n.id){delArm=null;renderList()}},3000)}};d.appendChild(x);
+  d.onclick=()=>openNote(n.id);l.appendChild(d)})}
+function renderFacts(){const f=$("facts");f.innerHTML="<p style='opacity:.7;font:13px Consolas'>Jarvis'e “bunu hatırla” dediğiniz bilgiler. Silmek için UNUT düğmesine basın.</p>";if(!facts.length){f.innerHTML+="<p>Henüz hatıra yok.</p>";return}
+ facts.forEach(x=>{const d=document.createElement("div");d.className="fc";d.innerHTML=`<span>${esc(x.fact)}</span><small>${esc(x.date||"")}</small>`;const b=document.createElement("button");b.textContent="UNUT";b.style.borderColor="rgba(255,120,84,.6)";b.style.color="#ff9a7a";b.onclick=()=>send({type:"notes_forget",i:x.i});d.appendChild(b);f.appendChild(d)})}
+function setTab(t){tab=t;$("tn").classList.toggle("on",t==="notes");$("tf").classList.toggle("on",t==="facts");const isN=t==="notes";$("tb").style.display=isN?"flex":"none";ttl.style.display=isN?"block":"none";pg.style.display=isN?"block":"none";$("facts").style.display=isN?"none":"block";$("side").style.display=isN?"flex":"none"}
+// ------------------------------------------------------------------ editör
+function setBg(c){bg=c||"";pg.style.background=bg||"#14110a";const dark=bg&&bg.length>=4?isDark(bg):true;pg.style.color=dark?"#f4ecdd":"#1a1408"}
+function isDark(h){let x=h.replace("#","");if(x.length===3)x=x.split("").map(c=>c+c).join("");const r=parseInt(x.slice(0,2),16),g=parseInt(x.slice(2,4),16),b=parseInt(x.slice(4,6),16);return(r*.299+g*.587+b*.114)<150}
+function newNote(){if(dirty)saveNow();cur=null;ttl.value="";pg.innerHTML="";setBg("");dirty=false;setStat("yeni not");setTab("notes");renderList();pg.focus()}
+function openNote(id){const n=notes.find(x=>x.id===id);if(!n)return;if(dirty)saveNow();cur=n.id;ttl.value=n.title;pg.innerHTML=n.html;setBg(n.bg);dirty=false;setStat("");setTab("notes");renderList()}
+function setStat(s){$("stat").textContent=s}
+function touch(){dirty=true;setStat("kaydedilmedi…");clearTimeout(saveT);saveT=setTimeout(saveNow,1500)}
+function saveNow(){clearTimeout(saveT);if(!dirty&&cur)return;const html=pg.innerHTML;if(!ttl.value.trim()&&!pg.textContent.trim()&&!cur)return;send({type:"notes_save",id:cur||"",title:ttl.value,html:html,bg:bg});dirty=false}
+function delCurrent(now){if(!cur){newNote();return}if(!now&&delArm!==cur){delArm=cur;$("dl").textContent="SİLMEK İÇİN TEKRAR TIKLA";setTimeout(()=>{delArm=null;$("dl").textContent="SİL"},3000);return}send({type:"notes_delete",id:cur});newNote();delArm=null;$("dl")&&($("dl").textContent="SİL")}
+pg.addEventListener("input",touch);ttl.addEventListener("input",touch);
+document.addEventListener("selectionchange",()=>{const s=getSelection();if(s.rangeCount&&pg.contains(s.anchorNode))lastRange=s.getRangeAt(0).cloneRange()});
+function restoreSel(){pg.focus();if(lastRange){const s=getSelection();s.removeAllRanges();s.addRange(lastRange)}else{const r=document.createRange();r.selectNodeContents(pg);r.collapse(false);const s=getSelection();s.removeAllRanges();s.addRange(r)}}
+function ex(cmd,val){restoreSel();document.execCommand("styleWithCSS",false,true);document.execCommand(cmd,false,val===undefined?null:val);touch()}
+function setSize(px){restoreSel();document.execCommand("styleWithCSS",false,false);document.execCommand("fontSize",false,"7");pg.querySelectorAll('font[size="7"]').forEach(f=>{const s=document.createElement("span");s.style.fontSize=px+"px";while(f.firstChild)s.appendChild(f.firstChild);f.replaceWith(s)});touch()}
+function applyFmt(f){if(f.bold)ex("bold");if(f.italic)ex("italic");if(f.underline)ex("underline");if(f.strike)ex("strikeThrough");if(f.align)ex({left:"justifyLeft",center:"justifyCenter",right:"justifyRight"}[f.align]);if(f.color)ex("foreColor",f.color);if(f.hilite)ex("hiliteColor",f.hilite);if(f.font)ex("fontName",f.font);if(f.size)setSize(f.size)}
+function insertHtmlNode(node){restoreSel();const s=getSelection();if(s.rangeCount){const r=s.getRangeAt(0);r.collapse(false);r.insertNode(node);r.setStartAfter(node);r.collapse(true);s.removeAllRanges();s.addRange(r)}else pg.appendChild(node);touch()}
+function insertSpecial(kind,sym){if(kind==="divider"){const d=document.createElement("div");d.style.cssText="text-align:center;color:#ffd84a;letter-spacing:8px;margin:10px 0";d.textContent="✦ ✦ ✦";insertHtmlNode(d);const p=document.createElement("p");p.innerHTML="<br>";d.after(p)}
+ else if(kind==="box"){const d=document.createElement("div");d.style.cssText="border:2px dashed #ffd84a;padding:10px;border-radius:10px;margin:8px 0";d.textContent="Önemli not…";insertHtmlNode(d);const p=document.createElement("p");p.innerHTML="<br>";d.after(p)}
+ else if(kind==="sym"){insertHtmlNode(document.createTextNode((sym||"✦")+" "))}}
+function appendText(a){if(!a||!a.text)return;setTab("notes");let el;if(a.heading){el=document.createElement("h2")}else if(a.bullet){let ul=pg.lastElementChild;if(!ul||ul.tagName!=="UL"){ul=document.createElement("ul");pg.appendChild(ul)}el=document.createElement("li");ul.appendChild(el)}else{el=document.createElement("p");pg.appendChild(el)}
+ const sp=document.createElement("span");sp.textContent=a.text;if(a.bold)sp.style.fontWeight="bold";if(a.italic)sp.style.fontStyle="italic";if(a.underline)sp.style.textDecoration="underline";if(a.color)sp.style.color=a.color;if(a.size)sp.style.fontSize=a.size+"px";el.appendChild(sp);pg.scrollTop=pg.scrollHeight;touch()}
+// ------------------------------------------------------------------ araç çubuğu
+function buildTb(){const tb=$("tb");tb.innerHTML="";const mk=(t,f,title,cls)=>{const b=document.createElement("button");b.innerHTML=t;if(title)b.title=title;if(cls)b.id=cls;b.onmousedown=e=>e.preventDefault();b.onclick=f;tb.appendChild(b);return b};const sep=()=>{const s=document.createElement("span");s.className="sep";tb.appendChild(s)};
+ const fs=document.createElement("select");fs.title="Yazı tipi";fs.innerHTML='<option value="">Yazı tipi</option>'+(D.fonts||[]).map(f=>`<option style="font-family:'${f}'" value="${f}">${f}</option>`).join("");fs.onchange=()=>{if(fs.value)ex("fontName",fs.value);fs.value=""};tb.appendChild(fs);
+ const sz=document.createElement("select");sz.title="Boyut";sz.innerHTML='<option value="">Boyut</option>'+[12,14,16,18,20,24,28,32,40,48,64].map(n=>`<option value="${n}">${n}</option>`).join("");sz.onchange=()=>{if(sz.value)setSize(+sz.value);sz.value=""};tb.appendChild(sz);sep();
+ mk("<b>K</b>",()=>ex("bold"),"Kalın");mk("<i>İ</i>",()=>ex("italic"),"İtalik");mk("<u>A</u>",()=>ex("underline"),"Altı çizili");mk("<s>Ü</s>",()=>ex("strikeThrough"),"Üstü çizili");sep();
+ mk("H1",()=>ex("formatBlock","h1"),"Büyük başlık");mk("H2",()=>ex("formatBlock","h2"));mk("¶",()=>ex("formatBlock","p"),"Normal paragraf");mk("• Liste",()=>ex("insertUnorderedList"));mk("1. Liste",()=>ex("insertOrderedList"));mk("❝",()=>ex("formatBlock","blockquote"),"Alıntı");sep();
+ mk("⯇",()=>ex("justifyLeft"),"Sola");mk("≡",()=>ex("justifyCenter"),"Ortala");mk("⯈",()=>ex("justifyRight"),"Sağa");sep();
+ const lab=t=>{const s=document.createElement("span");s.textContent=t;s.style.cssText="font:11px Consolas;opacity:.7";tb.appendChild(s)};
+ lab("YAZI");PAL.forEach(c=>{const b=document.createElement("button");b.className="sw";b.style.background=c;b.title="Yazı rengi";b.onmousedown=e=>e.preventDefault();b.onclick=()=>ex("foreColor",c);tb.appendChild(b)});const ci=document.createElement("input");ci.type="color";ci.value="#ffd84a";ci.title="Özel renk";ci.onchange=()=>ex("foreColor",ci.value);ci.onmousedown=()=>{};tb.appendChild(ci);sep();
+ lab("VURGU");["#ffd84a","#ff9a3c","#ff7ac8","#5ee08a","#5aa8ff","#ffffff00"].forEach(c=>{const b=document.createElement("button");b.className="sw";b.style.background=c==="#ffffff00"?"repeating-linear-gradient(45deg,#555,#555 3px,#222 3px,#222 6px)":c;b.title=c==="#ffffff00"?"Vurguyu kaldır":"Vurgu rengi";b.onmousedown=e=>e.preventDefault();b.onclick=()=>ex("hiliteColor",c==="#ffffff00"?"transparent":c);tb.appendChild(b)});sep();
+ lab("ZEMİN");BGS.forEach(c=>{const b=document.createElement("button");b.className="sw";b.style.background=c;b.title="Not zemini";b.onmousedown=e=>e.preventDefault();b.onclick=()=>{setBg(c);touch()};tb.appendChild(b)});sep();
+ const ds=document.createElement("select");ds.title="Süsler";ds.innerHTML='<option value="">✦ Süs ekle</option>'+["✦","★","☆","❀","✿","♥","✔","➤","✎","⚡","☀","☾","♪","◆","❝","❞","✈","☘","✱","❖"].map(c=>`<option>${c}</option>`).join("")+'<option value="#div">— ayraç —</option><option value="#box">▭ çerçeveli kutu</option><option value="#hr">▬ çizgi</option>';ds.onchange=()=>{const v=ds.value;if(v==="#div")insertSpecial("divider");else if(v==="#box")insertSpecial("box");else if(v==="#hr")ex("insertHorizontalRule");else if(v)insertSpecial("sym",v);ds.value=""};tb.appendChild(ds);sep();
+ mk("KAYDET",()=>{dirty=true;saveNow()},"Kaydet");mk("SİL",()=>delCurrent(false),"Notu sil","dl")}
+$("tn").onclick=()=>setTab("notes");$("tf").onclick=()=>setTab("facts");$("nw").onclick=newNote;$("q").addEventListener("input",renderList);
+// ------------------------------------------------------------------ komut kutusu, çıkış
+function shut(){if(dirty)saveNow();setTimeout(()=>send({type:"scene_close"}),dirty?200:0)}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){send({type:"text",text:e.target.value.trim()});$("jl").textContent="› komut uygulanıyor…";e.target.value=""}else if(e.key==="Escape")shut()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){const a=document.activeElement;if(a===pg||a===ttl||a===$("q")){a.blur();return}shut()}});
+setTab("notes");resize_();function resize_(){}
+setTimeout(()=>$("cmd").focus(),400);connect();window.focus();
+</script></body></html>

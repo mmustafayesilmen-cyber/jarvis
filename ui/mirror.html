@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#02060c"><title>Jarvis Ekran</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' blob: data:; media-src data: blob:; connect-src 'self' ws:">
+<style>
+:root{--c:#5fe6ff;--ok:#6dffb0;--bad:#ff8a70;--bg:#02060c;--ln:rgba(95,230,255,.25);--card:rgba(6,22,32,.85)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:#d8f6fb;font:15px "Segoe UI",system-ui,sans-serif}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#top{display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(#0b2230,#06141d);border-bottom:1px solid var(--ln);flex:none}
+#dot{width:10px;height:10px;border-radius:50%;background:#677;flex:none}#dot.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}#dot.wait{background:#ffb454}
+#st{flex:1;min-width:64px;font:600 13px Consolas,monospace;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stat{font:11px Consolas,monospace;color:rgba(216,246,251,.55);white-space:nowrap}
+button{font:600 12px Consolas,monospace;letter-spacing:.06em;padding:8px 11px;color:var(--c);background:rgba(0,14,20,.8);border:1px solid var(--ln);border-radius:10px;cursor:pointer;white-space:nowrap}
+button:active{background:rgba(95,230,255,.18)}button.on{background:rgba(95,230,255,.2);border-color:var(--c);color:#fff}
+#view{flex:none;max-height:60vh;min-height:120px;overflow:auto;background:#000;position:relative;-webkit-overflow-scrolling:touch}
+#scr{display:block;width:100%;height:auto;image-rendering:auto}#view.full #scr{width:auto;max-width:none}
+#msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:rgba(216,246,251,.7);pointer-events:none}
+#msg.hide{display:none}
+#modes{display:flex;gap:6px;padding:6px 10px;flex:none;overflow-x:auto}
+#log{flex:1;min-height:70px;overflow-y:auto;padding:6px 12px;font-size:14px;line-height:1.4;background:rgba(2,10,16,.9);border-top:1px solid var(--ln)}
+#log div{margin:3px 0}#log .u{color:var(--c)}#log .j{color:#e9fbff}#log .t{color:rgba(216,246,251,.5);font-size:12px}
+#chips{display:flex;gap:6px;padding:6px 10px 0;overflow-x:auto;flex:none}
+#bar{display:flex;gap:8px;padding:8px 10px;flex:none}
+#cmd{flex:1;min-width:0;padding:11px 13px;font:16px "Segoe UI",system-ui,sans-serif;color:#fff;background:rgba(0,0,0,.5);border:1px solid var(--ln);border-radius:12px;outline:0}
+#cmd:focus{border-color:var(--c)}
+@media (orientation:landscape){#view{flex:1;max-height:none}#log,#chips{display:none}}
+#pair{position:fixed;inset:0;background:rgba(2,6,12,.97);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+.pc{max-width:360px;text-align:center}.pc p{line-height:1.5;color:rgba(216,246,251,.8)}
+#pcode{display:none;width:100%;margin:12px 0;font:30px Consolas,monospace;letter-spacing:.4em;text-align:center;padding:10px;color:#fff;background:rgba(0,0,0,.5);border:1px solid var(--c);border-radius:12px;outline:0}
+#send{background:linear-gradient(135deg,var(--c),#2a7cff);color:#021016;border:0;padding:0 18px;font-size:14px}
+</style></head><body>
+<div id="pair"><div class="pc"><h2>Telefonu eşleştir</h2><p id="pmsg"></p><input id="pcode" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="off"><button id="pgo">KOD İSTE</button> <button id="pok" style="display:none">ONAYLA</button></div></div>
+<div id="top"><span id="dot"></span><span id="st">BAĞLANIYOR…</span><span id="stat"></span><button id="snd" title="Jarvis'in sesi telefonda çalsın">SES</button><button id="fit" title="Sığdır / gerçek boyut">SIĞDIR</button><button id="fs" title="Tam ekran">⛶</button></div>
+<div id="view"><canvas id="scr" width="16" height="9"></canvas><div id="msg">Bilgisayar ekranı bekleniyor…<br>Kablo takılı ve Jarvis açık olmalı.</div></div>
+<div id="modes"><button data-m="hizli" class="on">HIZLI</button><button data-m="dengeli">DENGELİ</button><button data-m="net">NET</button><span style="flex:1"></span><button id="mic">MİKROFON</button><button id="hud" title="Jarvis arayüzü">ARAYÜZ</button></div>
+<div id="log"></div>
+<div id="chips"></div>
+<div id="bar"><input id="cmd" placeholder="Jarvis'e komut yazın…" enterkeyhint="send" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="send">GÖNDER</button></div>
+<script>
+"use strict";
+const LAN=!!document.querySelector('meta[name="jv-lan"]');            // Wi-Fi sayfası (lan.py) bu işareti ekler; USB sayfasında yoktur
+if(!LAN&&location.hostname==="localhost"){location.replace(location.href.replace("localhost","127.0.0.1"))}
+const $=id=>document.getElementById(id),T=new URLSearchParams(location.search).get("t")||"";
+const cv=$("scr"),cx=cv.getContext("2d",{alpha:false});
+const WSB="ws://"+location.host;let DEV="";try{DEV=localStorage.getItem("jv_dev")||""}catch(e){}
+let pid="",fails=0,opened=false,ctrl=null,scr=null,bmp=null,cur=[-1,-1],mode="hizli",soundOn=false,frames=0,bytes=0,tStat=performance.now(),gap=0,lastF=0;
+function setStatus(txt,cls){$("st").textContent=txt;$("dot").className=cls||""}
+function draw(){if(!bmp)return;if(cv.width!==bmp.width||cv.height!==bmp.height){cv.width=bmp.width;cv.height=bmp.height}
+ cx.drawImage(bmp,0,0);if(cur[0]>=0){const r=Math.max(5,cv.width/180);cx.beginPath();cx.arc(cur[0]*cv.width,cur[1]*cv.height,r,0,6.283);
+ cx.fillStyle="rgba(255,60,60,.85)";cx.fill();cx.lineWidth=Math.max(1.5,r/4);cx.strokeStyle="#fff";cx.stroke()}}
+function connScreen(){scr=new WebSocket(WSB+(LAN?"/mws?d="+encodeURIComponent(DEV):"/mws?t="+encodeURIComponent(T)));scr.binaryType="arraybuffer";
+ scr.onopen=()=>{opened=true;fails=0;scr.send(JSON.stringify({mode}));if(document.hidden)scr.send(JSON.stringify({p:1}))};
+ scr.onmessage=async ev=>{
+  if(typeof ev.data==="string"){const d=JSON.parse(ev.data);if(d.c){cur=d.c;draw()}return}
+  const dv=new DataView(ev.data),fid=dv.getUint32(0,true);cur=[dv.getUint16(4,true)/65535,dv.getUint16(6,true)/65535];
+  try{bmp=await createImageBitmap(new Blob([ev.data.slice(8)],{type:"image/jpeg"}))}catch(e){scr.send(JSON.stringify({a:fid}));return}
+  draw();scr.send(JSON.stringify({a:fid}));$("msg").classList.add("hide");
+  const n=performance.now();gap=gap*.8+(n-lastF)*.2;lastF=n;frames++;bytes+=ev.data.byteLength;
+  if(n-tStat>1000){$("stat").textContent=Math.round(frames*1000/(n-tStat))+" fps";$("stat").title=Math.round(bytes/1024*1000/(n-tStat))+" KB/sn";frames=0;bytes=0;tStat=n}};
+ scr.onclose=ev=>{bmp=null;$("stat").textContent="";$("msg").classList.remove("hide");
+  if(!opened&&++fails>=3){if(LAN){try{localStorage.removeItem("jv_dev")}catch(e){}DEV="";showPair("Bu telefonun eşleşmesi geçersiz ya da silinmiş. Yeniden eşleştirin.");return}$("msg").innerHTML="Bağlantı reddedildi.<br>Sayfayı Jarvis'in telefona açtığı adresle açın (anahtar Jarvis her açıldığında değişir). Komut: <b>ekranı telefona yansıt</b>";setStatus("REDDEDİLDİ","wait");return}
+  opened=false;$("msg").textContent="Yayın kesildi, yeniden bağlanılıyor…";setTimeout(connScreen,1500)}}
+function connCtrl(){ctrl=new WebSocket(WSB+(LAN?"/ws?d="+encodeURIComponent(DEV):"/ws?t="+encodeURIComponent(T)));
+ ctrl.onopen=()=>setStatus("BAĞLANDI","on");
+ ctrl.onclose=()=>{if(LAN&&!DEV)return;if(fails<3)setStatus("BAĞLANTI YOK","wait");setTimeout(connCtrl,fails<3?1500:15000)};
+ ctrl.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.type==="state")setStatus((m.text||m.state||"").toString().toUpperCase().slice(0,40),"on");
+  else if(m.type==="user")addLog(m.text,"u");else if(m.type==="jarvis"){const l=$("log").lastChild;if(m.cont&&l&&l.className==="j")l.textContent+=" "+m.text;else addLog(m.text,"j")}
+  else if(m.type==="tool")addLog("çalıştırılıyor: "+String(m.name||"").replace(/_/g," "),"t");
+  else if(m.type==="mic")$("mic").classList.toggle("on",!m.muted);
+  else if(m.type==="audio"&&soundOn){const a=new Audio("data:"+(m.mime||"audio/mpeg")+";base64,"+m.data);a.play().catch(()=>{})}}}
+function addLog(t,c){if(!t)return;const d=document.createElement("div");d.className=c;d.textContent=t;const L=$("log");L.appendChild(d);while(L.childNodes.length>40)L.removeChild(L.firstChild);L.scrollTop=L.scrollHeight}
+function send(o){if(ctrl&&ctrl.readyState===1){ctrl.send(JSON.stringify(o));return true}return false}
+function say(t){t=(t||"").trim();if(!t)return;if(send({type:"text",text:t}))addLog(t,"u");else addLog("Bağlı değilim, komut gitmedi.","t")}
+$("send").onclick=()=>{say($("cmd").value);$("cmd").value=""};
+$("cmd").addEventListener("keydown",e=>{if(e.key==="Enter"){say($("cmd").value);$("cmd").value=""}});
+for(const [lb,txt] of [["IŞIK AÇ","ışığımı aç"],["IŞIK KAPAT","ışığımı kapat"],["SES −","sesi azalt"],["SES +","sesi artır"],["MOLA","mola ver"],["MASAÜSTÜ","masaüstüne geç"],["KILAVUZ","kılavuzu aç"]]){
+ const b=document.createElement("button");b.textContent=lb;b.onclick=()=>say(txt);$("chips").appendChild(b)}
+document.querySelectorAll("#modes [data-m]").forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll("#modes [data-m]").forEach(x=>x.classList.toggle("on",x===b));if(scr&&scr.readyState===1)scr.send(JSON.stringify({mode}))});
+$("mic").onclick=()=>send({type:"mic_toggle"});
+$("hud").onclick=()=>{location.href="/?t="+encodeURIComponent(T)+"&remote=1"};
+$("snd").onclick=()=>{soundOn=!soundOn;$("snd").classList.toggle("on",soundOn)};
+$("fit").onclick=()=>{const f=$("view").classList.toggle("full");$("fit").textContent=f?"GERÇEK BOYUT":"SIĞDIR"};
+$("fs").onclick=async()=>{try{if(document.fullscreenElement){await document.exitFullscreen()}else{await document.documentElement.requestFullscreen();if(screen.orientation&&screen.orientation.lock)screen.orientation.lock("landscape").catch(()=>{})}}catch(e){}};
+document.addEventListener("visibilitychange",()=>{if(scr&&scr.readyState===1)scr.send(JSON.stringify({p:document.hidden?1:0}));if(!document.hidden)keepAwake()});
+let wl=null;async function keepAwake(){try{if(navigator.wakeLock)wl=await navigator.wakeLock.request("screen")}catch(e){}}
+function showPair(msg){$("pair").style.display="flex";$("pmsg").textContent=msg||"Bu telefon henüz bu bilgisayarla eşleşmedi. KOD İSTE'ye basınca bilgisayarın ekranında 6 haneli bir kod çıkar; onu buraya yazın.";$("pcode").style.display="none";$("pok").style.display="none";$("pgo").style.display="";setStatus("EŞLEŞME GEREKLİ","wait")}
+$("pgo").onclick=async()=>{$("pmsg").textContent="Kod isteniyor…";try{const r=await fetch("/pair/start",{method:"POST"});const d=await r.json();if(!d.ok){$("pmsg").textContent=d.msg||"Olmadı.";return}
+ pid=d.id;$("pcode").style.display="block";$("pok").style.display="";$("pgo").style.display="none";$("pmsg").textContent="Bilgisayarın ekranında (ve bildiriminde) 6 haneli kodu görün, buraya yazın.";$("pcode").focus()}catch(e){$("pmsg").textContent="Bilgisayara ulaşılamadı. Aynı Wi-Fi'de misiniz ve kablosuz bağlantı açık mı?"}};
+$("pok").onclick=async()=>{const code=$("pcode").value.trim();if(code.length<6)return;try{const r=await fetch("/pair/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:pid,code})});const d=await r.json();
+ if(d.ok){try{localStorage.setItem("jv_dev",d.token)}catch(e){}DEV=d.token;$("pair").style.display="none";fails=0;opened=false;connCtrl();connScreen()}
+ else{$("pmsg").textContent=d.msg||"Olmadı.";$("pcode").value="";if(/süresi|bekleyin/.test(d.msg||""))setTimeout(()=>showPair(d.msg),1500)}}catch(e){$("pmsg").textContent="Bağlantı hatası."}};
+if(LAN){$("hud").style.display="none";$("snd").style.display="none"}
+keepAwake();if(LAN&&!DEV)showPair();else{connCtrl();connScreen()}
+</script></body></html>

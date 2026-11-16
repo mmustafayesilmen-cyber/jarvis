@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS KELİME KUTUSU</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#b48cff;--c2:#7a4cf0;--ln:rgba(180,140,255,.25);--hi:rgba(180,140,255,.12);--card:rgba(18,10,36,.7)}
+html,body{background:radial-gradient(ellipse at 50% -10%,#2a1456 0%,#07030f 66%)}
+#stage{display:grid;grid-template-columns:240px 1fr 240px;gap:18px}
+#cw{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:0}
+#card{width:min(620px,100%);min-height:300px;padding:30px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:12px}
+#w{font:700 min(9vh,64px) Bahnschrift,"Segoe UI";color:#fff;text-shadow:0 0 30px rgba(180,140,255,.5)}
+#tr{font:26px "Segoe UI";color:var(--c);min-height:36px}#sy{font:14px Consolas;color:var(--mut)}#ex{font:italic 16px "Segoe UI";color:#d8cfee;min-height:44px}
+#bt{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}#bt button{padding:12px 20px;font-size:13px}
+.ok{border-color:#5ee08a!important;color:#5ee08a!important}.no{border-color:#ff8a70!important;color:#ff8a70!important}
+#mic{height:28px;font:13px Consolas;color:var(--c)}#mic.on:before{content:"● ";animation:bl 1s infinite}@keyframes bl{50%{opacity:.2}}
+.bx{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px}.bx i{display:block;height:10px;background:linear-gradient(90deg,var(--c),var(--c2));border-radius:5px;min-width:3px}
+</style></head><body>
+<div id="stage">
+ <div class="card"><h3>LEITNER KUTULARI</h3><div id="boxes"></div><div class="mut" style="font-size:12px;margin-top:10px;line-height:1.5">Bildikçe kelime bir üst kutuya çıkar ve daha seyrek sorulur; bilmediğiniz kutu 1'e düşer.</div></div>
+ <div id="cw"><div id="prog" class="mut" style="font:13px Consolas;letter-spacing:.2em">KELİME GETİRİLMEDİ</div>
+  <div id="card" class="card"><div id="w">—</div><div id="tr"></div><div id="sy"></div><div id="ex"></div></div>
+  <div id="bt"><button id="get" class="prim">BUGÜNKÜ 10 KELİME</button><button id="sh">GÖSTER</button><button id="ye" class="ok">BİLDİM</button><button id="hd">ZOR</button><button id="nn" class="no">BİLMEDİM</button><button id="sk">GEÇ</button></div>
+  <div id="mic"></div></div>
+ <div class="col" style="display:flex;flex-direction:column;gap:14px"><div class="card"><h3>ARAÇLAR</h3><div style="display:grid;gap:8px"><button id="say">🔊 DİNLE</button><button id="sen">CÜMLE KUR</button><button id="pro">TELAFFUZU KONTROL ET</button></div></div>
+  <div class="card"><h3>KELİME EKLE</h3><input id="nw" placeholder="apple" class="nv" style="width:100%;margin-bottom:6px;text-align:left;font-size:14px"><input id="nt" placeholder="elma" class="nv" style="width:100%;margin-bottom:8px;text-align:left;font-size:14px"><button id="ad" style="width:100%">EKLE</button></div>
+  <div class="card"><h3>NOT</h3><div class="mut" style="font-size:12.5px;line-height:1.5">Telaffuz ve cümle kontrolü Türkçe konuşma tanıma ile yapıldığından yaklaşıktır; kelimeyi net ve yavaş söyleyin.</div></div></div></div>
+<script>
+let S=null;
+Mode.start({kind:"kelime",title:"KELİME KUTUSU",placeholder:"Komut: bugünkü 10 kelimemi getir · göster · bildim · bilmedim · zor · cümle kur: word · telaffuzu kontrol et · kelime ekle: apple = elma",init:d=>render(d.snap),act:d=>{if(d.snap)render(d.snap)}});
+function render(s){S=s;const c=s.cur;$("w").textContent=c?c.w:s.done?"Tebrikler!":"—";$("tr").textContent=c&&c.show?c.tr:"";$("sy").textContent=c&&c.show&&c.syn?"eş anlamlı: "+c.syn:"";$("ex").textContent=c&&c.show&&c.ex?"“"+c.ex+"”":"";
+ $("prog").textContent=s.n?(Math.min(s.i+1,s.n))+" / "+s.n+" · "+(c?(c.lang==="de"?"ALMANCA":"İNGİLİZCE"):"BİTTİ"):"KELİME GETİRİLMEDİ";
+ const mx=Math.max(1,...s.boxes);$("boxes").innerHTML=s.boxes.map((n,i)=>`<div class="bx"><span style="width:62px">${i===0?"Yeni":"Kutu "+i}</span><i style="width:${n/mx*90}px"></i><b>${n}</b></div>`).join("");
+ $("mic").className=s.await?"on":"";$("mic").textContent=s.await==="pron"?"Dinliyorum — kelimeyi söyleyin…":s.await==="sent"?"Dinliyorum — cümlenizi söyleyin…":"";Mode.pill(s.n?"ÇALIŞIYOR":"HAZIR")}
+const say=()=>{if(!S||!S.cur)return;try{const u=new SpeechSynthesisUtterance(S.cur.w.replace(/^(der|die|das)\s+/,""));u.lang=S.cur.lang==="de"?"de-DE":"en-US";u.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}};
+$("get").onclick=()=>Mode.cmd("bugünkü 10 kelimemi getir");$("sh").onclick=()=>{Mode.cmd("göster");setTimeout(say,300)};$("ye").onclick=()=>Mode.cmd("bildim");$("hd").onclick=()=>Mode.cmd("zor");$("nn").onclick=()=>Mode.cmd("bilmedim");$("sk").onclick=()=>Mode.cmd("sonraki");
+$("say").onclick=say;$("sen").onclick=()=>Mode.cmd("cümle kur");$("pro").onclick=()=>Mode.cmd("telaffuzu kontrol et");
+$("ad").onclick=()=>{const a=$("nw").value.trim(),b=$("nt").value.trim();if(a&&b){Mode.cmd("kelime ekle: "+a+" = "+b);$("nw").value=$("nt").value=""}};
+for(const id of["nw","nt"])$(id).addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("ad").click()});
+</script></body></html>

@@ -1,0 +1,107 @@
+/* JARVIS ortak mod/laboratuvar kiti: tüm sahne sayfalarına ortak cila + durum adası, altyazı, komut paleti, gizlilik göstergesi.
+   Sayfanın kendi stilleri bu dosyadan SONRA geldiği için aynı seçicilerde sayfa kazanır; burası yalnızca varsayılan cilayı verir. */
+:root{--kit-c:#3fe8ff;--kit-c2:#2a7cff;--kit-bg:rgba(4,16,24,.78);--kit-ln:rgba(63,232,255,.28);--kit-txt:#dff8fc;--kit-mut:rgba(223,248,252,.58);--kit-ok:#5ee08a;--kit-warn:#ffd84a;--kit-bad:#ff8a70}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:rgba(63,232,255,.35);color:#fff}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(63,232,255,.22);border-radius:6px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(63,232,255,.4);background-clip:padding-box}
+button{border-radius:8px;transition:background .18s,border-color .18s,box-shadow .18s,color .18s,transform .08s}
+button:hover{box-shadow:0 0 14px rgba(63,232,255,.18)}
+button:active{transform:translateY(1px)}
+input,textarea,select{border-radius:8px;transition:border-color .18s,box-shadow .18s}
+input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px rgba(63,232,255,.14)}
+:focus-visible{outline:2px solid rgba(63,232,255,.75);outline-offset:2px}
+body{animation:kitIn .55s cubic-bezier(.2,.7,.2,1)}
+@keyframes kitIn{from{opacity:0;transform:scale(1.01)}to{opacity:1;transform:none}}
+/* hafif sinematik kenar gölgesi ve tarama çizgisi (tıklamayı engellemez) */
+.kit-vig{position:fixed;inset:0;pointer-events:none;z-index:2147482000;background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.32) 100%)}
+.kit-vig::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 3px);mix-blend-mode:overlay}
+
+/* ---------- durum adası (üst orta) */
+#kit-dock{position:fixed;top:9px;left:50%;transform:translateX(-50%);z-index:2147483000;display:flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;
+ background:var(--kit-bg);border:1px solid var(--kit-ln);border-radius:22px;backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);
+ font:600 11.5px "Segoe UI",Bahnschrift,sans-serif;color:var(--kit-txt);letter-spacing:.04em;user-select:none;transition:opacity .3s,top .3s}
+#kit-dock.inline{position:relative;top:auto;left:auto;transform:none;margin:0 6px;padding:2px 4px 2px 9px;box-shadow:none;flex:none}
+#kit-dock.inline .kit-b:not(#kit-priv)>span:not(.kit-k){display:none}#kit-dock.inline .kit-b{padding:0 7px}#kit-dock.inline #kit-st{min-width:62px}
+#kit-dock.hide{opacity:0;top:-50px;pointer-events:none}
+#kit-orb{width:12px;height:12px;border-radius:50%;background:#6f8f9b;box-shadow:0 0 0 3px rgba(111,143,155,.15);flex:none;transition:background .25s,box-shadow .25s}
+#kit-dock[data-s=listening] #kit-orb{background:var(--kit-ok);animation:kitPulse 1.1s infinite}
+#kit-dock[data-s=thinking] #kit-orb{background:var(--kit-warn);animation:kitSpin 1s linear infinite;border-radius:3px}
+#kit-dock[data-s=speaking] #kit-orb{background:var(--kit-c);animation:kitTalk .5s ease-in-out infinite alternate}
+#kit-dock[data-off] #kit-orb{background:var(--kit-bad);animation:none}
+@keyframes kitPulse{0%{box-shadow:0 0 0 0 rgba(94,224,138,.55)}100%{box-shadow:0 0 0 9px rgba(94,224,138,0)}}
+@keyframes kitSpin{to{transform:rotate(360deg)}}
+@keyframes kitTalk{from{transform:scale(.8);box-shadow:0 0 6px var(--kit-c)}to{transform:scale(1.15);box-shadow:0 0 16px var(--kit-c)}}
+#kit-st{min-width:74px;color:var(--kit-mut)}
+.kit-b{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:13px;border:1px solid transparent;background:transparent;color:var(--kit-txt);
+ font:600 11px "Segoe UI",Bahnschrift,sans-serif;letter-spacing:.05em;cursor:pointer;white-space:nowrap}
+.kit-b:hover{background:rgba(63,232,255,.12);border-color:var(--kit-ln);box-shadow:none}
+.kit-b svg{width:14px;height:14px;fill:currentColor}
+.kit-b.muted{color:var(--kit-bad)}.kit-b[hidden]{display:none}
+#kit-priv{color:var(--kit-ok);border-color:rgba(94,224,138,.3);background:rgba(94,224,138,.07);cursor:default}
+#kit-priv.busy{color:var(--kit-warn);border-color:rgba(255,216,74,.4);background:rgba(255,216,74,.08)}
+.kit-sep{width:1px;height:16px;background:var(--kit-ln)}
+.kit-k{font:10px Consolas;opacity:.6;border:1px solid var(--kit-ln);border-radius:4px;padding:0 4px}
+
+/* ---------- altyazı */
+#kit-cap{position:fixed;left:50%;bottom:118px;transform:translate(-50%,12px);z-index:2147482500;max-width:min(980px,86vw);padding:10px 20px;border-radius:14px;
+ background:rgba(2,10,16,.82);border:1px solid var(--kit-ln);backdrop-filter:blur(10px);color:#fff;font:500 17px/1.45 "Segoe UI",sans-serif;text-align:center;
+ box-shadow:0 10px 40px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .35s,transform .35s}
+#kit-cap.on{opacity:1;transform:translate(-50%,0)}
+#kit-cap.slot{position:static;transform:none;max-width:none;width:100%;font-size:15px;text-align:left;box-shadow:none}
+#kit-cap.slot.on{transform:none}
+#kit-cap b{font:700 10.5px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--kit-c);display:block;margin-bottom:3px}
+
+/* ---------- bildirim */
+#kit-toasts{position:fixed;right:18px;top:62px;z-index:2147483100;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.kit-t{background:var(--kit-bg);border:1px solid var(--kit-ln);border-left:3px solid var(--kit-c);border-radius:10px;padding:8px 14px;color:var(--kit-txt);font:13px "Segoe UI",sans-serif;
+ backdrop-filter:blur(10px);box-shadow:0 8px 26px rgba(0,0,0,.4);animation:kitToast .3s ease-out;max-width:360px}
+.kit-t.ok{border-left-color:var(--kit-ok)}
+@keyframes kitToast{from{opacity:0;transform:translateX(20px)}}
+
+/* ---------- komut paleti */
+#kit-pal{position:fixed;inset:0;z-index:2147483200;display:none;align-items:flex-start;justify-content:center;padding-top:9vh;background:rgba(0,6,10,.55);backdrop-filter:blur(6px)}
+#kit-pal.on{display:flex;animation:kitIn .2s ease-out}
+#kit-box{width:min(820px,92vw);max-height:78vh;display:flex;flex-direction:column;background:rgba(4,18,26,.94);border:1px solid var(--kit-ln);border-radius:18px;
+ box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03) inset;overflow:hidden;color:var(--kit-txt);font-family:"Segoe UI",sans-serif}
+#kit-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--kit-ln)}
+#kit-head svg{width:18px;height:18px;fill:var(--kit-c);flex:none}
+#kit-q{flex:1;background:transparent;border:0;outline:0;color:#fff;font:16px "Segoe UI",sans-serif;box-shadow:none!important;user-select:text}
+#kit-q::placeholder{color:rgba(223,248,252,.4)}
+#kit-tt{font:600 10.5px Bahnschrift,Consolas;letter-spacing:.24em;color:var(--kit-c);white-space:nowrap}
+#kit-list{overflow:auto;padding:8px 10px 14px}
+.kit-g{padding:8px 6px}.kit-g h4{margin:4px 4px 2px;font:600 12px Bahnschrift,Consolas;letter-spacing:.14em;color:var(--kit-c)}
+.kit-g p{margin:0 4px 8px;font-size:12.5px;color:var(--kit-mut);line-height:1.45}
+.kit-cmds{display:flex;flex-wrap:wrap;gap:6px}
+.kit-cmd{padding:6px 11px;border-radius:9px;border:1px solid rgba(63,232,255,.18);background:rgba(63,232,255,.05);color:var(--kit-txt);font:13px "Segoe UI",sans-serif;cursor:pointer;letter-spacing:0}
+.kit-cmd:hover,.kit-cmd.sel{background:rgba(63,232,255,.18);border-color:var(--kit-c);color:#fff}
+#kit-foot{display:flex;gap:14px;align-items:center;padding:9px 16px;border-top:1px solid var(--kit-ln);font:11.5px "Segoe UI",sans-serif;color:var(--kit-mut)}
+#kit-foot label{display:inline-flex;gap:6px;align-items:center;cursor:pointer;margin-left:auto}
+.kit-empty{padding:26px;text-align:center;color:var(--kit-mut)}
+.kit-forgot{transition:opacity .5s;opacity:.55}
+
+/* ---------- Ortak cila (kit sayfaları): yazı kutuları, düğme odağı, kenar karartma biraz daha belirgin */
+input::placeholder,textarea::placeholder{color:rgba(223,248,252,.42)}
+button:hover{box-shadow:0 0 16px rgba(63,232,255,.24)}
+.kit-vig{background:radial-gradient(ellipse at 50% 45%,transparent 56%,rgba(0,0,0,.42) 100%)}
+#kit-dock{background:linear-gradient(180deg,rgba(255,255,255,.05),transparent),var(--kit-bg)}
+.kit-t{background:linear-gradient(180deg,rgba(255,255,255,.05),transparent),var(--kit-bg)}
+@media (prefers-reduced-motion:reduce){body{animation:none}}
+
+/* ---------- Eski tarz (kendi stilini taşıyan) sayfalar için ortak görünüm. scene_kit.js sayfa yüklenince <html>'e sınıf koyar:
+   kit-acc  = sayfada --c vurgu rengi var  -> üst çubuk çizgisi, başlık noktası/ışıması
+   kit-flat = gövde arka planı düz ve koyu -> vurgu renginde ızgara + üstten/alttan ışıma (arka plan katmanı: içeriğin üstüne çıkmaz)
+   :where() özgüllüğü sıfırlar, sayfanın kendi kuralı her zaman kazanır. Kur'an gibi açık/kâğıt temalı sayfalar etkilenmez. */
+.kit-flat body{background-image:radial-gradient(ellipse 70% 45% at 50% -8%,color-mix(in srgb,var(--c) 17%,transparent),transparent 70%),
+ radial-gradient(ellipse 60% 50% at 50% 112%,color-mix(in srgb,var(--c) 8%,transparent),transparent 70%),
+ linear-gradient(color-mix(in srgb,var(--c) 4.5%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--c) 4.5%,transparent) 1px,transparent 1px);
+ background-size:auto,auto,56px 56px,56px 56px;background-attachment:fixed}
+:where(.kit-acc) #top{position:relative}
+:where(.kit-acc) #top::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:1px;pointer-events:none;
+ background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c) 60%,transparent) 16%,color-mix(in srgb,var(--c) 14%,transparent) 62%,transparent)}
+:where(.kit-acc) #title{text-shadow:0 0 16px color-mix(in srgb,var(--c) 45%,transparent)}
+:where(.kit-acc) #top>#title:first-child::before{content:"";display:inline-block;width:10px;height:10px;margin-right:12px;border-radius:50%;vertical-align:baseline;
+ background:var(--c);box-shadow:0 0 12px var(--c),0 0 26px var(--c);animation:kitDot 2.8s ease-in-out infinite}
+@keyframes kitDot{50%{opacity:.6;box-shadow:0 0 6px var(--c)}}
+@media (prefers-reduced-motion:reduce){:where(.kit-acc) #top>#title:first-child::before{animation:none}}

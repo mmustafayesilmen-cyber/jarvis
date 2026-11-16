@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS SPOR</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#5ee08a;--c2:#1fb6a0;--ln:rgba(94,224,138,.24);--hi:rgba(94,224,138,.12);--card:rgba(6,26,18,.66)}
+html,body{background:radial-gradient(ellipse 60% 55% at 50% 45%,rgba(94,224,138,.08),transparent 70%),radial-gradient(ellipse at 50% -10%,#08301f 0%,#020c07 64%)}
+#stage{display:flex;flex-direction:column;gap:14px}
+.tabs{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.tabs .sp{flex:1}
+.tabs button.t{padding:12px 24px;font-size:14px}
+#list{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px;align-content:start;padding:4px}
+.lg h3{display:flex;justify-content:space-between}.lg h3 em{font-style:normal;color:var(--mut);letter-spacing:.05em}
+.m{display:grid;grid-template-columns:54px 1fr 70px 1fr;align-items:center;gap:8px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06);font-size:15px}
+.m .h{text-align:right}.m .sc{text-align:center;font:700 19px Bahnschrift,Consolas;color:#fff;letter-spacing:.06em}.m .tm{font:12px Consolas;color:var(--mut)}
+.b{font:600 10px Consolas;letter-spacing:.18em;padding:2px 7px;border-radius:9px;border:1px solid var(--ln);color:var(--mut)}
+.b.l{color:#ff5d5d;border-color:#ff5d5d;animation:bl 1.4s infinite}.b.f{color:var(--c);border-color:var(--c)}@keyframes bl{50%{opacity:.35}}
+#empty{padding:60px 20px;text-align:center;color:var(--mut);font-size:17px}
+</style></head><body>
+<div id="stage">
+ <div class="tabs" id="sports"></div>
+ <div class="tabs" id="days"></div>
+ <div id="list"></div>
+</div>
+<script>
+let D=null;const SP=[["futbol","FUTBOL"],["basketbol","BASKETBOL"],["voleybol","VOLEYBOL"]],DAYS=[[-1,"DÜN"],[0,"BUGÜN"],[1,"YARIN"]];
+Mode.start({kind:"spor",title:"SPOR / MAÇ",placeholder:"Komut: futbol · basketbol · voleybol · yarınki maçlar · dünün sonuçları · canlı maçlar · Süper Lig · Fenerbahçe maçı · yenile",init:d=>{D=d;draw();if(d.loading)Mode.cmd("yenile")},act:d=>{if(d.data){D=d.data;draw()}}});
+setInterval(()=>{if(D&&D.day===0)Mode.send({type:"text",text:"yenile"})},120000);
+function draw(){if(!D)return;
+ $("sports").innerHTML=SP.map(s=>'<button class="t '+(s[0]===D.sport?"cur":"")+'" data-k="'+s[0]+'">'+s[1]+'</button>').join("")+'<span class="sp"></span><button id="rf">YENİLE</button>';
+ $("days").innerHTML=DAYS.map(s=>'<button class="'+(s[0]===D.day?"cur":"")+'" data-d="'+s[1]+'">'+s[1]+'</button>').join("")+'<button id="cn">CANLI</button><button id="fv" class="'+(D.onlyfav?"cur":"")+'">★ FAVORİLER</button>'+(D.q?'<button id="cl">FİLTRE: '+Mode.esc(D.q.toUpperCase())+' ✕</button>':"")+'<span class="mut" style="margin-left:10px">'+D.n+' maç'+(D.canli?' · '+D.canli+' canlı':"")+'</span>';
+ $("sports").querySelectorAll("button.t").forEach(b=>b.onclick=()=>Mode.cmd(b.dataset.k));$("rf").onclick=()=>Mode.cmd("yenile");
+ $("days").querySelectorAll("button[data-d]").forEach(b=>b.onclick=()=>Mode.cmd(b.dataset.d==="DÜN"?"dünün maçları":b.dataset.d==="YARIN"?"yarınki maçlar":"bugünkü maçlar"));
+ $("cn").onclick=()=>Mode.cmd("canlı maçlar");$("fv").onclick=()=>Mode.cmd(D.onlyfav?"temizle":"favori maçlar");if($("cl"))$("cl").onclick=()=>Mode.cmd("temizle");
+ if(D.loading){$("list").innerHTML='<div id="empty">Maçlar yükleniyor…</div>';return}
+ if(D.err||!D.leagues.length){$("list").innerHTML='<div id="empty">'+Mode.esc(D.err||"Bu seçim için maç bulunamadı.")+'</div>';return}
+ $("list").innerHTML=D.leagues.map(l=>'<div class="card lg"><h3>'+Mode.esc(l.name.toUpperCase())+'<em>'+l.matches.length+' maç</em></h3>'+l.matches.map(m=>{
+  const sc=m.es!=null&&m.ds!=null&&m.es!==""&&m.ds!=="";
+  return '<div class="m"><span class="tm">'+(m.fav?'<b style="color:#ffd84a">★</b> ':"")+m.saat+(m.dk?'<br><span style="color:#ff5d5d">'+Mode.esc(m.dk)+'</span>':"")+'</span><span class="h">'+Mode.esc(m.ev)+'</span><span class="sc">'+(sc?m.es+" - "+m.ds:"vs")+'</span><span>'+Mode.esc(m.dep)+(m.durum==="canlı"?' <span class="b l">CANLI</span>':m.durum==="bitti"?' <span class="b f">BİTTİ</span>':m.durum==="ertelendi"?' <span class="b">ERTELENDİ</span>':"")+'</span></div>'}).join("")+'</div>').join("")}
+</script></body></html>

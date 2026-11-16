@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>Jarvis Cep</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#04141c"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--c:#3fe8ff;--c2:#1fb6d0;--bg:#04141c;--card:rgba(10,34,46,.75);--ln:rgba(63,232,255,.25);--tx:#e2f7fb;--mut:rgba(226,247,251,.6);--ok:#5ee08a;--bad:#ff8a70;--warn:#ffd84a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% -10%,#0a3a4c 0%,var(--bg) 62%);color:var(--tx);font:16px system-ui,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:900px;margin:0 auto}
+header{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 14px 8px}
+header h1{flex:1;margin:0;font:600 15px Bahnschrift,system-ui;letter-spacing:.3em;color:#fff;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:42px;height:42px;border-radius:12px;border:1px solid var(--ln);background:var(--card);color:var(--c);font-size:19px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.ib.on{background:var(--c);color:#02141a}.ib.rec{background:var(--bad);color:#fff;animation:pl 1s infinite}@keyframes pl{50%{opacity:.55}}
+#view{flex:1;min-height:0;overflow:auto;padding:6px 14px 14px}
+#bar{padding:8px 14px calc(env(safe-area-inset-bottom) + 10px);display:flex;flex-direction:column;gap:6px}
+#cmdw{display:flex;gap:8px}#cmd{flex:1;padding:12px 14px;border-radius:12px;border:1px solid var(--ln);background:rgba(0,10,16,.8);color:#fff;font:16px system-ui;outline:0;min-width:0}#cmd:focus{border-color:var(--c)}
+#log{font:13px ui-monospace,Consolas,monospace;color:#cfeeff;opacity:.85;min-height:18px;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button,.btn{font:600 13px system-ui;letter-spacing:.06em;padding:11px 14px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,14,20,.6);border-radius:12px}
+button:active{transform:scale(.97)}button.prim{background:linear-gradient(135deg,var(--c),var(--c2));color:#02141a;border:0}button.cur{background:rgba(63,232,255,.15);border-color:var(--c);color:#fff}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:18px;padding:14px 16px;margin:10px 0}
+.card h3{margin:0 0 10px;font:600 11px system-ui;letter-spacing:.28em;color:var(--c);text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:8px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;border-radius:18px;border:1px solid var(--ln);background:var(--card);color:var(--tx);font:600 13px system-ui;letter-spacing:.04em}
+.tile i{font-style:normal;font-size:30px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row.sp{justify-content:space-between}
+input,select,textarea{padding:11px 12px;border-radius:11px;border:1px solid var(--ln);background:rgba(0,0,0,.4);color:#fff;font:16px system-ui;outline:0;min-width:0}input:focus,textarea:focus{border-color:var(--c)}
+input[type=range]{padding:0;accent-color:var(--c)}
+.mut{color:var(--mut)}.big{font:700 38px Bahnschrift,system-ui;color:#fff}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.it{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:15px}.it a{color:var(--bad);padding:4px 8px;cursor:pointer}
+.bar{height:12px;background:rgba(255,255,255,.09);border-radius:6px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--c2));transition:width .5s}
+#hint{display:none;margin:8px 0}
+</style></head><body>
+<div id="app"><header><button class="ib" id="back" style="display:none" aria-label="Ana ekran">‹</button><h1 id="title">Jarvis Cep</h1><button class="ib" id="spk" title="Sesli yanıt" aria-label="Sesli yanıt">🔊</button><button class="ib" id="mic" title="Sesle komut" aria-label="Mikrofon">🎤</button></header>
+<div id="view"></div>
+<div id="bar"><div id="log"></div><div id="cmdw"><input id="cmd" placeholder="Komut yazın ya da 🎤'a basıp söyleyin" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send"><button class="prim" id="go">GÖNDER</button></div></div></div>
+<script src="core.js"></script><script src="modes1.js"></script><script src="modes2.js"></script><script src="modes3.js"></script><script src="modes4.js"></script><script src="modes5.js"></script><script src="modes6.js"></script><script src="modes7.js"></script><script src="modes8.js"></script><script src="modes9.js"></script><script src="modes10.js"></script><script src="modes11.js"></script><script src="modes12.js"></script>
+<script>start()</script></body></html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS MORS ATÖLYESİ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#7dff9b;--c2:#27b84a;--ln:rgba(125,255,155,.25);--hi:rgba(125,255,155,.12);--card:rgba(4,26,10,.7)}
+html,body{background:radial-gradient(ellipse at 50% 30%,#0d3a1a 0%,#020a04 70%)}
+#stage{display:grid;grid-template-columns:1fr 360px;gap:18px}
+#mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:0}
+#lamp{width:min(34vh,260px);height:min(34vh,260px);border-radius:50%;background:#0a1a0e;border:2px solid var(--ln);transition:box-shadow .03s,background .03s}
+#lamp.on{background:radial-gradient(circle at 40% 35%,#eaffee,var(--c) 50%,var(--c2));box-shadow:0 0 80px var(--c),0 0 200px color-mix(in srgb,var(--c) 50%,transparent)}
+#code{font:600 34px Consolas;letter-spacing:.2em;color:#fff;min-height:44px;text-align:center;word-break:break-all;max-width:90%}#txt{font:20px "Segoe UI";color:var(--c);min-height:28px}
+#tb{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font:12px Consolas}#tb div{padding:6px 4px;border:1px solid var(--ln);border-radius:8px;text-align:center;cursor:pointer}#tb b{color:var(--c);margin-right:6px;text-transform:uppercase}
+input.t{padding:9px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:9px;color:#fff;font:14px "Segoe UI";outline:0;user-select:text;width:100%}
+</style></head><body>
+<div id="stage"><div id="mid"><div id="lamp"></div><div id="txt"></div><div id="code"></div><div style="display:flex;gap:8px;width:min(520px,90%)"><input class="t" id="inp" placeholder="Mors'a çevrilecek metin"><button id="pl" class="prim">ÇAL</button></div>
+ <div style="display:flex;gap:8px;align-items:center"><button id="q">HARF SOR</button><span id="sc" class="mut"></span><span class="mut" style="margin-left:10px">HIZ</span><input type="range" id="wp" min="5" max="30" value="12" style="accent-color:var(--c)"><span id="wv" class="mut"></span></div></div>
+ <div class="card" style="overflow:auto"><h3>ALFABE <small>tıkla: çal</small></h3><div id="tb"></div></div></div>
+<script>
+let wpm=12,ac=null,gen=0,TB={};
+function beep(on,t0,d){ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=640;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.35,t0+.005);g.gain.setValueAtTime(.35,t0+d-.008);g.gain.linearRampToValueAtTime(0,t0+d);o.start(t0);o.stop(t0+d+.01)}
+function playCode(code,after){const my=++gen,u=1.2/wpm;ac=ac||new (window.AudioContext||window.webkitAudioContext)();let t=ac.currentTime+.1;const ev=[];
+ for(const ch of code){if(ch==="."){ev.push([t,u]);t+=2*u}else if(ch==="-"){ev.push([t,3*u]);t+=4*u}else if(ch===" "){t+=2*u}else if(ch==="/"){t+=4*u}}
+ ev.forEach(([s,d])=>{beep(1,s,d);setTimeout(()=>{if(my===gen)$("lamp").classList.add("on")},(s-ac.currentTime)*1000);setTimeout(()=>$("lamp").classList.remove("on"),(s+d-ac.currentTime)*1000)});
+ if(after)setTimeout(()=>{if(my===gen)after()},(t-ac.currentTime)*1000+100)}
+function sc(s){$("sc").textContent=s&&(s[0]+s[1])?"✓ "+s[0]+"  ✗ "+s[1]:""}
+function setW(v){wpm=v;$("wp").value=v;$("wv").textContent=v+" k/dk"}
+Mode.start({kind:"mors",title:"MORS ATÖLYESİ",placeholder:"Komut: mors yaz: merhaba · mors çöz: ... --- ... · hız 15 · harf sor · cevap k · alfabeyi göster",
+ init:d=>{TB=d.table;setW(d.wpm);sc(d.score);$("tb").innerHTML=Object.entries(TB).map(([k,v])=>`<div data-k="${k}"><b>${k}</b>${v}</div>`).join("");$("tb").querySelectorAll("div").forEach(e=>e.onclick=()=>{$("txt").textContent=e.dataset.k.toUpperCase();$("code").textContent=TB[e.dataset.k];playCode(TB[e.dataset.k])})},
+ act:d=>{if(d.wpm)setW(d.wpm);if(d.score)sc(d.score);if(d.decoded!==undefined){$("txt").textContent=d.decoded;$("code").textContent=""}
+  if(d.code&&d.play){$("txt").textContent=d.text||"";$("code").textContent=d.code;playCode(d.code)}
+  if(d.quiz){$("txt").textContent="Hangi harf?";$("code").textContent="";playCode(d.quiz.code)}
+  if(d.reveal){$("txt").textContent=(d.ok?"✓ ":"✗ ")+d.reveal.toUpperCase();$("code").textContent=TB[d.reveal]||""}}});
+$("pl").onclick=()=>{const v=$("inp").value.trim();if(v)Mode.cmd("mors yaz: "+v)};$("q").onclick=()=>Mode.cmd("harf sor");$("wp").oninput=()=>{setW(+$("wp").value);Mode.send({type:"text",text:"hız "+wpm})};
+$("inp").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("pl").click()});
+</script></body></html>

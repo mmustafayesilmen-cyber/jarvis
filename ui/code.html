@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS KOD</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src ws://127.0.0.1:8765">
+<style>
+:root{--c:#5fe6ff;--bg:#01050b;--ok:#6dffb0;--warn:#ffb454;--err:#ff7a7a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:radial-gradient(ellipse at center,#04182a 0%,#020b16 60%,#000204 100%);color:var(--c);
+ font-family:"Segoe UI",Bahnschrift,Consolas,monospace;display:flex;flex-direction:column}
+#top{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(95,230,255,.2)}
+#top b{font:600 15px Bahnschrift,"Segoe UI";letter-spacing:.35em;text-shadow:0 0 10px var(--c);white-space:nowrap}
+#path{flex:1;font:12px Consolas;opacity:.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:60px}
+#status{font:12px Consolas;opacity:.8;min-width:110px;text-align:right}
+#pname{width:190px;padding:7px 10px;background:rgba(2,12,20,.8);border:1px solid rgba(95,230,255,.3);color:var(--c);font:13px Consolas;outline:0}
+#pname:focus{border-color:var(--c)}
+button{font:14px Consolas;letter-spacing:.25em;cursor:pointer;padding:8px 20px;white-space:nowrap}
+#peek{border:1px solid rgba(95,230,255,.4);background:rgba(4,24,38,.6);color:var(--c)}
+#end{border:1px solid rgba(95,230,255,.6);background:rgba(4,24,38,.8);color:var(--c)}
+#end:hover{background:rgba(10,50,75,.9)}
+#cancel{border:1px solid rgba(255,180,84,.6);background:rgba(40,24,4,.7);color:var(--warn)}
+#cancel:hover{background:rgba(70,40,6,.9)}
+#run{border:1px solid rgba(109,255,176,.6);background:rgba(4,30,20,.8);color:var(--ok)}
+#run:hover{background:rgba(8,60,40,.9)}
+#stop{display:none;border:1px solid rgba(255,122,122,.6);background:rgba(40,8,8,.8);color:var(--err)}
+#wrap{flex:1;display:flex;min-height:0}
+#nums{padding:12px 8px 12px 14px;text-align:right;font:15px/1.5 Consolas,monospace;color:rgba(95,230,255,.35);overflow:hidden;user-select:none;white-space:pre}
+#ed{flex:1;resize:none;border:0;outline:0;background:transparent;color:#d7f6ff;font:15px/1.5 Consolas,"Cascadia Mono",monospace;padding:12px 14px 12px 6px;
+ tab-size:4;white-space:pre;overflow:auto;caret-color:var(--c)}
+#outbox{display:none;height:30vh;border-top:1px solid rgba(95,230,255,.3);background:rgba(0,6,12,.85);flex-direction:column}
+#outhead{display:flex;justify-content:space-between;padding:4px 16px;font:12px Consolas;letter-spacing:.2em;opacity:.8}
+#out{flex:1;margin:0;padding:6px 16px 10px;overflow:auto;font:14px/1.45 Consolas,monospace;color:#cdeff8;white-space:pre-wrap;user-select:text}
+#out .e{color:var(--err)}
+#hint{padding:6px 16px;font:12px Consolas;opacity:.5;border-top:1px solid rgba(95,230,255,.15)}
+</style></head><body>
+<div id="top"><b>KOD YAZMA</b><span id="path"></span><span id="status">hazır</span>
+<input id="pname" placeholder="proje adı (isteğe bağlı)" maxlength="40" spellcheck="false">
+<button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="run">ÇALIŞTIR</button><button id="stop">DURDUR</button><button id="cancel">İPTAL</button><button id="end">BİTİR</button></div>
+<div id="wrap"><div id="nums">1</div><textarea id="ed" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea></div>
+<div id="outbox"><div id="outhead"><span id="outtitle">ÇIKTI</span><span id="outclose" style="cursor:pointer">GİZLE ✕</span></div><pre id="out"></pre></div>
+<div id="hint">Otomatik kaydedilir ve VS Code'daki main.py'ye yansır · Tab = 4 boşluk · Ctrl+S = kaydet · F5 = çalıştır · BİTİR = son hali yaz (proje adı yazdıysanız klasör o adı alır) · İPTAL = kapat</div>
+<script>
+"use strict";
+const P=new URLSearchParams(location.search), T=P.get("t");
+const $=id=>document.getElementById(id);
+const ed=$("ed"), nums=$("nums"), st=$("status"), out=$("out"), outbox=$("outbox");
+$("path").textContent=P.get("dir")||"";
+let ws, timer=null, closed=false, running=false;
+function conn(){
+  ws=new WebSocket(`ws://127.0.0.1:8765/ws?t=${T}`);
+  ws.onopen=()=>{st.textContent="bağlandı"};
+  ws.onclose=()=>{if(!closed){st.textContent="bağlantı yok…";setTimeout(conn,1500)}};
+  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+    if(m.type==="code_out"){addOut(m.text,m.err)}
+    else if(m.type==="code_done"){setRunning(false);addOut("\n— bitti"+(m.timeout?" (süre doldu, durduruldu)":m.code===0?" ✓":" (çıkış kodu "+m.code+")")+" —\n",m.code!==0);}
+  };
+}conn();
+function addOut(t,err){const s=document.createElement("span");if(err)s.className="e";s.textContent=t;out.appendChild(s);out.scrollTop=out.scrollHeight}
+function setRunning(on){running=on;$("run").style.display=on?"none":"";$("stop").style.display=on?"":"none";$("outtitle").textContent=on?"ÇIKTI · çalışıyor…":"ÇIKTI"}
+function lines(){const n=ed.value.split("\n").length;let s="";for(let i=1;i<=n;i++)s+=i+"\n";nums.textContent=s.trimEnd();nums.scrollTop=ed.scrollTop}
+function send(type,extra){if(ws&&ws.readyState===1){ws.send(JSON.stringify(Object.assign({type,text:ed.value},extra||{})));return true}return false}
+function save(){clearTimeout(timer);st.textContent=send("code_save")?"kaydedildi ✓":"bağlantı yok…"}
+ed.addEventListener("input",()=>{lines();st.textContent="yazılıyor…";clearTimeout(timer);timer=setTimeout(save,500)});
+ed.addEventListener("scroll",()=>{nums.scrollTop=ed.scrollTop});
+ed.addEventListener("keydown",e=>{
+ if(e.key==="Tab"){e.preventDefault();ed.setRangeText("    ",ed.selectionStart,ed.selectionEnd,"end");ed.dispatchEvent(new Event("input"))}
+ else if(e.key==="Enter"){ // önceki satırın girintisini koru; ":" ile bittiyse bir kademe artır
+  e.preventDefault();const s=ed.selectionStart,before=ed.value.slice(0,s),ln=before.slice(before.lastIndexOf("\n")+1);
+  let ind=ln.match(/^\s*/)[0];if(/:\s*$/.test(ln))ind+="    ";ed.setRangeText("\n"+ind,s,ed.selectionEnd,"end");ed.dispatchEvent(new Event("input"))}
+ else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault();save()}
+ else if(e.key==="F5"){e.preventDefault();run()}
+});
+function run(){
+  if(running||!ed.value.trim())return;
+  clearTimeout(timer);out.textContent="";outbox.style.display="flex";
+  if(send("code_run")){setRunning(true);st.textContent="çalışıyor…"}else st.textContent="bağlantı yok…";
+}
+$("run").addEventListener("click",run);
+$("stop").addEventListener("click",()=>send("code_stop"));
+$("peek").addEventListener("click",()=>send("mode_peek"));
+$("outclose").addEventListener("click",()=>{outbox.style.display="none"});
+$("end").addEventListener("click",()=>{
+ clearTimeout(timer);st.textContent="bitiriliyor…";closed=true;
+ if(!send("code_finish",{name:$("pname").value})){closed=false;st.textContent="bağlantı yok, tekrar deneyin"}
+});
+$("cancel").addEventListener("click",()=>{
+ if(ed.value.trim()&&!confirm("Kod yazma ekranı kapatılsın mı? Şimdiye kadar yazdıklarınız proje klasöründe kalır."))return;
+ clearTimeout(timer);if(ed.value.trim())send("code_save");closed=true;if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:"code_cancel"}));
+});
+lines();ed.focus();
+</script></body></html>

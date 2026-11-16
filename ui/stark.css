@@ -1,0 +1,23 @@
+/* Stark modları (Zırh, Görev Masası, Brifing, Laboratuvar, Dünya, Odak Odası, Güvenlik, Köprü) ortak parçaları.
+   Renkler modes.css'in --c/--ln/--card değişkenlerinden gelir; her sayfa kendi vurgu rengini :root'ta verir. */
+:root{--gold:#ffc857;--red:#ff6b57;--steel:#9fb3bf}
+#stage{display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.sc{flex:1;min-height:0;overflow:auto;display:grid;gap:14px;align-content:start;padding:2px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.hd{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}.hd h1{margin:0;font:300 34px Bahnschrift,"Segoe UI";color:#fff;letter-spacing:.04em}.hd .sub{color:var(--mut);font-size:14px}
+.sp{flex:1}
+.row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;align-items:baseline}
+.row b{font:600 13px Consolas;color:var(--c);white-space:nowrap}
+.src{margin-top:10px;font:11px Consolas;color:var(--mut);letter-spacing:.02em}
+.empty{padding:26px 10px;text-align:center;color:var(--mut);font-size:14px;line-height:1.6}
+.err{color:var(--bad);font-size:13.5px;line-height:1.5}
+.ld{color:var(--mut);font-size:13px;animation:bl 1.2s infinite}@keyframes bl{50%{opacity:.35}}
+.chip{display:inline-block;font:600 10.5px Consolas;letter-spacing:.14em;padding:3px 9px;border-radius:12px;border:1px solid var(--ln);color:var(--mut);vertical-align:middle}
+.chip.ok{color:var(--ok);border-color:var(--ok)}.chip.warn{color:var(--warn);border-color:var(--warn)}.chip.bad{color:var(--bad);border-color:var(--bad)}.chip.unk{color:var(--steel);border-color:var(--steel)}.chip.info{color:var(--c);border-color:var(--c)}
+input.tx,select.tx,textarea.tx{font:14px "Segoe UI",sans-serif;color:#fff;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:9px;padding:8px 10px;outline:0;user-select:text;min-width:0;max-width:100%}
+input.tx:focus,select.tx:focus,textarea.tx:focus{border-color:var(--c)}textarea.tx{width:100%;min-height:90px;resize:vertical;font-family:Consolas,monospace}
+select.tx option{background:#06161f}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+button.sm{padding:5px 10px;font-size:11px}
+.tc{color:var(--mut)}
+@media (max-width:760px){#top{padding:0 12px;gap:8px}#title{letter-spacing:.2em;font-size:13px}#peek{display:none}#stage{left:12px;right:12px}#bar{left:12px;right:12px}.hd h1{font-size:26px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS HIZLI OKUMA</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#7dffb0;--c2:#2fc47a;--ln:rgba(125,255,176,.22);--hi:rgba(125,255,176,.12)}
+html,body{background:radial-gradient(ellipse at 50% -10%,#0d3a26 0%,#020a06 66%)}
+#stage{display:grid;grid-template-columns:1fr 300px;gap:18px}
+#main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;min-height:0}
+#word{height:150px;display:flex;align-items:center;justify-content:center;font:500 min(11vh,88px) "Segoe UI",Bahnschrift;color:#fff;letter-spacing:.02em;white-space:pre}
+#word .p{color:#ff6b5e}#word.idle{color:var(--mut);font-size:24px}
+#fx{width:min(560px,70%);height:2px;background:linear-gradient(90deg,transparent,var(--c),transparent);position:relative}#fx:before,#fx:after{content:"";position:absolute;left:50%;width:2px;height:16px;background:var(--c);transform:translateX(-50%)}#fx:before{top:-18px}#fx:after{top:4px}
+#txt{display:none;max-width:min(860px,90%);max-height:42vh;overflow:auto;font:20px/1.8 "Segoe UI";color:#cfe;user-select:text;padding:14px 18px;background:var(--card);border:1px solid var(--ln);border-radius:14px}
+#txt span.on{background:var(--c);color:#021;border-radius:4px;padding:0 2px}
+body.follow #word,body.follow #fx{display:none}body.follow #txt{display:block}
+#pr{width:min(560px,70%);height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}#pr i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--c),var(--c2))}
+#ctl{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center}
+#kv{display:none;gap:8px;align-items:center}#kv.show{display:flex}
+.col{display:flex;flex-direction:column;gap:14px;overflow:auto}
+#chart{width:100%;height:110px}
+</style></head><body>
+<div id="stage"><div id="main"><div id="word" class="idle">Başlamak için BAŞLAT'a basın</div><div id="fx"></div><div id="txt"></div><div id="pr"><i id="pi"></i></div>
+ <div id="ctl"><button id="b_wm">−25</button><span><b id="wpm" style="font-size:26px;color:#fff">250</b> <span class="mut">kelime/dk</span></span><button id="b_wp">+25</button>
+  <button id="go" class="prim">▶ BAŞLAT (TR)</button><button id="goe">BAŞLAT (EN)</button><button id="pz">⏸ DURAKLAT</button><button id="md">METİN TAKİBİ</button></div>
+ <div id="kv"><span class="mut">Ne kadar anladınız?</span><button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="4">4</button><button data-k="5">5</button></div></div>
+ <div class="col"><div class="card"><h3>HIZ GEÇMİŞİ</h3><svg id="chart" viewBox="0 0 280 110"></svg><div id="avg" class="mut" style="font-size:13px;margin-top:6px"></div></div>
+  <div class="card"><h3>NASIL?</h3><div class="mut" style="font-size:13px;line-height:1.55">Gözünüzü kırmızı harfe odaklayın; kelimeler tek tek akar. Sesle: "okuma hızını 300 kelimeye çıkar", "paragraf antrenmanını başlat", "İngilizce paragraf", "metni durdur". Bitince anlama puanınızı verin.</div></div></div></div>
+<script>
+let words=[],idx=0,tm=null,paused=false,wpm=250,running=false;
+Mode.start({kind:"okuma",title:"HIZLI OKUMA",placeholder:"Komut: paragraf antrenmanını başlat · okuma hızını 300 kelimeye çıkar · İngilizce paragraf · metni durdur · devam · kavrama 4",init:d=>stat(d.snap),act:d=>{if(d.snap)stat(d.snap);if(d.wpm){wpm=d.wpm;$("wpm").textContent=wpm}
+ if(d.start)begin(d.start);if(d.pause===true)pause(true);if(d.pause===false)pause(false)}});
+function stat(s){wpm=s.wpm;$("wpm").textContent=wpm;const h=s.hist||[],sv=$("chart");sv.innerHTML="";
+ if(h.length){const mx=Math.max(...h.map(x=>x.wpm),300),w=280/Math.max(h.length,6);h.forEach((x,i)=>{const bh=x.wpm/mx*90;sv.insertAdjacentHTML("beforeend",`<rect x="${i*w+3}" y="${100-bh}" width="${w-6}" height="${bh}" rx="3" fill="#7dffb0" opacity="${x.kav?.35+x.kav/160:.6}"/><text x="${i*w+w/2}" y="${96-bh}" font-size="9" fill="#cfe" text-anchor="middle">${x.wpm}</text>`)});
+  $("avg").textContent="Ortalama: "+Math.round(h.reduce((a,x)=>a+x.wpm,0)/h.length)+" kelime/dk"}else $("avg").textContent="Henüz kayıtlı okuma yok."}
+function orp(w){const n=w.replace(/[^\p{L}\p{N}]/gu,"").length,i=n<2?0:n<6?1:n<10?2:3;return `${" ".repeat(Math.max(0,4-i)*0)}${w.slice(0,i)}<span class="p">${w[i]||""}</span>${w.slice(i+1)}`}
+function begin(txt){clearTimeout(tm);words=txt.split(/\s+/).filter(Boolean);idx=0;paused=false;running=true;$("kv").classList.remove("show");$("pz").textContent="⏸ DURAKLAT";
+ $("txt").innerHTML=words.map((w,i)=>`<span id="w${i}">${Mode.esc(w)}</span>`).join(" ");$("word").classList.remove("idle");Mode.pill("OKUYOR");setTimeout(step,600)}
+function step(){if(paused||!running)return;if(idx>=words.length){running=false;$("word").classList.add("idle");$("word").textContent="Bitti — anlama puanınızı verin";$("kv").classList.add("show");Mode.pill("BİTTİ");return}
+ const w=words[idx];$("word").innerHTML=orp(Mode.esc(w));const pe=$("w"+idx),pv=$("w"+(idx-1));if(pv)pv.classList.remove("on");if(pe){pe.classList.add("on");pe.scrollIntoView({block:"center"})}
+ $("pi").style.width=(idx+1)/words.length*100+"%";let d=60000/wpm;if(/[.!?]$/.test(w))d*=2.2;else if(/[,;:]$/.test(w))d*=1.5;else if(w.length>9)d*=1.25;idx++;tm=setTimeout(step,d)}
+function pause(p){if(!running)return;paused=p;$("pz").textContent=p?"▶ DEVAM":"⏸ DURAKLAT";Mode.pill(p?"DURAKLADI":"OKUYOR");if(!p)step();else clearTimeout(tm)}
+$("go").onclick=()=>Mode.cmd("paragraf antrenmanını başlat");$("goe").onclick=()=>Mode.cmd("ingilizce paragraf başlat");
+$("pz").onclick=()=>Mode.cmd(paused?"devam":"metni durdur");$("md").onclick=()=>{document.body.classList.toggle("follow");$("md").textContent=document.body.classList.contains("follow")?"TEK KELİME":"METİN TAKİBİ"};
+$("b_wp").onclick=()=>Mode.cmd("hızlandır");$("b_wm").onclick=()=>Mode.cmd("yavaşlat");
+document.querySelectorAll("#kv button").forEach(b=>b.onclick=()=>{Mode.cmd("kavrama "+b.dataset.k);$("kv").classList.remove("show");$("word").textContent="Kaydedildi"});
+</script></body></html>

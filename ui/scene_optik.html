@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS SINAV SİMÜLATÖRÜ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ffd84a;--c2:#e8a400;--ln:rgba(255,216,74,.25);--hi:rgba(255,216,74,.12);--card:rgba(24,20,6,.7)}
+html,body{background:radial-gradient(ellipse at 50% -10%,#3a3008 0%,#0a0802 66%)}
+#stage{display:grid;grid-template-columns:260px 1fr 300px;gap:18px}
+.col{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto}
+#sheet{overflow:auto;background:#f4ecd8;color:#2a2410;border-radius:14px;padding:14px 16px;box-shadow:0 10px 40px #0008;user-select:none}
+#sheet .hd{font:700 13px Bahnschrift,Consolas;letter-spacing:.2em;margin-bottom:10px;display:flex;justify-content:space-between}
+#cols{display:grid;gap:18px}
+.q{display:flex;align-items:center;gap:6px;height:27px}
+.q .n{width:30px;text-align:right;font:600 12px Consolas;color:#6a5a20;cursor:context-menu}.q .n.fl{background:#ff8a70;color:#fff;border-radius:4px}
+.b{width:22px;height:22px;border-radius:50%;border:1.5px solid #6a5a20;font:600 11px Consolas;color:#6a5a20;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;padding:0;letter-spacing:0}
+.b:hover{background:#e8dcb0}.b.on{background:#2a2410;color:#f4ecd8;border-color:#2a2410}
+.b.ok{background:#2f9e5a;color:#fff;border-color:#2f9e5a}.b.bad{background:#d8503a;color:#fff;border-color:#d8503a}
+.lock .b{pointer-events:none}
+#time{font:300 56px Bahnschrift,Consolas;color:#fff;text-align:center;font-variant-numeric:tabular-nums}#time.low{color:#ff8a70}
+.bar{height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--c2));transition:width .5s linear}
+.pr{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pr button{padding:10px 4px;font-size:11.5px}
+.st{display:flex;justify-content:space-between;font-size:13px;margin:4px 0}
+textarea{width:100%;height:56px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:9px;color:#fff;font:13px Consolas;padding:6px;outline:0;user-select:text;resize:none}
+.res b{font-size:30px;color:#fff}
+</style></head><body>
+<div id="stage">
+ <div class="col"><div class="card"><h3>DENEME SEÇ</h3><div class="pr" id="pre"></div></div>
+  <div class="card"><h3>SON DENEMELER</h3><div id="hist" class="mut" style="font-size:12.5px;line-height:1.7"></div></div></div>
+ <div id="sheet"><div class="hd"><span id="nm">OPTİK FORM</span><span id="cnt"></span></div><div id="cols"></div></div>
+ <div class="col"><div class="card"><h3>KALAN SÜRE</h3><div id="time">--:--</div><div class="bar"><i id="pb" style="width:0"></i></div>
+   <div class="st"><span>İşaretlenen</span><b id="s1">0</b></div><div class="st"><span>Boş</span><b id="s2">0</b></div><div class="st"><span>Turlanacak</span><b id="s3">0</b></div></div>
+  <div class="card"><h3>CEVAP ANAHTARI <small>net için</small></h3><textarea id="key" placeholder="ABCDABCD…"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button id="bk" class="prim" style="flex:1">NET HESAPLA</button></div></div>
+  <div class="card res" id="res"><div class="mut" style="font-size:13px">Süre bitince ya da teslim edince sonuç burada görünür.</div></div>
+  <button id="fin" class="prim" style="padding:14px">SINAVI TESLİM ET</button></div>
+</div>
+<script>
+let S=null,endAt=0,sent=false;
+Mode.start({kind:"optik",title:"SINAV SİMÜLATÖRÜ",placeholder:"Komut: TYT Türkçe denemesi başlat · 15 C · 20 boş · 3 işaretle · kalan süre · cevap anahtarı A B C · sınavı teslim et",init:d=>render(d.snap),act:d=>{if(d.snap)render(d.snap)},tick:paint});
+const LET=["A","B","C","D","E"];
+function render(s){S=s;endAt=s.on?Date.now()+s.left*1000:0;sent=false;
+ if(!$("pre").children.length)s.presets.forEach(p=>{const b=document.createElement("button");b.innerHTML=p.k.toUpperCase()+"<br><small>"+p.n+" soru · "+p.d+" dk</small>";b.onclick=()=>Mode.cmd(p.k+" denemesi başlat");$("pre").appendChild(b)});
+ $("nm").textContent=s.n?s.name+" · "+s.n+" SORU":"OPTİK FORM";
+ const cols=$("cols"),per=20,nc=Math.max(1,Math.ceil((s.n||40)/per));cols.style.gridTemplateColumns="repeat("+nc+",1fr)";cols.innerHTML="";
+ $("sheet").classList.toggle("lock",!s.on);
+ const marks=s.res&&s.res.marks||{};
+ for(let c=0;c<nc;c++){const col=document.createElement("div");
+  for(let q=c*per+1;q<=Math.min(s.n||40,(c+1)*per);q++){const r=document.createElement("div");r.className="q";
+   const n=document.createElement("span");n.className="n"+(s.flag.includes(q)?" fl":"");n.textContent=q;n.oncontextmenu=e=>{e.preventDefault();if(s.on)Mode.cmd(q+" işaretle")};r.appendChild(n);
+   LET.forEach(L=>{const b=document.createElement("button");b.className="b";b.textContent=L;const a=s.ans[q];
+    if(a===L){b.classList.add("on");if(s.fin&&s.res&&s.res.keyed){b.classList.remove("on");b.classList.add(marks[q]==="d"?"ok":"bad")}}
+    else if(s.fin&&s.key&&s.key[q-1]===L&&marks[q]==="y")b.style.outline="2px solid #2f9e5a";
+    b.onclick=()=>Mode.cmd(a===L?q+" sil":q+" "+L);r.appendChild(b)});
+   col.appendChild(r)}
+  cols.appendChild(col)}
+ const done=Object.keys(s.ans).length;$("s1").textContent=done;$("s2").textContent=Math.max(0,s.n-done);$("s3").textContent=s.flag.length;$("cnt").textContent=s.n?done+"/"+s.n:"";
+ $("hist").innerHTML=(s.history||[]).slice().reverse().map(h=>Mode.esc(h.ts)+" · "+Mode.esc(h.ad)+(h.net!=null?" · <b style='color:#fff'>net "+h.net+"</b>":" · "+(h.n-h.b)+"/"+h.n)).join("<br>")||"Henüz yok.";
+ const r=s.res;$("res").innerHTML=!r?'<div class="mut" style="font-size:13px">Süre bitince ya da teslim edince sonuç burada görünür.</div>':
+  r.keyed?`<div class="mut" style="font-size:12px;letter-spacing:.2em">SONUÇ</div><b>NET ${r.net}</b><div class="st"><span>Doğru</span><b style="color:#5ee08a">${r.d}</b></div><div class="st"><span>Yanlış</span><b style="color:#ff8a70">${r.y}</b></div><div class="st"><span>Boş</span><b>${r.b}</b></div>`:
+  `<div class="mut" style="font-size:12px;letter-spacing:.2em">TESLİM EDİLDİ</div><div class="st"><span>İşaretlenen</span><b>${r.marked}</b></div><div class="st"><span>Boş</span><b>${r.b}</b></div><div class="mut" style="font-size:12px">Net için cevap anahtarını yazın.</div>`;
+ if(s.key&&document.activeElement!==$("key"))$("key").value=s.key;
+ Mode.pill(s.on?"SINAVDA":s.fin?"BİTTİ":"HAZIR")}
+function paint(){if(!S)return;const l=S.on?Math.max(0,(endAt-Date.now())/1000):0;const m=Math.floor(l/60),s=Math.floor(l%60),h=Math.floor(m/60);
+ $("time").textContent=S.on?(h?h+":":"")+String(m%60).padStart(2,"0")+":"+String(s).padStart(2,"0"):"--:--";$("time").classList.toggle("low",S.on&&l<300);
+ $("pb").style.width=S.on&&S.dur?Math.min(100,l/(S.dur*60)*100)+"%":"0";
+ if(S.on&&l<=0&&!sent){sent=true;Mode.cmd("sınavı teslim et")}}
+$("bk").onclick=()=>{const v=$("key").value.replace(/[^A-Ea-e]/g,"").toUpperCase();if(v)Mode.cmd("cevap anahtarı "+v.split("").join(" "))};
+$("fin").onclick=()=>Mode.cmd("sınavı teslim et");
+$("key").addEventListener("keydown",e=>e.stopPropagation());
+</script></body></html>

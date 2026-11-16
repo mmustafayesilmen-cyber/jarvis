@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS MÜZİK LİSTELERİ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#3fe8ff;--a:#ffb454;--a2:#ff7a59;--txt:#e2f7fb;--mut:rgba(226,247,251,.58);--ln:rgba(255,180,84,.22);--card:rgba(10,18,28,.7);--bad:#ff8a70;--ok:#5ee08a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse 60% 55% at 50% 40%,rgba(255,122,89,.07),transparent 70%),radial-gradient(ellipse at 50% -10%,#1d1a30 0%,#05070e 62%);color:var(--txt);font-family:"Segoe UI",Bahnschrift,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:12px;padding:0 22px;z-index:5;background:linear-gradient(#000d,transparent)}
+#title{font:600 15px Bahnschrift,Consolas;letter-spacing:.42em;color:#fff}#title b{color:var(--a);font-weight:600}
+#sp{flex:1}
+button{font:600 12px Bahnschrift,Consolas;letter-spacing:.08em;padding:8px 14px;cursor:pointer;color:var(--a);border:1px solid var(--ln);background:rgba(0,0,0,.35);border-radius:10px;white-space:nowrap;transition:background .15s,border-color .15s}
+button:hover{background:rgba(255,180,84,.14);border-color:var(--a)}button:disabled{opacity:.4;cursor:default}
+#close{border-color:rgba(255,120,84,.55);color:var(--bad)}
+.prim{background:linear-gradient(135deg,var(--a),var(--a2));color:#1a0e04;border:0}.prim:hover{background:linear-gradient(135deg,#ffc477,#ff8c6e)}
+#wrap{position:fixed;top:66px;bottom:92px;left:22px;right:22px;display:grid;grid-template-columns:minmax(230px,290px) 1fr minmax(280px,340px);gap:20px}
+.col{display:flex;flex-direction:column;gap:14px;min-height:0}
+.box{background:var(--card);border:1px solid var(--ln);border-radius:18px;padding:14px 16px;backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+h3{margin:0 0 10px;font:600 11.5px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--a);display:flex;align-items:center;gap:8px}h3 small{margin-left:auto;font:11px Consolas;letter-spacing:.04em;color:var(--mut)}
+.inp{flex:1;min-width:0;padding:10px 12px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:11px;color:#fff;font:14px "Segoe UI",sans-serif;outline:0;user-select:text}
+.inp:focus{border-color:var(--a);box-shadow:0 0 0 3px rgba(255,180,84,.13)}.inp::placeholder{color:rgba(226,247,251,.35)}
+.row{display:flex;gap:8px}
+/* listeler */
+#lists{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px;margin-top:10px;padding-right:2px}
+.li{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:10px 12px;border-radius:13px;border:1px solid transparent;background:rgba(0,0,0,.25);cursor:pointer}
+.li:hover{border-color:var(--ln)}.li.on{border-color:var(--a);background:rgba(255,180,84,.09);box-shadow:0 0 18px rgba(255,180,84,.12)}
+.li b{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.li span{font-size:11.5px;color:var(--mut)}
+.li .eq{grid-row:1/3;grid-column:2;align-self:center}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:14px;width:16px}.eq i{width:3px;background:var(--a);border-radius:1px;height:30%;animation:eq 1s ease-in-out infinite}.eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}
+.eq.off i{animation:none;height:25%;opacity:.5}
+@keyframes eq{0%,100%{height:20%}50%{height:100%}}
+.empty{color:var(--mut);font-size:13.5px;line-height:1.6;padding:14px 6px}
+/* şarkılar */
+#mid{min-height:0;display:flex;flex-direction:column}
+#lh{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#lname{font:700 24px "Segoe UI";color:#fff;border:0;background:transparent;outline:0;border-bottom:1px dashed transparent;min-width:80px;max-width:50%;user-select:text;padding:2px 0}
+#lname:hover{border-bottom-color:var(--ln)}#lname:focus{border-bottom-color:var(--a)}
+#lmeta{font:12.5px Consolas;color:var(--mut)}
+#lact{display:flex;gap:8px;margin-left:auto}
+#addbar{display:flex;gap:8px;margin:14px 0 8px}
+#busy{display:none;align-items:center;gap:8px;font-size:12.5px;color:var(--a);margin:0 0 8px}#busy.on{display:flex}#busy i{width:12px;height:12px;border:2px solid rgba(255,180,84,.3);border-top-color:var(--a);border-radius:50%;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+#songs{flex:1;overflow:auto;border-top:1px solid rgba(255,180,84,.12)}
+.sg{display:grid;grid-template-columns:34px 1fr 150px 54px auto;gap:10px;align-items:center;padding:8px 8px;border-bottom:1px solid rgba(255,255,255,.05);border-radius:8px;cursor:default}
+.sg:hover{background:rgba(255,180,84,.07)}.sg.now{background:rgba(255,180,84,.13)}.sg.drag{opacity:.35}.sg.over{box-shadow:0 -2px 0 var(--a)}
+.sg .n{color:var(--mut);font:12px Consolas;text-align:center}.sg .t{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sg .a{font-size:12.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sg .d{font:12px Consolas;color:var(--mut);text-align:right}.sg .ac{display:flex;gap:2px;opacity:.15;transition:opacity .15s}.sg:hover .ac{opacity:1}
+.sg .ac button{padding:3px 8px;font-size:12px;letter-spacing:0;border:0;background:transparent;color:var(--txt)}.sg .ac button:hover{background:rgba(255,180,84,.2)}.sg .ac .x{color:var(--bad)}
+.sg[draggable=true]{cursor:grab}
+/* çalan */
+#np{display:grid;grid-template-columns:62px 1fr;gap:12px;align-items:center}
+#art{width:62px;height:62px;border-radius:14px;background:linear-gradient(135deg,#3a2410,#5a1f33);display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:12px 10px;border:1px solid var(--ln);overflow:hidden}
+#art i{width:6px;background:var(--a);border-radius:2px;height:15%;opacity:.5}#art.on i{opacity:1;animation:eq 1s ease-in-out infinite}#art.on i:nth-child(2){animation-delay:-.25s}#art.on i:nth-child(3){animation-delay:-.5s}#art.on i:nth-child(4){animation-delay:-.75s}
+#npT{font-size:15px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#npA{font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+#npb{grid-column:1/-1;display:flex;align-items:center;gap:10px;font:11.5px Consolas;color:var(--mut)}
+#prog{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;cursor:default}#prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .9s linear}
+#ctl{display:flex;justify-content:center;gap:10px;margin-top:14px}
+#ctl button{width:46px;height:46px;padding:0;border-radius:50%;font-size:16px;letter-spacing:0;display:grid;place-items:center}
+#ctl #pp{width:56px;height:56px;border:0;background:linear-gradient(135deg,var(--a),var(--a2));color:#1a0e04;font-size:20px}
+#loopB.on{background:rgba(255,180,84,.25);color:#fff;border-color:var(--a)}
+#queue{font-size:12.5px;color:var(--mut);margin-top:12px;text-align:center}
+#bar{position:fixed;left:22px;right:22px;bottom:14px;z-index:9;display:flex;flex-direction:column;gap:6px}
+#cmdw{display:flex;align-items:center;gap:10px;background:rgba(0,10,16,.75);border:1px solid var(--ln);border-radius:14px;padding:4px 6px 4px 14px}#cmdw span{font:600 13px Consolas;color:var(--a)}
+#cmd{flex:1;padding:9px 0;background:transparent;border:0;color:#fff;font:14px Consolas;outline:0;user-select:text}
+#log{font:12.5px Consolas;color:#ffe3bf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;opacity:.9}
+@media(max-width:1200px){#wrap{display:flex;flex-direction:column;overflow:auto}}
+</style></head><body>
+<div id="top"><span id="title">MÜZİK <b>LİSTELERİ</b></span><span id="sp"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="wrap">
+ <div class="col"><div class="box" style="flex:1;display:flex;flex-direction:column;min-height:0"><h3>LİSTELERİM <small id="lc"></small></h3>
+   <div class="row"><input class="inp" id="nl" placeholder="Yeni liste adı…" maxlength="40" spellcheck="false" autocomplete="off"><button class="prim" id="nlb">EKLE</button></div>
+   <div id="lists"></div></div></div>
+ <div class="box" id="mid">
+  <div id="lh"><input id="lname" maxlength="40" spellcheck="false" title="Adı değiştirmek için tıklayın, Enter'a basın"><span id="lmeta"></span>
+   <div id="lact"><button class="prim" id="bplay">▶ ÇAL</button><button id="bshuf">🔀 KARIŞIK</button><button id="bdel" style="color:var(--bad);border-color:rgba(255,138,112,.35)">LİSTEYİ SİL</button></div></div>
+  <div id="addbar"><input class="inp" id="q" placeholder="Şarkı adı ya da YouTube bağlantısı yazın…" maxlength="300" spellcheck="false" autocomplete="off"><button class="prim" id="addb">ŞARKI EKLE</button></div>
+  <div id="busy"><i></i><span id="busyt"></span></div>
+  <div id="songs"></div>
+ </div>
+ <div class="col">
+  <div class="box"><h3>ÇALAN ŞARKI</h3>
+   <div id="np"><div id="art"><i></i><i></i><i></i><i></i></div><div style="min-width:0"><div id="npT">Çalan şarkı yok</div><div id="npA">bir listeyi çalın</div></div>
+    <div id="npb"><span id="npP">0:00</span><div id="prog"><i></i></div><span id="npD">0:00</span></div></div>
+   <div id="ctl"><button id="prevB" title="Önceki">⏮</button><button id="pp" title="Duraklat / devam">⏸</button><button id="nextB" title="Sonraki">⏭</button><button id="stopB" title="Durdur">⏹</button><button id="loopB" title="Döngü">⟳</button></div>
+   <div id="queue"></div>
+   <div class="row" style="margin-top:12px"><button id="addnow" style="flex:1" title="Şu an çalan şarkıyı seçili listeye ekler">＋ ÇALANI LİSTEYE EKLE</button></div></div>
+  <div class="box"><h3>İPUCU</h3><div class="empty" style="padding:0">Şarkıları satırdan tutup sürükleyerek sıralayabilirsiniz. Şarkı adı yerine <b>YouTube bağlantısı</b> da yapıştırabilirsiniz; <b>çalma listesi bağlantısı</b> yapıştırırsanız içindeki şarkıların hepsi (en fazla 100) eklenir.</div></div>
+ </div>
+</div>
+<div id="bar"><div id="cmdw"><span>›</span><input id="cmd" placeholder="Komut: yeni liste çalışma · çalışma listesine tarkan kuzu kuzu ekle · çalışma listesini çal · karışık çal · 2. şarkıyı sil · listelerim · çık" spellcheck="false" autocomplete="off"></div><div id="log">Jarvis: listelerinizi buradan yönetin; çalan şarkı mod kapansa da sürer.</div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+let ws,V=null,NP=null,adding=false,dragI=null;
+function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function cmd(t){send({type:"text",text:t});$("log").textContent="› komut uygulanıyor…"}
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+const ms=s=>{s=Math.max(0,Math.floor(s||0));return s>=3600?Math.floor(s/3600)+":"+String(Math.floor(s%3600/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"):Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+const total=a=>a.reduce((x,s)=>x+(s.dur||0),0);
+const cur=()=>V&&V.lists.find(l=>l.id===V.sel);
+function render(v){V=v;
+ $("lc").textContent=v.lists.length+" liste";
+ const L=$("lists");L.innerHTML="";
+ if(!v.lists.length)L.appendChild(el("div","empty","Henüz liste yok. Yukarıya bir ad yazıp EKLE'ye basın ya da “yeni liste çalışma” deyin."));
+ v.lists.forEach(l=>{const d=el("div","li"+(l.id===v.sel?" on":""));d.appendChild(el("b",null,l.name));d.appendChild(el("span",null,`${l.songs} şarkı`+(l.dur?` · ${ms(l.dur)}`:"")));
+  if(l.id===v.playing&&NP){const e=el("span","eq"+(NP.playing?"":" off"));e.innerHTML="<i></i><i></i><i></i>";d.appendChild(e)}
+  d.onclick=()=>send({type:"listeler_sel",id:l.id});L.appendChild(d)});
+ const c=cur();
+ $("mid").style.opacity=c?1:.55;
+ if(document.activeElement!==$("lname"))$("lname").value=c?c.name:"";$("lname").disabled=!c;
+ $("lmeta").textContent=c?`${v.songs.length} şarkı`+(v.songs.length?` · ${ms(total(v.songs))}`:""):"";
+ ["bplay","bshuf","bdel","addb","q"].forEach(i=>$(i).disabled=!c||(i==="addb"&&adding));$("bplay").disabled=!c||!v.songs.length;$("bshuf").disabled=!c||!v.songs.length;
+ const busy=v.busy||(adding?"şarkı aranıyor…":"");$("busy").classList.toggle("on",!!busy);$("busyt").textContent=busy;
+ const S=$("songs");S.innerHTML="";
+ if(!c)S.appendChild(el("div","empty","Soldan bir liste seçin ya da yeni bir liste oluşturun."));
+ else if(!v.songs.length)S.appendChild(el("div","empty","Bu liste boş. Yukarıya bir şarkı adı ya da YouTube bağlantısı yazıp ŞARKI EKLE'ye basın."));
+ v.songs.forEach((s,i)=>{const nowp=NP&&v.playing===v.sel&&NP.id===s.id;
+  const r=el("div","sg"+(nowp?" now":""));r.draggable=true;
+  const n=el("span","n");if(nowp){n.className="n eq"+(NP.playing?"":" off");n.innerHTML="<i></i><i></i><i></i>"}else n.textContent=i+1;
+  r.append(n,el("span","t",s.title),el("span","a",s.artist),el("span","d",ms(s.dur)));
+  const ac=el("div","ac");
+  const mk=(txt,tip,fn,cls)=>{const b=el("button",cls||"",txt);b.title=tip;b.onclick=e=>{e.stopPropagation();fn()};ac.appendChild(b)};
+  mk("▶","Buradan çal",()=>send({type:"listeler_play",id:v.sel,start:i}));
+  mk("↑","Yukarı",()=>i>0&&send({type:"listeler_move",id:v.sel,i,j:i-1}));mk("↓","Aşağı",()=>i<v.songs.length-1&&send({type:"listeler_move",id:v.sel,i,j:i+1}));
+  mk("×","Listeden çıkar",()=>send({type:"listeler_remove",id:v.sel,i}),"x");r.appendChild(ac);
+  r.ondblclick=()=>send({type:"listeler_play",id:v.sel,start:i});
+  r.ondragstart=e=>{dragI=i;r.classList.add("drag");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(i))};
+  r.ondragend=()=>{dragI=null;r.classList.remove("drag");S.querySelectorAll(".over").forEach(x=>x.classList.remove("over"))};
+  r.ondragover=e=>{if(dragI!==null){e.preventDefault();r.classList.add("over")}};r.ondragleave=()=>r.classList.remove("over");
+  r.ondrop=e=>{e.preventDefault();r.classList.remove("over");if(dragI!==null&&dragI!==i)send({type:"listeler_move",id:v.sel,i:dragI,j:i});dragI=null};
+  S.appendChild(r)});
+ renderNP()}
+function renderNP(){const np=NP;$("art").classList.toggle("on",!!(np&&np.playing));
+ if(!np){$("npT").textContent="Çalan şarkı yok";$("npA").textContent="bir listeyi çalın";$("prog").firstElementChild.style.width="0";$("npP").textContent="0:00";$("npD").textContent="0:00";$("pp").textContent="▶";$("queue").textContent="";$("loopB").classList.remove("on");$("addnow").disabled=true;return}
+ $("npT").textContent=np.title||"?";$("npT").title=np.title||"";$("npA").textContent=(np.artist||"")+(np.playing?"":" · duraklatıldı");
+ $("npP").textContent=ms(np.pos);$("npD").textContent=np.dur?ms(np.dur):"–";$("prog").firstElementChild.style.width=(np.dur?Math.min(100,np.pos/np.dur*100):0)+"%";
+ $("pp").textContent=np.playing?"⏸":"▶";$("queue").textContent=np.total>1?`${np.index} / ${np.total}`:"";$("loopB").classList.toggle("on",!!np.repeat);$("addnow").disabled=!cur()}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"listeler"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.kind!=="listeler")return;
+  if(m.type==="scene_init"&&m.data){NP=m.data.np||null;render(m.data)}
+  else if(m.type==="scene_do"){const d=m.do||{};if("np" in d)NP=d.np;
+   if(d.data){if(d.done)adding=false;render(d.data)}else if("np" in d){renderNP();if(V){if(("busy" in d)&&d.busy!==V.busy){V.busy=d.busy;const b=d.busy||(adding?"şarkı aranıyor…":"");$("busy").classList.toggle("on",!!b);$("busyt").textContent=b}}}
+   if(d.msg)$("log").textContent="Jarvis: "+d.msg}};
+ ws.onclose=()=>setTimeout(connect,1500)}
+const create=()=>{const v=$("nl").value.trim();if(v){send({type:"listeler_create",name:v});$("nl").value=""}};
+$("nlb").onclick=create;
+const add=()=>{const q=$("q").value.trim();if(!q||!V||!V.sel)return;adding=true;send({type:"listeler_add",id:V.sel,q});$("q").value="";$("addb").disabled=true;$("busy").classList.add("on");$("busyt").textContent="şarkı aranıyor…"};
+$("addb").onclick=add;
+$("bplay").onclick=()=>V&&send({type:"listeler_play",id:V.sel});$("bshuf").onclick=()=>V&&send({type:"listeler_play",id:V.sel,shuffle:true});
+$("bdel").onclick=()=>{const c=cur();if(c&&confirm(`"${c.name}" listesi ve içindeki ${c.songs} şarkı silinsin mi?`))send({type:"listeler_delete",id:c.id})};
+$("lname").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"){const c=cur(),v=e.target.value.trim();if(c&&v&&v!==c.name)send({type:"listeler_rename",id:c.id,name:v});e.target.blur()}else if(e.key==="Escape"){const c=cur();e.target.value=c?c.name:"";e.target.blur()}});
+$("lname").addEventListener("blur",()=>{const c=cur();if(c)$("lname").value=c.name});
+$("prevB").onclick=()=>send({type:"listeler_ctl",k:"prev"});$("nextB").onclick=()=>send({type:"listeler_ctl",k:"next"});$("stopB").onclick=()=>send({type:"listeler_ctl",k:"stop"});
+$("pp").onclick=()=>send({type:"listeler_ctl",k:NP&&NP.playing?"pause":"resume"});$("loopB").onclick=()=>send({type:"listeler_ctl",k:"loop"});
+$("addnow").onclick=()=>V&&V.sel&&send({type:"listeler_addnow",id:V.sel});
+function keys(el,fn){el.addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")fn();else if(e.key==="Escape")e.target.blur()})}
+keys($("nl"),create);keys($("q"),add);
+function shut(){send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){cmd(e.target.value.trim());e.target.value=""}else if(e.key==="Escape")e.target.blur()});
+addEventListener("keydown",e=>{const t=(document.activeElement||{}).tagName;if(t==="INPUT")return;if(e.key==="Escape")shut();else if(e.key===" "){e.preventDefault();$("pp").click()}});
+connect();window.focus();
+</script></body></html>

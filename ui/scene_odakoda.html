@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JARVIS ODAK ODASI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><link rel="stylesheet" href="/kit/stark.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#8fb3c2;--ph:#8fb3c2;--ln:rgba(143,179,194,.22);--hi:rgba(143,179,194,.1);--card:rgba(6,14,20,.55)}
+body.work{--ph:#5fb8d6}body.short{--ph:#6fcf97}body.long{--ph:#b79cf2}body.idle{--ph:#8fb3c2}
+html,body{background:radial-gradient(ellipse 60% 60% at 50% 45%,color-mix(in srgb,var(--ph) 9%,transparent),transparent 70%),#04080c}
+#top{background:none}#bg{opacity:.35}
+#stage{align-items:center;justify-content:center;gap:18px;text-align:center}
+#ring{position:relative;width:min(62vmin,420px);height:min(62vmin,420px)}
+#ring svg{width:100%;height:100%;transform:rotate(-90deg)}#ring circle{fill:none;stroke-width:5}
+#ring .tr{stroke:rgba(255,255,255,.07)}#ring .pg{stroke:var(--ph);stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .8s}
+#tm{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#tt{font:200 min(16vmin,104px) Bahnschrift,"Segoe UI";color:#fff;letter-spacing:.02em;font-variant-numeric:tabular-nums;line-height:1}
+#ph{font:600 13px Bahnschrift;letter-spacing:.4em;color:var(--ph);margin-top:10px}#st{font-size:13px;color:var(--mut);margin-top:6px;min-height:18px}
+#dots{display:flex;gap:8px;justify-content:center;min-height:14px}#dots i{width:11px;height:11px;border-radius:50%;border:1px solid var(--ph)}#dots i.f{background:var(--ph)}#dots i.c{box-shadow:0 0 10px var(--ph)}
+#ctl{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+#info{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;color:var(--mut);font-size:13.5px}#info b{color:#fff;font-weight:600}
+#np{font-size:12.5px;color:var(--mut);min-height:16px}
+</style></head><body class="idle">
+<div id="stage">
+ <div id="dots" aria-label="Tur ilerlemesi"></div>
+ <div id="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="tr" cx="50" cy="50" r="46"/><circle class="pg" id="pg" cx="50" cy="50" r="46" stroke-dasharray="289.03" stroke-dashoffset="289.03"/></svg>
+  <div id="tm" role="timer" aria-live="off"><div id="tt">--:--</div><div id="ph">HAZIR</div><div id="st"></div></div></div>
+ <div id="ctl"><button id="b_go" class="prim">BAŞLAT</button><button id="b_ps">DURAKLAT</button><button id="b_sk">EVREYİ ATLA</button><button id="b_p5">+5 DK</button><button id="b_en">OTURUMU BİTİR</button><button id="b_mu">MÜZİK: —</button></div>
+ <div id="info"></div><div id="np"></div>
+</div>
+<script>
+const E=Mode.esc;let S=null,at=0;const NM={work:"ÇALIŞMA",short:"KISA MOLA",long:"UZUN MOLA",idle:"HAZIR"};
+const mm=s=>{s=Math.max(0,Math.round(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function left(){if(!S)return 0;if(S.phase==="idle"||S.paused)return S.left;return Math.max(0,S.left-(Date.now()-at)/1000)}
+function draw(){if(!S)return;const run=S.phase!=="idle"&&!S.paused,l=left();$("tt").textContent=S.phase==="idle"?mm(S.cfg.work*60):mm(l);document.title="JARVIS ODAK ODASI";
+ $("pg").style.strokeDashoffset=289.03*(S.phase==="idle"?1:S.total?1-(S.total-l)/S.total:1)}
+function render(s){S=s;at=Date.now();document.body.className=s.phase;
+ const state=s.phase==="idle"?"hazır":s.waiting?"başlamaya hazır":s.paused?"duraklatıldı":"sürüyor";
+ $("ph").textContent=NM[s.phase]||"HAZIR";$("st").textContent=s.phase==="idle"?"Başlat deyin ya da düğmeye basın":s.phase==="work"||!s.paused?"":"";
+ $("st").textContent=s.phase==="idle"?"Başlatmaya hazır":state==="duraklatıldı"?"Duraklatıldı":state==="başlamaya hazır"?"Devam demenizi bekliyor":s.phase==="work"?"Odaklanın":"Dinlenin";
+ Mode.pill(s.phase==="idle"?"HAZIR":s.paused?"DURAKLATILDI":NM[s.phase]);
+ $("dots").innerHTML=Array.from({length:s.rounds},(_,i)=>`<i class="${i<(s.round-(s.phase==="work"?1:0))?"f":""} ${s.phase==="work"&&i===s.round-1?"c":""}"></i>`).join("");
+ $("b_go").textContent=s.phase==="idle"?"BAŞLAT":s.paused?"DEVAM":"BAŞLAT";$("b_go").style.display=s.phase!=="idle"&&!s.paused?"none":"";$("b_ps").style.display=s.phase!=="idle"&&!s.paused?"":"none";
+ ["b_sk","b_p5","b_en"].forEach(i=>$(i).style.display=s.phase==="idle"?"none":"");
+ $("b_mu").textContent="MÜZİK: "+(s.cfg.music?"AÇIK":"KAPALI");
+ $("info").innerHTML=`<span>Tur <b>${s.phase==="idle"?"-":s.round+" / "+s.rounds}</b></span><span>Bu oturumda <b>${s.session_done}</b> tur</span><span>Bugün <b>${s.done_today}</b> tur · <b>${s.work_min_today}</b> dk çalışma</span><span>${s.cfg.work} / ${s.cfg.short} / ${s.cfg.long} dk</span>`;draw()}
+function chime(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[660,880].forEach((f,i)=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=f;o.connect(g);g.connect(a.destination);const t=a.currentTime+i*.25;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.1,t+.04);g.gain.exponentialRampToValueAtTime(.0001,t+.6);o.start(t);o.stop(t+.65)})}catch(e){}}
+Mode.start({kind:"odakoda",title:"ODAK ODASI",placeholder:"Komut: başlat · duraklat · devam · atla · bitir · çalışma 30 dakika · müzik aç",init:render,act:d=>{if(d.snap)render(d.snap);if("np" in d){const n=d.np;$("np").textContent=n?"♪ "+(n.title||"")+(n.artist?" — "+n.artist:"")+(n.playing?"":" (duraklatıldı)"):""}if(d.chime)chime()},tick:draw});
+$("b_go").onclick=()=>Mode.cmd(S&&S.paused&&S.phase!=="idle"?"devam":"başlat");$("b_ps").onclick=()=>Mode.cmd("duraklat");$("b_sk").onclick=()=>Mode.cmd("atla");$("b_p5").onclick=()=>Mode.cmd("beş dakika ekle");$("b_en").onclick=()=>Mode.cmd("bitir");
+$("b_mu").onclick=()=>Mode.cmd(S&&S.cfg.music?"müzik kapat":"müzik aç");
+</script></body></html>

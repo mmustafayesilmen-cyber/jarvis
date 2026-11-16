@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS ZEN BAHÇESİ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#e8d7a8;--c2:#b89a55;--ln:rgba(232,215,168,.25);--hi:rgba(232,215,168,.12);--card:rgba(30,24,12,.7)}
+html,body{background:#14110a}
+#stage{display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center}
+#gw{position:relative;width:min(100%,1200px);flex:1;min-height:0;border-radius:20px;overflow:hidden;box-shadow:0 20px 70px rgba(0,0,0,.6),inset 0 0 0 10px #4b3a1e}
+canvas.l{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.tl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+</style></head><body>
+<div id="stage"><div id="gw"><canvas class="l" id="sand"></canvas><canvas class="l" id="top"></canvas></div>
+ <div class="tl"><span class="mut">TIRMIK</span><span id="rk" class="tl"></span><button id="ta">+ TAŞ</button><button id="te">− TAŞ</button><button id="yb">YENİ BAHÇE</button><button id="tm">TEMİZLE</button></div></div>
+<script>
+const RAKES=["düz","dalga","çift","daire"];let rake="düz",stones=[],nst=3,W=0,H=0;const sand=$("sand"),top=$("top"),g=sand.getContext("2d"),t=top.getContext("2d");
+function rs(){const r=$("gw").getBoundingClientRect();W=sand.width=top.width=Math.round(r.width);H=sand.height=top.height=Math.round(r.height);clear(true)}
+function rnd(a,b){return a+Math.random()*(b-a)}
+function base(){g.fillStyle="#d9c593";g.fillRect(0,0,W,H);const im=g.getImageData(0,0,W,H),d=im.data;for(let i=0;i<d.length;i+=4){const n=(Math.random()-.5)*26;d[i]+=n;d[i+1]+=n;d[i+2]+=n*.8}g.putImageData(im,0,0)}
+function groove(x0,y0,x1,y1,off){g.lineCap="round";g.lineWidth=3.2;g.strokeStyle="rgba(70,52,20,.55)";g.beginPath();g.moveTo(x0+off.x,y0+off.y);g.lineTo(x1+off.x,y1+off.y);g.stroke();g.lineWidth=2;g.strokeStyle="rgba(255,244,205,.6)";g.beginPath();g.moveTo(x0+off.x+1.6,y0+off.y+1.6);g.lineTo(x1+off.x+1.6,y1+off.y+1.6);g.stroke()}
+function rings(s){for(let r=s.r+10;r<s.r+10+8*12;r+=12){g.lineWidth=2.6;g.strokeStyle="rgba(70,52,20,.5)";g.beginPath();g.arc(s.x,s.y,r,0,6.283);g.stroke();g.lineWidth=1.6;g.strokeStyle="rgba(255,244,205,.5)";g.beginPath();g.arc(s.x+1.4,s.y+1.4,r,0,6.283);g.stroke()}}
+function drawStones(){t.clearRect(0,0,W,H);stones.forEach(s=>{t.save();t.translate(s.x,s.y);t.rotate(s.a);t.beginPath();t.ellipse(5,9,s.r*1.05,s.r*.8,0,0,6.283);t.fillStyle="rgba(0,0,0,.28)";t.fill();
+ const gr=t.createRadialGradient(-s.r*.3,-s.r*.3,2,0,0,s.r*1.1);gr.addColorStop(0,"#9a9a94");gr.addColorStop(1,"#3d3d3a");t.beginPath();t.ellipse(0,0,s.r,s.r*.8,0,0,6.283);t.fillStyle=gr;t.fill();t.restore()})}
+function place(n,reroll){if(reroll)stones=[];while(stones.length<n)stones.push({x:rnd(W*.15,W*.85),y:rnd(H*.2,H*.8),r:rnd(22,46),a:rnd(0,3)});stones.length=Math.min(stones.length,n)}
+function clear(newStones){base();if(newStones||stones.length!==nst)place(nst,!stones.length);stones.forEach(rings);drawStones()}
+let dr=null;
+top.onpointerdown=e=>{const r=top.getBoundingClientRect();dr={x:e.clientX-r.left,y:e.clientY-r.top};dr.sx=dr.x;dr.sy=dr.y;top.setPointerCapture(e.pointerId)};
+top.onpointermove=e=>{if(!dr)return;const r=top.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,dx=x-dr.x,dy=y-dr.y,L=Math.hypot(dx,dy);if(L<3)return;
+ if(rake==="daire"){const R=Math.hypot(x-dr.sx,y-dr.sy);g.lineWidth=2.6;g.strokeStyle="rgba(70,52,20,.5)";g.beginPath();g.arc(dr.sx,dr.sy,R,0,6.283);g.stroke();g.lineWidth=1.6;g.strokeStyle="rgba(255,244,205,.5)";g.beginPath();g.arc(dr.sx+1.4,dr.sy+1.4,R,0,6.283);g.stroke();dr.x=x;dr.y=y;return}
+ const nx=-dy/L,ny=dx/L,n=rake==="çift"?2:5,gap=rake==="çift"?26:11;for(let i=0;i<n;i++){let o=(i-(n-1)/2)*gap,w=rake==="dalga"?Math.sin((x+y)/22)*10:0;groove(dr.x,dr.y,x,y,{x:nx*(o+w),y:ny*(o+w)})}
+ dr.x=x;dr.y=y;drawStones()};
+top.onpointerup=()=>{dr=null};
+function setRake(k){rake=k;$("rk").innerHTML=RAKES.map(x=>`<button class="${x===k?"cur":""}" data-r="${x}">${x.toUpperCase()}</button>`).join("");$("rk").querySelectorAll("button").forEach(b=>b.onclick=()=>Mode.cmd("tırmığı "+b.dataset.r+" yap"));Mode.pill("TIRMIK: "+k.toUpperCase())}
+function take(d){if(d.rake)setRake(d.rake);if(d.stones!==undefined){nst=d.stones;if(d.clear){clear(true)}else{clear(false);}}else if(d.clear)clear(false)}
+Mode.start({kind:"kum",title:"ZEN BAHÇESİ",placeholder:"Fareyle kumu tırmıkla · Komut: taş ekle · tırmığı dalga yap · daire yap · çift çizgi · temizle · yeni bahçe",init:d=>{nst=d.stones;rs();setRake(d.rake)},act:d=>{if(d.stones!==undefined&&d.reroll===false)stones.length=Math.min(stones.length,d.stones);take(d)}});
+$("ta").onclick=()=>Mode.cmd("taş ekle");$("te").onclick=()=>Mode.cmd("taşı azalt");$("yb").onclick=()=>Mode.cmd("yeni bahçe");$("tm").onclick=()=>Mode.cmd("temizle");addEventListener("resize",rs);
+</script></body></html>

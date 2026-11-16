@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS EVİM</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src data:; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#5ee0a8;--bg:#06100c;--ln:rgba(94,224,168,.24);--hi:rgba(94,224,168,.13);--st:#ffd84a;--dg:#ff9a7a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:#e6f4ec;font-family:"Segoe UI",Bahnschrift,Consolas,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:8px;padding:0 14px;z-index:5;background:linear-gradient(#000c,transparent);border-bottom:1px solid var(--ln)}
+#title{font:600 14px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--c);white-space:nowrap;margin-right:10px}
+#sp{flex:1}
+button,select{font:12.5px Consolas;letter-spacing:.06em;padding:6px 10px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,0,0,.5);white-space:nowrap}
+button:hover{background:var(--hi)}button.on{background:var(--hi);border-color:var(--c)}
+button.dg{border-color:rgba(255,120,84,.55);color:var(--dg)}
+button.pri{background:var(--c);color:#04150e;border-color:var(--c);font-weight:700}
+option{background:#0c1d16;color:#d8f7e8}
+#close{border-color:rgba(255,120,84,.7);color:#ff9a7a}
+#main{position:fixed;top:50px;bottom:78px;left:0;right:0;display:flex}
+#content{flex:1;overflow:auto;padding:16px 22px 30px;scrollbar-width:thin;min-width:0}
+#detail{width:420px;border-left:1px solid var(--ln);background:rgba(0,0,0,.4);overflow:auto;padding:16px 18px;display:none;scrollbar-width:thin}
+h1{font:700 26px "Segoe UI";margin:0 0 2px;color:#fff}h2{font:600 13px Consolas;letter-spacing:.22em;color:var(--c);margin:22px 0 10px;text-transform:uppercase}
+.mut{opacity:.65;font-size:13px}
+.stats{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}.stat{flex:1;min-width:130px;border:1px solid var(--ln);padding:12px 14px;background:rgba(94,224,168,.05)}
+.stat b{display:block;font:700 30px Bahnschrift;color:var(--c)}.stat span{font-size:12.5px;opacity:.75}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.quick{flex:1;min-width:220px;border:1px solid var(--ln);padding:14px;cursor:pointer;background:rgba(94,224,168,.05)}
+.quick:hover{background:var(--hi)}.quick b{display:block;font-size:16px;color:var(--c)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.card{display:flex;gap:10px;border:1px solid var(--ln);padding:8px;background:rgba(255,255,255,.03);cursor:pointer;align-items:center;position:relative;min-width:0}
+.card:hover,.card.act{background:var(--hi);border-color:var(--c)}
+.th{width:54px;height:54px;flex:none;background:#0d241a;border:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden}
+.th img{width:100%;height:100%;object-fit:cover}
+.card .tx{min-width:0;flex:1}.card b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:26px}
+.card small{display:block;opacity:.65;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.star{position:absolute;right:6px;top:4px;border:0;background:none;font-size:18px;padding:2px;color:#7f8f87}.star.on{color:var(--st)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.chips button{padding:4px 10px;border-radius:14px}
+.room{border:1px solid var(--ln);cursor:pointer;background:rgba(255,255,255,.03);overflow:hidden}.room:hover{background:var(--hi)}
+.room .ph{height:110px;background:#0d241a;display:flex;align-items:center;justify-content:center;font-size:40px}.room .ph img{width:100%;height:100%;object-fit:cover}
+.room div.i{padding:8px 10px}.room b{font-size:16px}
+input,textarea,select.f{width:100%;padding:8px 10px;background:rgba(0,0,0,.5);border:1px solid var(--ln);color:#eaffef;font:14px "Segoe UI";outline:0;user-select:text}
+input:focus,textarea:focus{border-color:var(--c)}textarea{resize:vertical;min-height:70px}
+label{display:block;font:12px Consolas;letter-spacing:.1em;color:var(--c);margin:12px 0 4px}
+.crumb{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin:8px 0}.crumb span{background:var(--hi);border:1px solid var(--ln);padding:3px 9px;font-size:14px;font-weight:600}
+.step{display:flex;gap:10px;margin:8px 0}.step i{flex:none;width:24px;height:24px;border-radius:50%;background:var(--c);color:#04150e;font:700 13px Consolas;display:flex;align-items:center;justify-content:center;font-style:normal}
+.box{border:1px solid var(--ln);padding:10px 12px;background:rgba(255,255,255,.03);margin:6px 0;font-size:14px;line-height:1.5}
+.hist{margin:8px 0;font-size:13px}.hist s{opacity:.55;display:block}
+.pinimg{position:relative;display:inline-block;max-width:100%;border:1px solid var(--ln)}.pinimg img{display:block;max-width:100%;max-height:280px}
+.pin{position:absolute;width:20px;height:20px;margin:-20px 0 0 -10px;font-size:20px;line-height:20px;pointer-events:none;filter:drop-shadow(0 0 3px #000)}
+#modal{position:fixed;inset:50px 0 78px 0;background:rgba(0,0,0,.72);z-index:8;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px}
+#form{width:min(640px,100%);background:#08150f;border:1px solid var(--c);padding:16px 20px 18px}
+#form h2{margin-top:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#bar{position:fixed;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--ln);background:rgba(0,0,0,.65);z-index:9;padding:6px 12px}
+#cmdrow{display:flex;gap:10px;align-items:center}
+#cmd{flex:1;padding:8px 12px;background:rgba(0,0,0,.55);border:1px solid var(--ln);color:var(--c);font:14px Consolas;outline:0;user-select:text}
+#cmd:focus{border-color:var(--c)}
+#log{height:30px;margin-top:5px;font:12.5px Consolas;overflow:hidden;display:flex;gap:14px;align-items:center;white-space:nowrap}
+#log span.j{color:#cfeeff;overflow:hidden;text-overflow:ellipsis;max-width:60vw}#log span.mem{color:#9fe8a0;opacity:.85;margin-left:auto}
+.empty{border:1px dashed var(--ln);padding:26px;text-align:center;opacity:.75;margin:10px 0}
+@media(max-width:1100px){#detail{width:340px}}
+</style></head><body>
+<div id="top"><span id="title">EVİM</span><button id="t_home" class="on">ANA SAYFA</button><button id="t_rooms">ODALAR</button><button id="t_items">EŞYALAR</button><button id="t_profile">PROFİL</button><span id="sp"></span><button id="add" class="pri">+ EŞYA EKLE</button><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="main"><div id="content"></div><div id="detail"></div></div>
+<div id="modal"><div id="form"></div></div>
+<div id="bar"><div id="cmdrow"><input id="cmd" placeholder="Komut: kulaklığım nerede · kulaklığı salonda TV ünitesinin sağ çekmecesine koydum · odalar · favoriler · oda ekle salon · çık" spellcheck="false" autocomplete="off"></div><div id="log"><span class="j" id="jl">Jarvis: sesli komutlar açık, yazarak da verebilirsiniz.</span><span class="mem" id="mem">anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)</span></div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ICON={"headphones":"🎧","silverware-fork-knife":"🍴","tshirt-crew":"👕","book-open-variant":"📖","file-document-outline":"📄","sofa-outline":"🛋","teddy-bear":"🧸","hammer-wrench":"🔧","account-outline":"👤","shape-outline":"◆","tag-outline":"🏷"};
+const MON=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+function norm(s){return String(s).replace(/İ/g,"i").replace(/I/g,"ı").toLocaleLowerCase("tr").replace(/ı/g,"i").replace(/ş/g,"s").replace(/ğ/g,"g").replace(/ü/g,"u").replace(/ö/g,"o").replace(/ç/g,"c").trim()}
+function fdate(ts){const d=new Date(ts);return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear()+", "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+let D=null,SUG=[],tab="home",openId=null,roomId=null,F={q:"",sort:"new",fav:false,cat:null,room:null},formState=null,delArm=null,resetArm=0;
+// ------------------------------------------------------------------ iletişim
+let ws;function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"yuvam"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.type==="cmdbuf"){const it=m.items||[];$("mem").textContent=it.length?`anlık komut kaydı: işleniyor → “${it[it.length-1].text}” (bitince silinecek)`:"anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)";return}
+  if(m.kind!=="yuvam")return;
+  if(m.type==="scene_init"){D=m.data.data;SUG=m.data.rooms_suggest||[];render()}
+  else if(m.type==="scene_do")handleDo(m.do||{})};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function handleDo(d){
+ if(d.msg)$("jl").textContent="Jarvis: "+d.msg;
+ if(d.data)D=d.data;
+ if(d.filter!==undefined){F={q:"",sort:"new",fav:false,cat:null,room:null,...d.filter}}
+ if(d.search!==undefined&&d.search!==null)F.q=d.search;
+ if(d.tab)setTab(d.tab,true);
+ if(d.room){roomId=d.room;tab="rooms";openId=null}
+ if(d.closeDetail)openId=null;
+ if(d.closeForm)closeForm();
+ if(d.open)openId=d.open;
+ if(d.form!==undefined&&d.form!==null)openForm(d.form.id||"");
+ render()}
+const item=id=>D.items.find(i=>i.id===id),room=id=>D.rooms.find(r=>r.id===id),cat=id=>D.categories.find(c=>c.id===id);
+function chain(lid){const o=[];let c=lid?D.locations.find(l=>l.id===lid):null;const seen=new Set();while(c&&!seen.has(c.id)){seen.add(c.id);o.unshift(c);c=c.parentId?D.locations.find(l=>l.id===c.parentId):null}return o}
+function pathNames(it){const r=room(it.roomId);return [r?r.name:"Bilinmeyen oda",...chain(it.locationId).map(l=>l.name)]}
+function stem(text,t){if(text.includes(t))return true;if(t.length<6)return false;for(let n=t.length-1;n>=Math.max(5,t.length-4);n--)if(text.includes(t.slice(0,n)))return true;return false}
+function search(q){const tk=norm(q).split(/\s+/).filter(Boolean);if(!tk.length)return D.items.slice();const out=[];
+ for(const it of D.items){const c=cat(it.categoryId),name=norm(it.name),rest=norm([c?c.name:"",...pathNames(it),it.description,it.howToFind,...it.tags].join(" "));let sc=0,ok=true;
+  for(const t of tk){if(name.includes(t))sc+=name.startsWith(t)?3:2;else if(rest.includes(t))sc+=1;else if(stem(name,t))sc+=1.5;else if(stem(rest,t))sc+=.5;else{ok=false;break}}
+  if(ok)out.push([sc,it])}
+ return out.sort((a,b)=>b[0]-a[0]||b[1].updatedAt-a[1].updatedAt).map(x=>x[1])}
+// ------------------------------------------------------------------ ortak parçalar
+function thumb(it){const c=cat(it.categoryId);return it.image?`<img src="${esc(it.image)}" alt="">`:(ICON[c&&c.icon]||"📦")}
+function card(it){const el=document.createElement("div");el.className="card"+(it.id===openId?" act":"");
+ el.innerHTML=`<div class="th">${thumb(it)}</div><div class="tx"><b>${esc(it.name)}</b><small>${esc(pathNames(it).join(" → "))}</small></div>`;
+ const s=document.createElement("button");s.className="star"+(it.isFavorite?" on":"");s.textContent=it.isFavorite?"★":"☆";s.title="Favori";s.onclick=e=>{e.stopPropagation();send({type:"yuvam_fav",id:it.id})};el.appendChild(s);
+ el.onclick=()=>showItem(it.id);return el}
+function cardsInto(parent,arr,empty){if(!arr.length){const e=document.createElement("div");e.className="empty";e.textContent=empty;parent.appendChild(e);return}
+ const g=document.createElement("div");g.className="cards";arr.forEach(it=>g.appendChild(card(it)));parent.appendChild(g)}
+function showItem(id){openId=id;send({type:"yuvam_view",id});const it=item(id);if(it){it.lastViewedAt=Date.now();it.viewCount=(it.viewCount||0)+1}render()}
+function setTab(t,keep){tab=t;if(!keep){roomId=null}["home","rooms","items","profile"].forEach(k=>$("t_"+k).classList.toggle("on",k===t));render()}
+// ------------------------------------------------------------------ ekranlar
+function render(){if(!D)return;["home","rooms","items","profile"].forEach(k=>$("t_"+k).classList.toggle("on",k===tab));const c=$("content");c.innerHTML="";
+ ({home:rHome,rooms:rRooms,items:rItems,profile:rProfile}[tab])(c);renderDetail();if(formState)renderForm()}
+function rHome(c){
+ c.innerHTML=`<h1>Merhaba efendim</h1><div class="mut">Evin senin, eşyaların da yerinde!</div>
+ <div class="stats"><div class="stat"><b>${D.items.length}</b><span>Toplam Eşya</span></div><div class="stat"><b>${D.rooms.length}</b><span>Oda</span></div><div class="stat"><b>${D.categories.length}</b><span>Kategori</span></div></div>
+ <h2>Hızlı erişim</h2><div class="row"><div class="quick" id="qa"><b>＋ Eşya Ekle</b><span class="mut">Yeni eşya kaydet</span></div><div class="quick" id="qr"><b>⌂ Odalara Git</b><span class="mut">Evdeki odaları görüntüle</span></div></div>`;
+ $("qa").onclick=()=>openForm("");$("qr").onclick=()=>setTab("rooms");
+ const sec=(t,arr,e)=>{if(!arr.length&&!e)return;const h=document.createElement("h2");h.textContent=t;c.appendChild(h);cardsInto(c,arr,e||"")};
+ sec("Favoriler",D.items.filter(i=>i.isFavorite).slice(0,10));
+ sec("Son baktıkların",D.items.filter(i=>i.lastViewedAt).sort((a,b)=>b.lastViewedAt-a.lastViewedAt).slice(0,10));
+ sec("Sık arananlar",D.items.filter(i=>(i.viewCount||0)>=2).sort((a,b)=>b.viewCount-a.viewCount).slice(0,10));
+ sec("Son eklenenler",D.items.slice().sort((a,b)=>b.createdAt-a.createdAt).slice(0,6),"Henüz eşya yok. “+ EŞYA EKLE” ya da sesle: kulaklığı salonda TV ünitesinin sağ çekmecesine koydum.")}
+function rRooms(c){
+ if(roomId&&room(roomId))return rRoom(c);
+ c.innerHTML=`<h1>Odalar</h1><div class="mut">${D.rooms.length} oda</div><div class="row" style="margin:12px 0"><input id="nr" placeholder="Yeni oda adı (örn. Salon)" style="max-width:300px" maxlength="40"><button id="nrb" class="pri">ODA EKLE</button></div><div class="chips" id="sg"></div><div class="cards" id="rg" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))"></div>`;
+ const add=n=>{n=(n||"").trim();if(n)send({type:"yuvam_add_room",name:n})};
+ $("nrb").onclick=()=>{add($("nr").value);$("nr").value=""};$("nr").onkeydown=e=>{e.stopPropagation();if(e.key==="Enter"){add(e.target.value);e.target.value=""}};
+ SUG.filter(s=>!D.rooms.some(r=>norm(r.name)===norm(s))).forEach(s=>{const b=document.createElement("button");b.textContent="+ "+s;b.onclick=()=>add(s);$("sg").appendChild(b)});
+ if(!D.rooms.length)$("rg").outerHTML='<div class="empty">Henüz oda yok. Yukarıdan ekleyin ya da “oda ekle salon” deyin.</div>';
+ D.rooms.forEach(r=>{const n=D.items.filter(i=>i.roomId===r.id).length,el=document.createElement("div");el.className="room";el.innerHTML=`<div class="ph">${r.image?`<img src="${esc(r.image)}" alt="">`:"🛋"}</div><div class="i"><b>${esc(r.name)}</b><div class="mut">${n} eşya</div></div>`;el.onclick=()=>{roomId=r.id;render()};$("rg")&&$("rg").appendChild(el)})}
+function rRoom(c){const r=room(roomId),its=D.items.filter(i=>i.roomId===r.id).sort((a,b)=>b.updatedAt-a.updatedAt),top=D.locations.filter(l=>l.roomId===r.id&&!l.parentId);
+ c.innerHTML=`<div class="row"><button id="bk">← ODALAR</button><h1 style="margin:0">${esc(r.name)}</h1></div><div class="row" style="margin:12px 0">${r.image?`<div class="pinimg"><img src="${esc(r.image)}" alt=""></div>`:'<span class="mut">Oda fotoğrafı yok.</span>'}<button id="ph">FOTOĞRAF ${r.image?"DEĞİŞTİR":"EKLE"}</button>${r.image?'<button id="phx" class="dg">FOTOĞRAFI KALDIR</button>':""}<button id="rn">ADI DEĞİŞTİR</button><button id="rd" class="dg">ODAYI SİL</button></div><div class="mut">${its.length} eşya</div><div id="locs"></div>`;
+ $("bk").onclick=()=>{roomId=null;render()};
+ $("ph").onclick=()=>pickPhoto(u=>send({type:"yuvam_room",id:r.id,image:u}));if($("phx"))$("phx").onclick=()=>send({type:"yuvam_room",id:r.id,image:""});
+ $("rn").onclick=()=>{const n=prompt("Oda adı",r.name);if(n&&n.trim())send({type:"yuvam_room",id:r.id,name:n})};
+ $("rd").onclick=()=>{if(its.length){$("jl").textContent="Jarvis: İçinde eşya olan oda silinemez. Önce eşyaları taşıyın.";return}if(delArm==="room"+r.id){send({type:"yuvam_delete_room",id:r.id});roomId=null;delArm=null}else{delArm="room"+r.id;$("rd").textContent="EMİN MİSİN?";setTimeout(()=>{delArm=null;if($("rd"))$("rd").textContent="ODAYI SİL"},3000)}};
+ if(top.length){const h=document.createElement("h2");h.textContent="Konumlar";c.appendChild(h);const tr=document.createElement("div");c.appendChild(tr);
+  const count=lid=>{const ids=new Set([lid]);let g=true;while(g){g=false;for(const l of D.locations)if(l.parentId&&ids.has(l.parentId)&&!ids.has(l.id)){ids.add(l.id);g=true}}return D.items.filter(i=>i.locationId&&ids.has(i.locationId)).length};
+  const walk=(pid,depth)=>D.locations.filter(l=>l.roomId===r.id&&l.parentId===pid).forEach(l=>{const d=document.createElement("div");d.className="box";d.style.marginLeft=depth*22+"px";d.innerHTML=`📦 <b>${esc(l.name)}</b> <span class="mut">· ${count(l.id)} eşya</span>`;d.style.cursor="pointer";d.onclick=()=>{F={q:"",sort:"new",fav:false,cat:null,room:r.id,loc:l.id};setTab("items")};tr.appendChild(d);walk(l.id,depth+1)});walk(null,0)}
+ const h=document.createElement("h2");h.textContent="Eşyalar";c.appendChild(h);cardsInto(c,its,"Bu odada henüz eşya yok.")}
+function locIds(lid){const ids=new Set([lid]);let g=true;while(g){g=false;for(const l of D.locations)if(l.parentId&&ids.has(l.parentId)&&!ids.has(l.id)){ids.add(l.id);g=true}}return ids}
+function rItems(c){
+ c.innerHTML=`<h1>Eşyalar</h1><div class="row" style="margin:10px 0"><input id="q" placeholder="Eşya, oda, konum ya da etiket ara…" value="${esc(F.q)}" style="max-width:420px"><button data-s="new">YENİ</button><button data-s="alpha">A-Z</button><button data-s="updated">GÜNCEL</button><button id="fv">★ FAVORİLER</button><button id="cl" class="dg">FİLTRELERİ TEMİZLE</button></div><div class="chips" id="cc"></div><div class="chips" id="rc"></div><div id="res"></div>`;
+ c.querySelectorAll("[data-s]").forEach(b=>{b.classList.toggle("on",F.sort===b.dataset.s);b.onclick=()=>{F.sort=b.dataset.s;render()}});
+ $("fv").classList.toggle("on",F.fav);$("fv").onclick=()=>{F.fav=!F.fav;render()};$("cl").onclick=()=>{F={q:"",sort:"new",fav:false,cat:null,room:null};render()};
+ $("q").oninput=e=>{F.q=e.target.value;list()};$("q").onkeydown=e=>e.stopPropagation();
+ D.categories.forEach(k=>{const b=document.createElement("button");b.textContent=(ICON[k.icon]||"🏷")+" "+k.name;b.classList.toggle("on",F.cat===k.id);b.onclick=()=>{F.cat=F.cat===k.id?null:k.id;render()};$("cc").appendChild(b)});
+ D.rooms.forEach(r=>{const b=document.createElement("button");b.textContent="⌂ "+r.name;b.classList.toggle("on",F.room===r.id);b.onclick=()=>{F.room=F.room===r.id?null:r.id;F.loc=null;render()};$("rc").appendChild(b)});
+ list();
+ function list(){let a=search(F.q);if(F.cat)a=a.filter(i=>i.categoryId===F.cat);if(F.room)a=a.filter(i=>i.roomId===F.room);if(F.loc){const ids=locIds(F.loc);a=a.filter(i=>i.locationId&&ids.has(i.locationId))}if(F.fav)a=a.filter(i=>i.isFavorite);
+  if(!F.q.trim()){if(F.sort==="new")a.sort((x,y)=>y.createdAt-x.createdAt);if(F.sort==="alpha")a.sort((x,y)=>x.name.localeCompare(y.name,"tr"));if(F.sort==="updated")a.sort((x,y)=>y.updatedAt-x.updatedAt)}
+  const r=$("res");r.innerHTML="";cardsInto(r,a,D.items.length?"Eşleşen eşya yok.":"Henüz eşya yok.")}}
+function rProfile(c){
+ c.innerHTML=`<h1>Profil</h1><div class="mut">${D.items.length} eşya · ${D.rooms.length} oda</div> <h2>Yedekleme</h2><div class="mut">Verilerin yalnızca bu bilgisayardaki yuvam.json dosyasında durur. Yedek, telefondaki Yuvam uygulamasıyla aynı biçimdedir.</div>
+ <div class="row" style="margin:10px 0"><button id="ex">YEDEK AL (yuvam_yedek.json)</button></div>
+ <label>YEDEKTEN GERİ YÜKLE — yedek metnini yapıştırın (mevcut verinin yerine geçer; fotoğraflar yalnızca bu cihazın biçimindeyse alınır)</label><textarea id="im" style="min-height:90px" placeholder="{ &quot;version&quot;: 1, ... }"></textarea><div class="row" style="margin-top:8px"><button id="ib" class="pri">YÜKLE</button></div>
+ <h2>Tehlikeli bölge</h2><button id="rs" class="dg">TÜM VERİLERİ SİL</button><div class="mut" style="margin-top:20px">Evim · Eşyalarını kaydet, her zaman bul.</div>`;
+ $("im").onkeydown=e=>e.stopPropagation();
+ $("ex").onclick=()=>send({type:"yuvam_export"});
+ $("ib").onclick=()=>{const t=$("im").value.trim();if(t)send({type:"yuvam_import",text:t});$("im").value=""};
+ $("rs").onclick=()=>{if(Date.now()-resetArm<4000){send({type:"yuvam_reset"});resetArm=0;$("rs").textContent="TÜM VERİLERİ SİL"}else{resetArm=Date.now();$("rs").textContent="TÜM ODALAR VE EŞYALAR SİLİNECEK — TEKRAR TIKLA";setTimeout(()=>{if($("rs"))$("rs").textContent="TÜM VERİLERİ SİL";resetArm=0},4000)}}}
+// ------------------------------------------------------------------ eşya detayı
+function steps(t){return String(t||"").split(/\n+/).map(l=>l.replace(/^\s*(\d+[.)]|[-•*])\s*/,"").trim()).filter(Boolean)}
+function renderDetail(){const dv=$("detail"),it=openId&&item(openId);if(!it){dv.style.display="none";dv.innerHTML="";return}
+ dv.style.display="block";const c=cat(it.categoryId),r=room(it.roomId),h=D.history.filter(x=>x.itemId===it.id).sort((a,b)=>b.changedAt-a.changedAt),st=steps(it.howToFind);
+ dv.innerHTML=`<div class="row"><button id="dx">✕ KAPAT</button><span style="flex:1"></span><button id="df" class="${it.isFavorite?"on":""}">${it.isFavorite?"★ FAVORİ":"☆ FAVORİLE"}</button><button id="de">DÜZENLE</button></div>
+ ${it.image?`<div class="pinimg" style="margin-top:10px"><img src="${esc(it.image)}" alt=""></div>`:`<div class="th" style="width:100%;height:110px;margin-top:10px;font-size:48px">${thumb(it)}</div>`}
+ <h1 style="margin-top:10px">${esc(it.name)}</h1>${c?`<span class="box" style="display:inline-block;padding:3px 12px;border-radius:14px">${esc(c.name)}</span>`:""}
+ <h2>Konum</h2><div class="crumb">${pathNames(it).map(n=>`<span>${esc(n)}</span>`).join("→")}</div>
+ ${st.length?`<h2>Nasıl bulunur?</h2>${st.length===1?`<div class="box">${esc(st[0])}</div>`:st.map((s,i)=>`<div class="step"><i>${i+1}</i><span>${esc(s)}</span></div>`).join("")}`:""}
+ ${it.pin&&r&&r.image?`<h2>Odadaki yeri</h2><div class="pinimg"><img src="${esc(r.image)}" alt=""><span class="pin" style="left:${it.pin.x*100}%;top:${it.pin.y*100}%">📍</span></div>`:""}
+ ${it.description?`<h2>Açıklama</h2><div class="box">${esc(it.description)}</div>`:""}
+ ${h.length?`<h2>Konum geçmişi</h2>${h.map(x=>`<div class="hist"><b class="mut">${esc(fdate(x.changedAt))}</b><s>${esc(x.previousLocation)}</s>${esc(x.newLocation)}</div>`).join("")}`:""}
+ <h2>İşlemler</h2><div class="row"><button id="dm">KONUMU DEĞİŞTİR</button><button id="dd" class="dg">EŞYAYI SİL</button></div>`;
+ $("dx").onclick=()=>{openId=null;render()};$("df").onclick=()=>send({type:"yuvam_fav",id:it.id});$("de").onclick=()=>openForm(it.id);$("dm").onclick=()=>openForm(it.id,true);
+ $("dd").onclick=()=>{if(delArm===it.id){send({type:"yuvam_delete",id:it.id});delArm=null}else{delArm=it.id;$("dd").textContent="EMİN MİSİN? BU GERİ ALINAMAZ";setTimeout(()=>{if(delArm===it.id){delArm=null;if($("dd"))$("dd").textContent="EŞYAYI SİL"}},3500)}}}
+// ------------------------------------------------------------------ eşya formu
+function pickPhoto(cb){const f=document.createElement("input");f.type="file";f.accept="image/*";f.onchange=()=>{const file=f.files&&f.files[0];if(!file||!/^image\//.test(file.type))return;const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{let w=img.width,h=img.height,m=720;if(Math.max(w,h)>m){const k=m/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
+  const cv=document.createElement("canvas");cv.width=w;cv.height=h;cv.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);let q=.75,d=cv.toDataURL("image/jpeg",q);while(d.length>200000&&q>.3){q-=.1;d=cv.toDataURL("image/jpeg",q)}
+  if(d.length>200000){$("jl").textContent="Jarvis: Fotoğraf çok büyük.";return}cb(d)};img.onerror=()=>URL.revokeObjectURL(url);img.src=url};f.click()}
+function openForm(id,moveOnly){const it=id?item(id):null;formState={id:it?it.id:"",moveOnly:!!moveOnly,name:it?it.name:"",roomId:it?it.roomId:(D.rooms[0]?D.rooms[0].id:""),path:it?chain(it.locationId).map(l=>l.name).join(" > "):"",categoryId:it?it.categoryId||"":"",description:it?it.description:"",howToFind:it?it.howToFind:"",image:it?it.image||"":"",isFavorite:it?it.isFavorite:false,pin:it&&it.pin?{...it.pin}:null};renderForm()}
+function closeForm(){formState=null;$("modal").style.display="none"}
+function pathSegs(s){return String(s).split(/>|→|\//).map(x=>x.trim()).filter(Boolean).slice(0,6)}
+function renderForm(){const f=formState,m=$("modal"),fm=$("form");m.style.display="flex";const keep=document.activeElement&&document.activeElement.id;
+ if($("fn")){f.name=$("fn").value;if($("fh"))f.howToFind=$("fh").value;if($("fd"))f.description=$("fd").value;if($("fp"))f.path=$("fp").value;if($("ff"))f.isFavorite=$("ff").checked}
+ const rm=room(f.roomId),kids=(()=>{const segs=pathSegs(f.path.replace(/>\s*$/,""));let parent=null;const done=f.path.trim().endsWith(">")?segs:segs.slice(0,-1);for(const n of done){const l=D.locations.find(x=>x.roomId===f.roomId&&x.parentId===parent&&norm(x.name)===norm(n));if(!l){parent=undefined;break}parent=l.id}return parent===undefined?[]:D.locations.filter(l=>l.roomId===f.roomId&&l.parentId===parent).map(l=>l.name)})();
+ if(f.moveOnly){fm.innerHTML=`<h2>Konumu değiştir — ${esc(f.name)}</h2>`}
+ else fm.innerHTML=`<h2>${f.id?"Eşyayı düzenle":"Yeni eşya"}</h2><label>EŞYA ADI</label><input id="fn" maxlength="80" value="${esc(f.name)}" placeholder="örn. HyperX kulaklık">`;
+ fm.innerHTML+=`<div class="two"><div><label>ODA</label><select id="fr" class="f">${D.rooms.map(r=>`<option value="${esc(r.id)}"${r.id===f.roomId?" selected":""}>${esc(r.name)}</option>`).join("")}<option value="__new">＋ Yeni oda…</option></select></div>
+ ${f.moveOnly?"":`<div><label>KATEGORİ</label><select id="fc" class="f"><option value="">— seçilmedi —</option>${D.categories.map(c=>`<option value="${esc(c.id)}"${c.id===f.categoryId?" selected":""}>${esc(c.name)}</option>`).join("")}<option value="__new">＋ Yeni kategori…</option></select></div>`}</div>
+ <label>KONUM (büyükten küçüğe, “>” ile ayırın)</label><input id="fp" value="${esc(f.path)}" placeholder="örn. TV Ünitesi > Sağ Çekmece" maxlength="200"><div class="chips" id="fk">${kids.map(k=>`<button data-k="${esc(k)}">${esc(k)}</button>`).join("")}</div>
+ ${f.moveOnly?"":`<label>NASIL BULUNUR? (her satır bir adım)</label><textarea id="fh" maxlength="800">${esc(f.howToFind)}</textarea><label>AÇIKLAMA</label><textarea id="fd" maxlength="600">${esc(f.description)}</textarea>`}
+ ${rm&&rm.image?`<label>ODADAKİ YERİ (fotoğrafa tıklayın)</label><div class="pinimg" id="pi"><img src="${esc(rm.image)}" alt="">${f.pin?`<span class="pin" style="left:${f.pin.x*100}%;top:${f.pin.y*100}%">📍</span>`:""}</div>${f.pin?' <button id="pr">İŞARETİ KALDIR</button>':""}`:""}
+ ${f.moveOnly?"":`<label>FOTOĞRAF</label><div class="row">${f.image?`<div class="pinimg"><img src="${esc(f.image)}" alt="" style="max-height:120px"></div>`:""}<button id="fi">${f.image?"DEĞİŞTİR":"FOTOĞRAF SEÇ"}</button>${f.image?'<button id="fix" class="dg">KALDIR</button>':""}</div>
+ <label><input type="checkbox" id="ff" style="width:auto"${f.isFavorite?" checked":""}> Favori</label>`}
+ <div class="row" style="margin-top:16px"><button id="sv" class="pri">KAYDET</button><button id="cn">VAZGEÇ</button></div>`;
+ const rd=()=>{if($("fn"))f.name=$("fn").value;if($("fh"))f.howToFind=$("fh").value;if($("fd"))f.description=$("fd").value;if($("fp"))f.path=$("fp").value;if($("ff"))f.isFavorite=$("ff").checked};
+ ["fn","fp","fh","fd"].forEach(k=>{const e=$(k);if(e){e.onkeydown=ev=>ev.stopPropagation();if(k==="fp")e.oninput=()=>{f.path=e.value;renderForm()}}});
+ $("fr").onchange=e=>{rd();if(e.target.value==="__new"){const n=prompt("Yeni oda adı");if(n&&n.trim()){const nm=n.trim().slice(0,40);const ex=D.rooms.find(r=>norm(r.name)===norm(nm));if(ex)f.roomId=ex.id;else{f.pendingRoom=nm;send({type:"yuvam_add_room",name:nm});return}}}else{f.roomId=e.target.value;f.pin=null}renderForm()};
+ if($("fc"))$("fc").onchange=e=>{rd();if(e.target.value==="__new"){const n=prompt("Yeni kategori adı");if(n&&n.trim()){f.pendingCat=n.trim().slice(0,30);send({type:"yuvam_add_category",name:n})}f.categoryId=""}else f.categoryId=e.target.value;renderForm()};
+ $("fk").querySelectorAll("button").forEach(b=>b.onclick=()=>{rd();const segs=pathSegs(f.path),ends=f.path.trim().endsWith(">");const base=ends?segs:segs.slice(0,-1);f.path=[...base,b.dataset.k].join(" > ");renderForm()});
+ if($("pi"))$("pi").onclick=e=>{rd();const r=e.currentTarget.getBoundingClientRect();f.pin={x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))};renderForm()};
+ if($("pr"))$("pr").onclick=()=>{rd();f.pin=null;renderForm()};
+ if($("fi"))$("fi").onclick=()=>{rd();pickPhoto(u=>{f.image=u;renderForm()})};if($("fix"))$("fix").onclick=()=>{rd();f.image="";renderForm()};
+ $("cn").onclick=closeForm;
+ $("sv").onclick=()=>{rd();if(!f.roomId||f.roomId==="__new"){$("jl").textContent="Jarvis: Önce bir oda seçin ya da ekleyin.";return}
+  if(f.moveOnly){send({type:"yuvam_move",id:f.id,roomId:f.roomId,path:pathSegs(f.path),pin:f.pin});closeForm();return}
+  if(!f.name.trim()){$("jl").textContent="Jarvis: Eşya adı gerekli.";return}
+  send({type:"yuvam_save_item",id:f.id,item:{name:f.name,roomId:f.roomId,categoryId:f.categoryId||null,locationPath:pathSegs(f.path),description:f.description,howToFind:f.howToFind,image:f.image,isFavorite:f.isFavorite,pin:f.pin}})};
+ if(keep&&$(keep)&&$(keep).tagName!=="SELECT"){const e=$(keep);e.focus();try{e.setSelectionRange(e.value.length,e.value.length)}catch(x){}}}
+// yeni eklenen oda/kategori formda seçilsin
+const _hd=handleDo;handleDo=function(d){_hd(d);if(formState&&d.data){if(formState.pendingRoom){const r=D.rooms.find(x=>norm(x.name)===norm(formState.pendingRoom));if(r)formState.roomId=r.id;formState.pendingRoom=null}
+ if(formState.pendingCat){const c=D.categories.find(x=>norm(x.name)===norm(formState.pendingCat));if(c)formState.categoryId=c.id;formState.pendingCat=null}renderForm()}};
+// ------------------------------------------------------------------ üst çubuk, komut kutusu, çıkış
+["home","rooms","items","profile"].forEach(k=>$("t_"+k).onclick=()=>setTab(k));
+$("add").onclick=()=>openForm("");
+function shut(){send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){send({type:"text",text:e.target.value.trim()});$("jl").textContent="› komut uygulanıyor…";e.target.value=""}else if(e.key==="Escape")shut()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){if(formState){closeForm();return}const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){a.blur();return}shut()}});
+setTimeout(()=>$("cmd").focus(),400);connect();window.focus();
+</script></body></html>

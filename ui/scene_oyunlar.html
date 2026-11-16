@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS ZİHİN OYUNLARI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#3fe8ff;--p:#ff7ad9;--txt:#e2f7fb;--mut:rgba(226,247,251,.58);--ln:rgba(63,232,255,.2);--card:rgba(6,22,32,.66);--ok:#5ee08a;--bad:#ff8a70;--warn:#ffd84a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse 60% 55% at 50% 45%,rgba(255,122,217,.07),transparent 70%),radial-gradient(ellipse at 50% -10%,#08303f 0%,#020a10 62%);color:var(--txt);font-family:"Segoe UI",Bahnschrift,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:12px;padding:0 22px;z-index:5;background:linear-gradient(#000d,transparent)}
+#title{font:600 15px Bahnschrift,Consolas;letter-spacing:.42em;color:#fff}#title b{color:var(--p);font-weight:600}
+#today{font:12px Consolas;color:var(--mut);margin-left:10px}#sp{flex:1}
+button{font:600 12px Bahnschrift,Consolas;letter-spacing:.1em;padding:8px 14px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,14,20,.6);border-radius:10px;white-space:nowrap}
+button:hover{background:rgba(63,232,255,.12);border-color:var(--c)}
+#close{border-color:rgba(255,120,84,.55);color:var(--bad)}
+#stage{position:fixed;top:66px;bottom:92px;left:22px;right:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+/* menü */
+#menu{display:grid;grid-template-columns:repeat(4,minmax(200px,280px));gap:20px}
+.gc{background:var(--card);border:1px solid var(--ln);border-radius:20px;padding:22px 20px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+.gc:hover{transform:translateY(-4px);border-color:var(--gc);box-shadow:0 16px 40px rgba(0,0,0,.4),0 0 24px color-mix(in srgb,var(--gc) 30%,transparent)}
+.gc .ic{font-size:42px;margin-bottom:10px}.gc b{display:block;font-size:18px;margin-bottom:6px}.gc p{margin:0 0 14px;font-size:13px;color:var(--mut);line-height:1.45;min-height:56px}
+.gc .best{font:600 12px Consolas;color:var(--gc)}.gc .best em{font-style:normal;font-size:22px;margin-right:4px}
+.gc svg{display:block;width:100%;height:28px;margin-top:8px}
+.gc::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--gc)}
+/* oyun alanı */
+#game{display:none;flex-direction:column;align-items:center;gap:18px;width:100%}
+#ghead{display:flex;align-items:center;gap:14px;width:min(900px,100%)}#ghead b{font-size:20px}#ghead .sc{margin-left:auto;font:600 14px Consolas;color:var(--mut)}#ghead .sc em{font-style:normal;color:#fff;font-size:20px;margin:0 4px}
+#garea{width:min(900px,100%);min-height:52vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--card);border:1px solid var(--ln);border-radius:22px;padding:24px;position:relative}
+.big{font:700 min(16vh,140px) Bahnschrift,Consolas;letter-spacing:.06em;color:#fff;text-shadow:0 0 30px rgba(63,232,255,.5);font-variant-numeric:tabular-nums;min-height:1.1em}
+.msg{font-size:17px;color:var(--mut);text-align:center;min-height:26px}
+.inp{padding:12px 16px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:12px;color:#fff;font:600 26px Consolas;outline:0;text-align:center;width:min(420px,90%);letter-spacing:.2em;user-select:text}
+.inp:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(63,232,255,.14)}
+.prim{background:linear-gradient(135deg,var(--c),#2a7cff);color:#021016;border:0;font-size:14px;padding:11px 26px}
+.flash-ok{animation:fo .6s}.flash-bad{animation:fb .6s}@keyframes fo{30%{box-shadow:0 0 0 4px var(--ok) inset}}@keyframes fb{30%{box-shadow:0 0 0 4px var(--bad) inset}}
+/* eşleştirme */
+#mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:min(520px,100%)}
+.mc{aspect-ratio:1;perspective:600px;cursor:pointer}.mc .in{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}.mc.open .in,.mc.done .in{transform:rotateY(180deg)}
+.mc .f,.mc .bk{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;display:grid;place-items:center}
+.mc .f{background:linear-gradient(145deg,#0d3346,#0a1e2c);border:1px solid var(--ln)}.mc .f::after{content:"?";font:700 30px Bahnschrift;color:rgba(63,232,255,.35)}
+.mc .bk{transform:rotateY(180deg);background:linear-gradient(145deg,#2a1d40,#141a30);border:1px solid rgba(255,122,217,.45);font-size:min(6vh,46px)}
+.mc.done .bk{border-color:var(--ok);box-shadow:0 0 16px rgba(94,224,138,.3)}
+/* simon */
+#simon{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:min(420px,80%);aspect-ratio:1}
+.pad{border-radius:24px;cursor:pointer;opacity:.35;transition:opacity .12s,transform .12s,box-shadow .12s;border:2px solid rgba(255,255,255,.08)}
+.pad.on{opacity:1;transform:scale(1.03);box-shadow:0 0 40px currentColor}
+.pad[data-i="0"]{background:#2ee6a8;color:#2ee6a8}.pad[data-i="1"]{background:#ff5e7e;color:#ff5e7e}.pad[data-i="2"]{background:#ffd84a;color:#ffd84a}.pad[data-i="3"]{background:#4aa8ff;color:#4aa8ff}
+#tbar{width:min(520px,90%);height:8px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden}#tbar i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--warn),var(--bad));transition:width .25s linear}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.opt{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut);cursor:pointer}
+#bar{position:fixed;left:22px;right:22px;bottom:14px;z-index:9;display:flex;flex-direction:column;gap:6px}
+#cmdw{display:flex;align-items:center;gap:10px;background:rgba(0,10,16,.75);border:1px solid var(--ln);border-radius:14px;padding:4px 6px 4px 14px}#cmdw span{font:600 13px Consolas;color:var(--c)}
+#cmd{flex:1;padding:9px 0;background:transparent;border:0;color:#fff;font:14px Consolas;outline:0;user-select:text}
+#log{font:12.5px Consolas;color:#cfeeff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;opacity:.85}
+@media(max-width:1200px){#menu{grid-template-columns:repeat(2,minmax(200px,1fr))}}
+</style></head><body>
+<div id="top"><span id="title">ZİHİN <b>OYUNLARI</b></span><span id="today"></span><span id="sp"></span><button id="menub" style="display:none">◂ MENÜ</button><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="stage">
+ <div id="menu"></div>
+ <div id="game"><div id="ghead"><span id="gicon" style="font-size:28px"></span><b id="gname"></b><span class="sc" id="gsc"></span></div><div id="garea"></div></div>
+</div>
+<div id="bar"><div id="cmdw"><span>›</span><input id="cmd" placeholder="Komut: sayı dizisi · eşleştirme · hızlı hesap · renk dizisi · element avı · başla · menü · rekorlarım · çık" spellcheck="false" autocomplete="off"></div><div id="log">Jarvis: bir oyun seçin.</div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const META={dizi:{ic:"🔢",col:"#3fe8ff",d:"Ekranda beliren rakamları sırayla aklınızda tutun, sonra yazın ya da söyleyin. Her doğru turda dizi bir uzar."},
+ eslestir:{ic:"🃏",col:"#ff7ad9",d:"16 kartın arasından eşleri bulun. Ne kadar az deneme ve kısa sürede bitirirseniz o kadar çok puan."},
+ hesap:{ic:"⚡",col:"#ffd84a",d:"60 saniyede çözebildiğiniz kadar işlem çözün. Doğru cevap verdikçe işlemler zorlaşır."},
+ simon:{ic:"🎨",col:"#5ee08a",d:"Yanıp sönen renk dizisini izleyin ve aynı sırayla tekrarlayın. Her turda bir renk eklenir."},
+ element:{ic:"⚛️",col:"#ff9a5a",d:"60 saniyede elementin adını ya da sembolünü bulun. Doğru bildikçe havuz genişler: hidrojenden uranyuma."}};
+let ws,V=null,cur=null,G={};
+function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function cmd(t){send({type:"text",text:t});$("log").textContent="› komut uygulanıyor…"}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// ---- Türkçe sayı okuma ("on iki" -> 12, "eksi beş" -> -5, "yedi üç dokuz" -> rakam dizisi)
+const ONES={"sıfır":0,"bir":1,"iki":2,"üç":3,"dört":4,"beş":5,"altı":6,"yedi":7,"sekiz":8,"dokuz":9},TENS={"on":10,"yirmi":20,"otuz":30,"kırk":40,"elli":50,"altmış":60,"yetmiş":70,"seksen":80,"doksan":90};
+const low=s=>String(s).replace(/İ/g,"i").replace(/I/g,"ı").toLocaleLowerCase("tr").replace(/[^\p{L}\p{N}\s-]/gu," ");
+function digitsOf(s){s=low(s);let out="";for(const w of s.split(/\s+/)){if(/^\d+$/.test(w))out+=w;else if(w in ONES)out+=ONES[w]}return out}
+function numOf(s){s=low(s).trim();const neg=/^(eksi|-)/.test(s);const m=s.match(/-?\d+/);if(m)return +m[0]*(neg&&+m[0]>0?-1:1);
+ let n=0,any=false;for(const w of s.split(/\s+/)){if(w==="yüz"){n=(n||1)*100;any=true}else if(w in TENS){n+=TENS[w];any=true}else if(w in ONES){n+=ONES[w];any=true}}return any?(neg?-n:n):null}
+// ---- ses (WebAudio)
+let AC=null;function tone(f,ms=220,type="sine",vol=.12){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;o.connect(g);g.connect(AC.destination);const t=AC.currentTime;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+ms/1000);o.start(t);o.stop(t+ms/1000+.02)}catch(e){}}
+const ok=()=>{tone(660,120);setTimeout(()=>tone(990,160),110)},bad=()=>tone(160,300,"sawtooth",.08);
+function flash(c){const a=$("garea");a.classList.remove("flash-ok","flash-bad");void a.offsetWidth;a.classList.add(c)}
+// ---- menü
+function spark(arr,col){if(!arr||arr.length<2)return "";const mx=Math.max(...arr,1),w=200,h=28;const pts=arr.map((v,i)=>`${(i/(arr.length-1)*w).toFixed(1)},${(h-2-(v/mx)*(h-6)).toFixed(1)}`).join(" ");return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`}
+function menu(){cur=null;G.stop=true;$("menu").style.display="grid";$("game").style.display="none";$("menub").style.display="none";if(!V)return;
+ $("today").textContent=`bugün ${V.today} oyun`;
+ $("menu").innerHTML=V.games.map(g=>{const m=META[g.id];return `<div class="gc" data-g="${g.id}" style="--gc:${m.col}"><div class="ic">${m.ic}</div><b>${esc(g.name)}</b><p>${m.d}</p><div class="best">${g.best?`REKOR <em>${g.best}</em>${esc(g.unit)}`:"henüz oynanmadı"}</div>${spark(g.recent,m.col)}</div>`}).join("");
+ document.querySelectorAll(".gc").forEach(e=>e.onclick=()=>open(e.dataset.g))}
+function open(id,start){cur=id;G={stop:true};const g=V.games.find(x=>x.id===id),m=META[id];$("menu").style.display="none";$("game").style.display="flex";$("menub").style.display="inline-block";
+ $("gicon").textContent=m.ic;$("gname").textContent=g.name;$("gsc").innerHTML=g.best?`rekor<em>${g.best}</em>${esc(g.unit)}`:"";
+ const A=$("garea");A.innerHTML=`<div class="msg">${m.d}</div>`+(id==="dizi"?`<label class="opt"><input type="checkbox" id="audio"> Sesli mod: rakamları Jarvis okusun (ekranda görünmez)</label>`:"")+`<button class="prim" id="go">BAŞLA</button><div class="msg" style="font-size:13px">ya da “başla” deyin</div>`;
+ $("go").onclick=()=>start_();if(start)start_()}
+function start_(){if(!cur)return;G={stop:false};({dizi:dizi,eslestir:eslestir,hesap:hesap,simon:simon,element:element})[cur]()}
+function finish(score,text){G.stop=true;const A=$("garea");A.insertAdjacentHTML("beforeend",`<div class="msg" style="color:#fff;font-size:20px">${text}</div><div class="row"><button class="prim" id="again">TEKRAR OYNA</button><button id="back">MENÜ</button></div>`);
+ $("again").onclick=()=>start_();$("back").onclick=menu;send({type:"oyunlar_score",game:cur,score})}
+// ---- 1) sayı dizisi
+async function dizi(){const g=G;const audio=$("audio")&&$("audio").checked;G.audio=audio;let len=3,lives=2,best=0;const A=$("garea");
+ while(!g.stop){const seq=Array.from({length:len},()=>Math.floor(Math.random()*10)).join("");
+  A.innerHTML=`<div class="msg">${len} rakam · kalan hak ${"❤".repeat(lives)}</div><div class="big" id="show"></div><div class="msg" id="sub">${audio?"dinleyin…":"izleyin…"}</div>`;
+  await sleep(700);if(g.stop)return;
+  if(audio){if(window.JarvisKit)JarvisKit.muteCaptions(len*1200+4000);send({type:"oyunlar_say",text:seq.split("").join(", ")});await sleep(len*900+1800)}
+  else for(const d of seq){if(g.stop)return;$("show").textContent=d;tone(400+d*40,120);await sleep(750);$("show").textContent="";await sleep(200)}
+  if(g.stop)return;
+  A.innerHTML=`<div class="msg">Diziyi yazın ya da söyleyin</div><input class="inp" id="ans" inputmode="numeric" autocomplete="off" maxlength="20"><button class="prim" id="ok">TAMAM</button>`;
+  const ans=await new Promise(res=>{G.answer=t=>res(t);$("ok").onclick=()=>res($("ans").value);$("ans").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")res($("ans").value)});$("ans").focus()});
+  G.answer=null;if(g.stop)return;const got=digitsOf(ans);
+  if(got===seq){ok();flash("flash-ok");best=len;len++}else{bad();flash("flash-bad");lives--;A.innerHTML=`<div class="msg">Doğrusu</div><div class="big" style="font-size:min(10vh,80px);color:var(--warn)">${seq}</div><div class="msg">sizinki: ${esc(got||"—")}</div>`;await sleep(2200);if(lives<=0)break}}
+ if(g.stop&&lives>0)return;A.innerHTML=`<div class="big">${best}</div><div class="msg">rakama kadar doğru hatırladınız${G.audio?" (sesli mod)":""}</div>`;finish(best,best>=7?"Harika bir hafıza!":best>=5?"Güzel sonuç.":"Biraz pratikle artar.")}
+// ---- 2) eşleştirme
+function eslestir(){const g=G;const icons=["🍎","🚀","🎧","⚽","🌙","🐢","🎲","🔥"];const deck=[...icons,...icons].sort(()=>Math.random()-.5);let open=[],moves=0,found=0,t0=Date.now(),lock=false;
+ const A=$("garea");A.innerHTML=`<div class="msg" id="st">deneme 0 · 0 sn</div><div id="mgrid">${deck.map((c,i)=>`<div class="mc" data-i="${i}"><div class="in"><div class="f"></div><div class="bk">${c}</div></div></div>`).join("")}</div>`;
+ const tick=setInterval(()=>{if(g.stop){clearInterval(tick);return}$("st").textContent=`deneme ${moves} · ${Math.round((Date.now()-t0)/1000)} sn · ${found}/8 çift`},500);
+ A.querySelectorAll(".mc").forEach(c=>c.onclick=()=>{if(lock||g.stop||c.classList.contains("open")||c.classList.contains("done"))return;c.classList.add("open");tone(520,80);open.push(c);
+  if(open.length===2){moves++;const [a,b]=open;open=[];
+   if(deck[a.dataset.i]===deck[b.dataset.i]){a.classList.add("done");b.classList.add("done");found++;ok();
+    if(found===8){clearInterval(tick);const sec=Math.round((Date.now()-t0)/1000),score=Math.max(0,1000-(moves-8)*25-sec*4);setTimeout(()=>{A.innerHTML=`<div class="big">${score}</div><div class="msg">${moves} denemede, ${sec} saniyede bitirdiniz</div>`;finish(score,moves<=12?"Mükemmel hafıza!":"Tebrikler!")},700)}}
+   else{lock=true;setTimeout(()=>{a.classList.remove("open");b.classList.remove("open");lock=false},850)}}})}
+// ---- 3) hızlı hesap
+function hesap(){const g=G;let score=0,streak=0,end=Date.now()+60000,q=null;const A=$("garea");
+ const make=()=>{const lv=Math.min(4,Math.floor(score/5));const r=(a,b)=>a+Math.floor(Math.random()*(b-a+1));const op=["+","-","×","÷"][Math.floor(Math.random()*(lv<1?2:lv<2?3:4))];let a,b,ans;
+  if(op==="+"){a=r(2,10+lv*20);b=r(2,10+lv*20);ans=a+b}else if(op==="-"){a=r(5,15+lv*25);b=r(1,a);ans=a-b}else if(op==="×"){a=r(2,5+lv*2);b=r(2,9+lv);ans=a*b}else{b=r(2,9);ans=r(2,5+lv*2);a=b*ans}
+  return {t:`${a} ${op} ${b}`,ans}};
+ A.innerHTML=`<div id="tbar"><i style="width:100%"></i></div><div class="msg" id="hs">doğru: 0</div><div class="big" id="hq" style="font-size:min(12vh,100px)"></div><input class="inp" id="ha" inputmode="numeric" autocomplete="off" maxlength="6"><div class="msg" style="font-size:13px">Enter ile gönderin ya da sesle söyleyin</div>`;
+ const next=()=>{q=make();$("hq").textContent=q.t+" = ?";$("ha").value="";$("ha").focus()};
+ const check=v=>{if(g.stop||!q)return;const n=numOf(v);if(n===null)return;if(n===q.ans){score++;streak++;ok();flash("flash-ok")}else{streak=0;bad();flash("flash-bad");$("log").textContent=`Jarvis: ${q.t} = ${q.ans}`}$("hs").textContent=`doğru: ${score}`+(streak>=3?` · ${streak} seri 🔥`:"");next()};
+ G.answer=check;$("ha").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")check($("ha").value)});next();
+ const tick=setInterval(()=>{if(g.stop){clearInterval(tick);return}const left=end-Date.now();$("tbar").firstElementChild.style.width=Math.max(0,left/600)+"%";
+  if(left<=0){clearInterval(tick);G.answer=null;A.innerHTML=`<div class="big">${score}</div><div class="msg">60 saniyede doğru cevap</div>`;finish(score,score>=25?"Şimşek gibi!":score>=15?"Çok iyi.":"Hız pratikle gelir.")}},250)}
+// ---- 5) element avı (periyodik tablo)
+const ELS=[["H","hidrojen"],["He","helyum"],["Li","lityum"],["Be","berilyum"],["B","bor"],["C","karbon"],["N","azot"],["O","oksijen"],["F","flor"],["Ne","neon"],["Na","sodyum"],["Mg","magnezyum"],["Al","alüminyum"],["Si","silisyum"],["P","fosfor"],["S","kükürt"],["Cl","klor"],["Ar","argon"],["K","potasyum"],["Ca","kalsiyum"],["Fe","demir"],["Cu","bakır"],["Zn","çinko"],["Ag","gümüş"],["Au","altın"],["Hg","cıva"],["Pb","kurşun"],["Sn","kalay"],["I","iyot"],["Br","brom"],["Ni","nikel"],["Cr","krom"],["Mn","mangan"],["Ti","titanyum"],["W","tungsten"],["Pt","platin"],["U","uranyum"],["Ba","baryum"],["Li","lityum"],["Xe","ksenon"]];
+const trn=s=>String(s||"").toLocaleLowerCase("tr").replace(/[ıİ]/g,"i").replace(/ş/g,"s").replace(/ç/g,"c").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ğ/g,"g").replace(/[^a-z0-9]/g,"");
+function element(){const g=G;let score=0,tries=0,end=Date.now()+60000,q=null;const A=$("garea");
+ const make=()=>{const pool=ELS.slice(0,Math.min(ELS.length,12+score*2)),e=pool[Math.floor(Math.random()*pool.length)],bySym=Math.random()<.7;return bySym?{show:e[0],ans:e[1],hint:"adı nedir?"}:{show:e[1].toUpperCase(),ans:e[0],hint:"sembolü nedir?"}};
+ A.innerHTML=`<div id="tbar"><i style="width:100%"></i></div><div class="msg" id="es">doğru: 0</div><div class="big" id="eq" style="font-size:min(14vh,110px)"></div><div class="msg" id="eh"></div><input class="inp" id="ea" autocomplete="off" maxlength="20"><div class="msg" style="font-size:13px">Enter ile gönderin ya da sesle söyleyin</div>`;
+ const next=()=>{q=make();$("eq").textContent=q.show;$("eh").textContent=q.hint;$("ea").value="";$("ea").focus()};
+ const check=v=>{if(g.stop||!q)return;const a=trn(v);if(!a)return;tries++;if(a===trn(q.ans)){score++;ok();flash("flash-ok")}else{bad();flash("flash-bad");$("log").textContent="Jarvis: "+q.show+" = "+q.ans}$("es").textContent="doğru: "+score+" / "+tries;next()};
+ G.answer=check;$("ea").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")check($("ea").value)});next();
+ const tick=setInterval(()=>{if(g.stop){clearInterval(tick);return}const left=end-Date.now();$("tbar").firstElementChild.style.width=Math.max(0,left/600)+"%";
+  if(left<=0){clearInterval(tick);G.answer=null;A.innerHTML=`<div class="big">${score}</div><div class="msg">60 saniyede doğru element</div>`;finish(score,score>=20?"Kimya ustası!":score>=12?"Çok iyi.":"Periyodik tabloyu çalıştıkça hızlanırsınız.")}},250)}
+// ---- 4) renk dizisi
+async function simon(){const g=G;const F=[330,392,494,587];let seq=[];const A=$("garea");
+ A.innerHTML=`<div class="msg" id="ss">izleyin…</div><div id="simon">${[0,1,2,3].map(i=>`<div class="pad" data-i="${i}"></div>`).join("")}</div>`;
+ const pads=[...A.querySelectorAll(".pad")];const lit=async(i,ms=420)=>{pads[i].classList.add("on");tone(F[i],ms);await sleep(ms);pads[i].classList.remove("on")};
+ while(!g.stop){seq.push(Math.floor(Math.random()*4));$("ss").textContent=`izleyin… (${seq.length})`;await sleep(600);
+  const sp=Math.max(220,480-seq.length*15);for(const i of seq){if(g.stop)return;await lit(i,sp);await sleep(120)}
+  $("ss").textContent="sıra sizde";
+  const okRound=await new Promise(res=>{let k=0;pads.forEach(p=>p.onclick=async()=>{const i=+p.dataset.i;lit(i,200);if(i!==seq[k]){pads.forEach(x=>x.onclick=null);res(false);return}k++;if(k===seq.length){pads.forEach(x=>x.onclick=null);res(true)}})});
+  if(g.stop)return;if(!okRound){bad();flash("flash-bad");break}ok();await sleep(400)}
+ const score=seq.length-1;A.innerHTML=`<div class="big">${score}</div><div class="msg">adımlık diziyi doğru tekrarladınız</div>`;finish(score,score>=10?"İnanılmaz dikkat!":score>=6?"Güzel!":"Bir daha deneyelim.")}
+// ---- bağlantı
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"oyunlar"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.kind!=="oyunlar")return;
+  if(m.type==="scene_init"&&m.data){V=m.data;menu()}
+  else if(m.type==="scene_do"){const d=m.do||{};if(d.data){V=d.data;if(!cur)menu();else{const g=V.games.find(x=>x.id===cur);if(g&&g.best)$("gsc").innerHTML=`rekor<em>${g.best}</em>${esc(g.unit)}`;$("today").textContent=`bugün ${V.today} oyun`}}
+   if(d.menu)menu();if(d.game)open(d.game,d.start);else if(d.start&&cur)start_();if(d.stop){G.stop=true;if(cur)open(cur)}
+   if(d.answer&&G.answer)G.answer(d.answer);
+   if(d.msg&&!d.quiet)$("log").textContent="Jarvis: "+d.msg}};
+ ws.onclose=()=>setTimeout(connect,1500)}
+$("menub").onclick=menu;
+function shut(){send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){cmd(e.target.value.trim());e.target.value=""}else if(e.key==="Escape")e.target.blur()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){if(cur){menu();return}shut()}});
+connect();window.focus();
+</script></body></html>

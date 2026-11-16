@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS DÜNYA HARİTASI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' data: blob: https://server.arcgisonline.com https://s3.amazonaws.com; connect-src 'self' ws://127.0.0.1:8765 https://server.arcgisonline.com https://s3.amazonaws.com"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<link rel="stylesheet" href="/vendor/maplibre/maplibre-gl.css"><script src="/vendor/maplibre/maplibre-gl-csp.js"></script>
+<style>
+:root{--c:#3fe8ff;--txt:#e2f7fb;--mut:rgba(226,247,251,.6);--ln:rgba(63,232,255,.25);--card:rgba(4,14,22,.78)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;color:var(--txt);font-family:"Segoe UI",sans-serif;user-select:none;
+ background:radial-gradient(ellipse at 50% 50%,#0a1830 0%,#02050c 60%,#000 100%)}
+#stars{position:fixed;inset:0;z-index:0}
+#map{position:fixed;inset:0;z-index:1}
+.maplibregl-canvas{outline:0}
+#top{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:10px;padding:0 18px;z-index:5;background:linear-gradient(rgba(0,0,0,.75),transparent)}
+#title{font:600 15px Bahnschrift,Consolas;letter-spacing:.42em;color:#fff;white-space:nowrap}#title b{color:var(--c);font-weight:600}
+#search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--ln);border-radius:22px;padding:4px 6px 4px 14px;width:min(440px,34vw);backdrop-filter:blur(8px)}
+#search svg{width:16px;height:16px;fill:var(--c);flex:none}
+#q{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#fff;font:14px "Segoe UI";padding:6px 0;user-select:text}#q::placeholder{color:rgba(226,247,251,.45)}
+#sp{flex:1}
+button{font:600 12px "Segoe UI",sans-serif;letter-spacing:.05em;padding:8px 12px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:var(--card);border-radius:10px;white-space:nowrap;backdrop-filter:blur(8px)}
+button:hover{background:rgba(63,232,255,.15);border-color:var(--c)}button.on{background:rgba(63,232,255,.2);color:#fff;border-color:var(--c)}
+#close{border-color:rgba(255,120,84,.55);color:#ff9a7a}
+#tools{position:fixed;right:16px;top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;gap:8px}
+#tools button{width:46px;height:46px;padding:0;border-radius:14px;font-size:19px;display:grid;place-items:center;position:relative}
+#tools button::after{content:attr(data-tip);position:absolute;right:56px;white-space:nowrap;background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:5px 10px;font:12px "Segoe UI";color:var(--txt);opacity:0;pointer-events:none;transition:opacity .15s}
+#tools button:hover::after{opacity:1}
+#info{position:fixed;left:18px;bottom:74px;z-index:5;width:min(420px,40vw);background:var(--card);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#info h2{margin:0 0 4px;font:700 20px "Segoe UI";color:#fff}#info .sub{font-size:12.5px;color:var(--mut);line-height:1.45;max-height:3.2em;overflow:hidden}
+#info .row{display:flex;gap:16px;margin-top:10px;font:12.5px Consolas;color:var(--mut)}#info .row b{color:#fff;font-weight:400}
+#info .tour{margin-top:8px;font-size:13.5px;line-height:1.5;color:#dff}
+#saved{position:fixed;right:76px;top:50%;transform:translateY(-50%);z-index:6;width:260px;max-height:60vh;overflow:auto;background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:8px;display:none;backdrop-filter:blur(10px)}
+#saved.on{display:block}#saved h4{margin:4px 8px 8px;font:600 11px Bahnschrift;letter-spacing:.25em;color:var(--c)}
+#saved .it{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13.5px}#saved .it:hover{background:rgba(63,232,255,.1)}
+#saved .it span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#saved .it button{padding:1px 7px;border:0;background:transparent;color:#ff9a7a}
+#load{position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:6;background:var(--card);border:1px solid var(--ln);border-radius:20px;padding:6px 16px;font-size:13px;display:none}
+#err{position:fixed;inset:0;z-index:4;display:none;align-items:center;justify-content:center;text-align:center;color:var(--mut);font-size:15px;line-height:1.6}
+.maplibregl-ctrl-attrib{background:rgba(0,0,0,.45)!important;font-size:10.5px}.maplibregl-ctrl-attrib a,.maplibregl-ctrl-attrib-inner{color:rgba(226,247,251,.75)!important}
+.maplibregl-ctrl-attrib-button{filter:invert(1)}
+.mk{width:18px;height:18px;border-radius:50%;background:var(--c);border:3px solid #fff;box-shadow:0 0 0 6px rgba(63,232,255,.25),0 0 20px var(--c)}
+#bar{position:fixed;left:18px;right:18px;bottom:12px;z-index:9;display:flex;gap:10px;align-items:center}
+#cmdw{flex:1;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:3px 6px 3px 14px;backdrop-filter:blur(8px)}#cmdw span{font:600 13px Consolas;color:var(--c)}
+#cmd{flex:1;padding:9px 0;background:transparent;border:0;color:#fff;font:14px Consolas;outline:0;user-select:text}
+#log{max-width:38%;font:12.5px Consolas;color:#cfeeff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000}
+</style></head><body>
+<canvas id="stars"></canvas><div id="map"></div>
+<div id="err"></div>
+<div id="top"><span id="title">DÜNYA <b>HARİTASI</b></span>
+ <div id="search"><svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="q" placeholder="Bir yer arayın… (örn: Kapadokya, Everest, Paris)" spellcheck="false" autocomplete="off"><button id="go">GİT</button></div>
+ <span id="sp"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="tools">
+ <button id="b_globe" data-tip="Dünyayı göster">🌍</button><button id="b_home" data-tip="Evimi göster">🏠</button><button id="b_where" data-tip="Burası neresi?">❓</button>
+ <button id="b_spin" data-tip="Dünyayı döndür">⟳</button><button id="b_3d" data-tip="3B dağlar / düz">⛰</button><button id="b_north" data-tip="Kuzeyi yukarı al">🧭</button>
+ <button id="b_lbl" data-tip="Yer adları ve sınırlar">🏷</button><button id="b_tour" data-tip="Dünya turu">✈</button><button id="b_save" data-tip="Burayı kaydet">★</button><button id="b_list" data-tip="Kayıtlı yerlerim">☰</button>
+ <button id="b_in" data-tip="Yakınlaş">＋</button><button id="b_out" data-tip="Uzaklaş">－</button></div>
+<div id="saved"></div>
+<div id="load">yükleniyor…</div>
+<div id="info"><h2 id="iname">Dünya</h2><div class="sub" id="isub">Fareyle sürükleyin, tekerlekle yakınlaşın, sağ tuşla eğip döndürün. Ya da bir yer adı söyleyin.</div>
+ <div class="row"><span>Konum <b id="icoord">–</b></span><span>Rakım <b id="ielev">–</b></span><span>Göz yüksekliği <b id="ialt">–</b></span></div><div class="tour" id="itour"></div></div>
+<div id="bar"><div id="cmdw"><span>›</span><input id="cmd" placeholder="Komut: İstanbul'a git · Everest dağını göster · burası neresi · yakınlaş · döndür · üç boyutlu · dünya turu · evimi göster · çık" spellcheck="false" autocomplete="off"></div><div id="log"></div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+let ws,V=null,map=null,marker=null,spin=false,touring=false,tourStop=false,labels=true,terrain=true,camT=0;
+function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function cmd(t){send({type:"text",text:t});$("log").textContent="› komut uygulanıyor…"}
+// yıldızlar (küre dışında)
+(()=>{const c=$("stars"),x=c.getContext("2d");const rs=()=>{c.width=innerWidth;c.height=innerHeight;x.clearRect(0,0,c.width,c.height);
+ for(let i=0;i<420;i++){x.globalAlpha=Math.random()*.8+.1;x.fillStyle="#fff";const r=Math.random()*1.3;x.beginPath();x.arc(Math.random()*c.width,Math.random()*c.height,r,0,6.283);x.fill()}};rs();addEventListener("resize",rs)})();
+const ESRI="https://server.arcgisonline.com/ArcGIS/rest/services/",EXAG=1.4;
+function build(v){
+ if(!window.maplibregl){$("err").style.display="flex";$("err").textContent="Harita kütüphanesi yüklenemedi.";return}
+ maplibregl.setWorkerUrl("/vendor/maplibre/maplibre-gl-csp-worker.js");
+ labels=v.labels;terrain=v.terrain;
+ const cam=v.cam||{lng:35,lat:39,zoom:1.7,pitch:0,bearing:0};
+ map=new maplibregl.Map({container:"map",center:[cam.lng,cam.lat],zoom:cam.zoom,pitch:cam.pitch,bearing:cam.bearing,maxPitch:85,attributionControl:{compact:true},
+  style:{version:8,projection:{type:["interpolate",["linear"],["zoom"],9,"vertical-perspective",11.5,"mercator"]},
+   sources:{sat:{type:"raster",tiles:[ESRI+"World_Imagery/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:19,attribution:"Uydu: Esri, Maxar, Earthstar Geographics, GIS kullanıcı topluluğu"},
+    lbl:{type:"raster",tiles:[ESRI+"Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:19},
+    dem:{type:"raster-dem",tiles:["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],encoding:"terrarium",tileSize:256,maxzoom:14,attribution:"Yükseklik: Mapzen / AWS Terrain Tiles · Arama: © OpenStreetMap katkıcıları"}},
+   layers:[{id:"sat",type:"raster",source:"sat",paint:{"raster-fade-duration":200}},{id:"lbl",type:"raster",source:"lbl",layout:{visibility:labels?"visible":"none"}}],
+   sky:{"sky-color":"#0b2a4a","horizon-color":"#7fb6e6","fog-color":"#b8d4ee","sky-horizon-blend":0.6,"horizon-fog-blend":0.6,"fog-ground-blend":0.4,
+        "atmosphere-blend":["interpolate",["linear"],["zoom"],0,1,7,1,10,0]}}});
+ // 'load' değil 'style.load': kullanılmayan yükseklik kaynağı 'load' olayını sonsuza kadar bekletebiliyor
+ let ready=false;const init=()=>{if(ready)return;ready=true;if(terrain)map.setTerrain({source:"dem",exaggeration:EXAG});setBtns();info();if(!v.cam)setSpin(true)};
+ map.once("style.load",init);map.once("load",init);const poll=setInterval(()=>{if(map.isStyleLoaded()){clearInterval(poll);init()}},150);   // olay kaçırılırsa (satır içi stil hemen yüklenebiliyor)
+ [100,600,1500].forEach(ms=>setTimeout(()=>map.resize(),ms));addEventListener("resize",()=>map.resize());   // sayfa boyut almadan kurulursa tuval 400x300'de kalıyordu
+ map.on("error",e=>{const m=String(e&&e.error&&e.error.message||"");if(/Failed to fetch|NetworkError|status 0/.test(m)){$("load").style.display="block";$("load").textContent="İnternet bağlantısı yok ya da harita sunucusuna ulaşılamıyor"}});
+ map.on("move",()=>{if(!touring)info(true)});map.on("idle",()=>info());map.on("moveend",()=>{info();clearTimeout(camT);camT=setTimeout(saveCam,2000)});
+ ["mousedown","wheel","touchstart","dragstart"].forEach(ev=>map.getCanvas().addEventListener(ev,()=>{if(spin)setSpin(false);if(touring)tourStop=true},{passive:true}));
+ requestAnimationFrame(spinLoop)}
+function saveCam(){if(!map)return;const c=map.getCenter();send({type:"harita_cam",cam:{lng:c.lng,lat:c.lat,zoom:map.getZoom(),pitch:map.getPitch(),bearing:map.getBearing()}})}
+function fmtCoord(c){const la=Math.abs(c.lat).toFixed(4)+"° "+(c.lat>=0?"K":"G"),lo=Math.abs(c.lng).toFixed(4)+"° "+(c.lng>=0?"D":"B");return la+", "+lo}
+function altitude(){const z=map.getZoom(),lat=map.getCenter().lat*Math.PI/180;const mpp=40075016.686*Math.cos(lat)/(512*Math.pow(2,z));const h=mpp*innerHeight/2/Math.tan(Math.PI/180*18);return h}
+function km(m){return m>=10000?Math.round(m/1000).toLocaleString("tr-TR")+" km":m>=1000?(m/1000).toFixed(1).replace(".",",")+" km":Math.round(m)+" m"}
+function info(fast){if(!map)return;const c=map.getCenter();$("icoord").textContent=fmtCoord(c);$("ialt").textContent=km(altitude());
+ if(!fast){let e=null;try{e=terrain?map.queryTerrainElevation(c):null}catch(x){}$("ielev").textContent=e==null?"–":Math.round(e/EXAG).toLocaleString("tr-TR")+" m"}}
+function setBtns(){$("b_spin").classList.toggle("on",spin);$("b_3d").classList.toggle("on",terrain&&map&&map.getPitch()>5);$("b_lbl").classList.toggle("on",labels);$("b_tour").classList.toggle("on",touring)}
+function setSpin(on){spin=on;setBtns()}
+function spinLoop(){if(map&&spin&&!touring&&!map.isMoving()){const c=map.getCenter();map.setCenter([c.lng+(map.getZoom()<4?.06:.01),c.lat])}requestAnimationFrame(spinLoop)}
+function place(name,sub){$("iname").textContent=name;$("isub").textContent=sub||"";$("itour").textContent=""}
+function fly(f){if(!map)return;setSpin(false);if(marker)marker.remove();
+ const el=document.createElement("div");el.className="mk";marker=new maplibregl.Marker({element:el}).setLngLat([f.lon,f.lat]).addTo(map);
+ place(f.short||f.name,f.name&&f.name!==f.short?f.name:"");
+ const big=f.bbox&&Math.abs(f.bbox[2]-f.bbox[0])>0.05;
+ if(big&&!f.zoom){map.fitBounds([[f.bbox[0],f.bbox[1]],[f.bbox[2],f.bbox[3]]],{padding:{top:120,bottom:180,left:80,right:120},maxZoom:13,pitch:terrain?50:0,duration:6500,curve:1.6,essential:true})}
+ else map.flyTo({center:[f.lon,f.lat],zoom:f.zoom||14.5,pitch:terrain?60:0,bearing:map.getBearing(),duration:6500,curve:1.6,essential:true})}
+function globe(){setSpin(true);if(marker){marker.remove();marker=null}map.flyTo({center:[map.getCenter().lng,25],zoom:1.6,pitch:0,bearing:0,duration:4000});place("Dünya","")}
+async function tour(){if(!V||touring)return;touring=true;tourStop=false;setSpin(false);setBtns();
+ for(const p of V.tour){if(tourStop)break;place(p.name,"Dünya turu");if(marker){marker.remove();marker=null}
+  map.flyTo({center:[p.lon,p.lat],zoom:p.zoom,pitch:terrain?p.pitch:0,bearing:p.bearing,duration:9000,curve:1.8,essential:true});
+  await new Promise(r=>map.once("moveend",r));if(tourStop)break;$("itour").textContent=p.info;send({type:"harita_say",text:p.name+". "+p.info});
+  const t0=performance.now();while(performance.now()-t0<9000&&!tourStop){map.setBearing(map.getBearing()+.08);await new Promise(r=>requestAnimationFrame(r))}}
+ touring=false;setBtns()}
+function savedList(){const S=$("saved");S.innerHTML="<h4>KAYITLI YERLER</h4>";const L=(V&&V.saved)||[];if(!L.length)S.insertAdjacentHTML("beforeend",'<div class="it"><span style="color:var(--mut)">Henüz kayıtlı yer yok</span></div>');
+ L.slice().reverse().forEach(x=>{const d=document.createElement("div");d.className="it";const s=document.createElement("span");s.textContent=x.name;const b=document.createElement("button");b.textContent="×";b.title="sil";
+  b.onclick=e=>{e.stopPropagation();send({type:"harita_unsave",name:x.name})};d.append(s,b);d.onclick=()=>{fly({lat:x.lat,lon:x.lon,zoom:x.zoom,short:x.name,name:x.name});S.classList.remove("on")};S.appendChild(d)})}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"harita"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.kind!=="harita")return;
+  if(m.type==="scene_init"&&m.data){V=m.data;if(!map)build(V);savedList()}
+  else if(m.type==="scene_do"){const d=m.do||{};if(d.data){V=d.data;savedList()}
+   if(!map)return;
+   if(d.fly)fly(d.fly);if(d.globe)globe();if(d.tour)tour();if(d.stop){tourStop=true;setSpin(false)}
+   if("spin" in d)setSpin(!!d.spin);if(d.north)map.easeTo({bearing:0,duration:1200});
+   if("pitch" in d){if(d.pitch>0&&!map.getTerrain()){terrain=true;map.setTerrain({source:"dem",exaggeration:EXAG})}map.easeTo({pitch:d.pitch,duration:1500});setTimeout(setBtns,1600)}
+   if(d.zoom)map.easeTo({zoom:map.getZoom()+d.zoom*1.5,duration:900});
+   if("labels" in d){labels=!!d.labels;map.setLayoutProperty("lbl","visibility",labels?"visible":"none");setBtns()}
+   if(d.ask_center){const c=map.getCenter();send({type:"harita_where",lat:c.lat,lon:c.lng,zoom:map.getZoom()})}
+   if(d.here!==undefined&&d.here)place(d.here,fmtCoord(map.getCenter()));
+   if(d.save_here)saveHere();if(d.saved)$("saved").classList.add("on");
+   if(d.msg)$("log").textContent=d.msg}};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function saveHere(){const c=map.getCenter();const nm=$("iname").textContent&&$("iname").textContent!=="Dünya"?$("iname").textContent:fmtCoord(c);send({type:"harita_save",name:nm,lat:c.lat,lon:c.lng,zoom:map.getZoom()})}
+const search=()=>{const q=$("q").value.trim();if(q){send({type:"harita_search",q});$("log").textContent="aranıyor…";$("q").blur()}};
+$("go").onclick=search;$("q").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")search();else if(e.key==="Escape")e.target.blur()});
+$("b_globe").onclick=()=>map&&globe();$("b_home").onclick=()=>cmd("evimi göster");$("b_where").onclick=()=>{if(map){const c=map.getCenter();send({type:"harita_where",lat:c.lat,lon:c.lng,zoom:map.getZoom()})}};
+$("b_spin").onclick=()=>setSpin(!spin);$("b_north").onclick=()=>map&&map.easeTo({bearing:0,pitch:map.getPitch(),duration:1200});
+$("b_3d").onclick=()=>{if(!map)return;const up=map.getPitch()<5;if(up&&!map.getTerrain()){terrain=true;map.setTerrain({source:"dem",exaggeration:EXAG})}map.easeTo({pitch:up?62:0,duration:1500});send({type:"harita_terrain",on:true});setTimeout(setBtns,1600)};
+$("b_lbl").onclick=()=>{labels=!labels;map&&map.setLayoutProperty("lbl","visibility",labels?"visible":"none");send({type:"harita_labels",on:labels});setBtns()};
+$("b_tour").onclick=()=>{if(touring){tourStop=true}else tour()};$("b_save").onclick=()=>map&&saveHere();$("b_list").onclick=()=>$("saved").classList.toggle("on");
+$("b_in").onclick=()=>map&&map.easeTo({zoom:map.getZoom()+1.5,duration:700});$("b_out").onclick=()=>map&&map.easeTo({zoom:map.getZoom()-1.5,duration:700});
+function shut(){send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){cmd(e.target.value.trim());e.target.value=""}else if(e.key==="Escape")e.target.blur()});
+addEventListener("keydown",e=>{const tag=(document.activeElement||{}).tagName;if(tag==="INPUT")return;if(e.key==="Escape"){if($("saved").classList.contains("on")){$("saved").classList.remove("on");return}if(touring){tourStop=true;return}shut()}});
+connect();window.focus();
+</script></body></html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS EZBER KARTLARI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#3fe8ff;--c2:#b58cff;--ok:#5ee08a;--warn:#ffd84a;--bad:#ff8a70;--txt:#e2f7fb;--mut:rgba(226,247,251,.58);--ln:rgba(63,232,255,.2);--card:rgba(6,22,32,.66)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse 60% 55% at 50% 45%,rgba(181,140,255,.10),transparent 70%),radial-gradient(ellipse at 50% -10%,#08303f 0%,#020a10 62%);color:var(--txt);font-family:"Segoe UI",Bahnschrift,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:12px;padding:0 22px;z-index:5;background:linear-gradient(#000d,transparent)}
+#title{font:600 15px Bahnschrift,Consolas;letter-spacing:.42em;color:#fff}#title b{color:var(--c2);font-weight:600}
+#today{font:12px Consolas;color:var(--mut);margin-left:10px}
+#sp{flex:1}
+button{font:600 12px Bahnschrift,Consolas;letter-spacing:.1em;padding:8px 14px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,14,20,.6);border-radius:10px;white-space:nowrap}
+button:hover{background:rgba(63,232,255,.12);border-color:var(--c)}button:disabled{opacity:.4;cursor:default}
+#close{border-color:rgba(255,120,84,.55);color:var(--bad)}
+#wrap{position:fixed;top:66px;bottom:92px;left:22px;right:22px;display:grid;grid-template-columns:minmax(250px,300px) 1fr minmax(320px,390px);gap:22px}
+.col{display:flex;flex-direction:column;gap:16px;min-height:0;overflow:auto;padding:2px}
+.cardbox{background:var(--card);border:1px solid var(--ln);border-radius:18px;padding:16px 18px;backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+h3{margin:0 0 12px;font:600 11.5px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--c);display:flex;align-items:center;gap:8px}h3 small{margin-left:auto;font:11px Consolas;letter-spacing:.04em;color:var(--mut)}
+/* desteler */
+.dk{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:10px 12px;border-radius:12px;border:1px solid transparent;cursor:pointer;margin-bottom:6px;background:rgba(0,0,0,.2)}
+.dk:hover{border-color:var(--ln)}.dk.on{border-color:var(--c2);background:rgba(181,140,255,.1);box-shadow:0 0 18px rgba(181,140,255,.15)}
+.dk b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dk span{font-size:11.5px;color:var(--mut)}
+.bd{display:flex;gap:5px;align-items:center;grid-row:1/3;grid-column:2}.bd i{font:600 11px Consolas;font-style:normal;padding:2px 7px;border-radius:9px}
+.bd .du{background:rgba(255,216,74,.15);color:var(--warn)}.bd .nw{background:rgba(63,232,255,.13);color:var(--c)}
+.row{display:flex;gap:8px}.inp{flex:1;min-width:0;padding:9px 11px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:10px;color:#fff;font:13.5px "Segoe UI",sans-serif;outline:0;user-select:text}
+.inp:focus{border-color:var(--c)}textarea.inp{resize:none;height:62px;font-family:"Segoe UI",sans-serif}
+.st3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.st3 div{background:rgba(0,0,0,.22);border-radius:12px;padding:9px;text-align:center}.st3 b{display:block;font:700 22px Bahnschrift,Consolas;color:#fff}.st3 span{font:10px Consolas;letter-spacing:.12em;color:var(--mut)}
+/* kart */
+#center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;min-height:0}
+#meta{display:flex;gap:10px;align-items:center;font:12px Consolas;color:var(--mut)}#meta .tag{padding:3px 9px;border-radius:9px;border:1px solid var(--ln);color:var(--txt)}
+#meta .ai{border-color:rgba(181,140,255,.6);color:var(--c2)}#meta .nwt{border-color:rgba(63,232,255,.5);color:var(--c)}
+#scene3d{width:min(640px,100%);aspect-ratio:1.6;perspective:1400px;cursor:pointer}
+#flip{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.2,1)}
+#flip.on{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:34px 40px;text-align:center;
+ border:1px solid rgba(63,232,255,.35);background:linear-gradient(150deg,rgba(10,44,60,.92),rgba(6,20,32,.95));box-shadow:0 30px 70px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04) inset,0 0 40px rgba(63,232,255,.08)}
+.face.back{transform:rotateY(180deg);border-color:rgba(181,140,255,.45);background:linear-gradient(150deg,rgba(36,24,64,.92),rgba(10,14,32,.96));box-shadow:0 30px 70px rgba(0,0,0,.55),0 0 40px rgba(181,140,255,.12)}
+.face small{position:absolute;top:18px;left:22px;font:600 10.5px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--mut)}
+.face .tx{font:600 clamp(20px,3.2vw,40px)/1.3 "Segoe UI",sans-serif;color:#fff;word-break:break-word;max-height:100%;overflow:auto}
+.face.back .tx{font-size:clamp(18px,2.5vw,32px)}
+.face .hint{position:absolute;bottom:16px;font:11.5px Consolas;color:var(--mut)}
+#empty{display:none;text-align:center;max-width:520px;color:var(--mut);font-size:15px;line-height:1.6}#empty b{display:block;font-size:22px;color:#fff;margin-bottom:8px}
+#grades{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:min(640px,100%)}
+#grades button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;border-radius:14px;font-size:13px}
+#grades button small{font:11px Consolas;letter-spacing:0;opacity:.75}#grades button kbd{font:10px Consolas;opacity:.5}
+.g0{color:var(--bad);border-color:rgba(255,138,112,.4)}.g0:hover{background:rgba(255,138,112,.12);border-color:var(--bad)}
+.g1{color:var(--warn);border-color:rgba(255,216,74,.4)}.g1:hover{background:rgba(255,216,74,.1);border-color:var(--warn)}
+.g2{color:var(--ok);border-color:rgba(94,224,138,.4)}.g2:hover{background:rgba(94,224,138,.1);border-color:var(--ok)}
+.g3{color:var(--c);border-color:rgba(63,232,255,.4)}
+#showb{width:min(640px,100%);padding:14px;font-size:14px;border-radius:14px}
+#prog{width:min(640px,100%);height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}#prog i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--c2));transition:width .5s}
+/* liste */
+#list{display:flex;flex-direction:column;gap:6px;max-height:34vh;overflow:auto}
+.it{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.22);border:1px solid rgba(63,232,255,.08);font-size:13px}
+.it b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.it span{color:var(--mut);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .ac{grid-row:1/3;grid-column:2;display:flex;gap:4px;align-items:center}.it .ac button{padding:3px 8px;font-size:11px}
+.it em{font:10px Consolas;font-style:normal;color:var(--c2);margin-left:6px}
+.seg{display:flex;gap:6px;margin-bottom:10px}.seg button{flex:1;padding:6px}.seg button.on{background:rgba(181,140,255,.15);border-color:var(--c2);color:#fff}
+select.inp{appearance:none}
+#genst{font-size:12.5px;color:var(--c2);margin-top:8px;min-height:18px}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(181,140,255,.3);border-top-color:var(--c2);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes sp{to{transform:rotate(360deg)}}
+#bar{position:fixed;left:22px;right:22px;bottom:14px;z-index:9;display:flex;flex-direction:column;gap:6px}
+#cmdw{display:flex;align-items:center;gap:10px;background:rgba(0,10,16,.75);border:1px solid var(--ln);border-radius:14px;padding:4px 6px 4px 14px}#cmdw span{font:600 13px Consolas;color:var(--c)}
+#cmd{flex:1;padding:9px 0;background:transparent;border:0;color:#fff;font:14px Consolas;outline:0;user-select:text}
+#log{font:12.5px Consolas;color:#cfeeff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;opacity:.85}
+.mut{color:var(--mut);font-size:12.5px;line-height:1.5}
+@media(max-width:1200px){#wrap{display:flex;flex-direction:column;overflow:auto}.col{overflow:visible}}
+</style></head><body>
+<div id="top"><span id="title">EZBER <b>KARTLARI</b></span><span id="today"></span><span id="sp"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="wrap">
+ <div class="col">
+  <div class="cardbox"><h3>DESTELER <small id="dsum"></small></h3><div id="decks"></div>
+   <div class="row" style="margin-top:8px"><input class="inp" id="nd" placeholder="Yeni deste adı (örn: İngilizce)" maxlength="40" spellcheck="false" autocomplete="off"><button id="ndb">EKLE</button></div></div>
+  <div class="cardbox"><h3>BUGÜN</h3><div class="st3"><div><b id="t_rev">0</b><span>TEKRAR</span></div><div><b id="t_ok">–</b><span>DOĞRU</span></div><div><b id="t_new">0</b><span>YENİ</span></div></div>
+   <p class="mut" style="margin:10px 0 0">Bildiğiniz kartlar giderek seyrekleşir, bilmedikleriniz kısa süre sonra tekrar gelir. Günde en fazla <span id="nl">30</span> yeni kart.</p></div>
+ </div>
+ <div id="center">
+  <div id="meta"></div>
+  <div id="scene3d" title="Çevirmek için tıklayın ya da Boşluk"><div id="flip">
+   <div class="face front"><small>SORU</small><div class="tx" id="fr"></div><div class="hint">çevirmek için tıklayın · Boşluk</div></div>
+   <div class="face back"><small>CEVAP</small><div class="tx" id="bk"></div><div class="hint">ne kadar iyi bildiniz? · 1 2 3 4</div></div></div></div>
+  <div id="empty"></div>
+  <button id="showb">CEVABI GÖSTER · Boşluk</button>
+  <div id="grades" style="display:none">
+   <button class="g0" data-g="0">BİLMEDİM<small id="p0"></small><kbd>1</kbd></button><button class="g1" data-g="1">ZOR<small id="p1"></small><kbd>2</kbd></button>
+   <button class="g2" data-g="2">İYİ<small id="p2"></small><kbd>3</kbd></button><button class="g3" data-g="3">KOLAY<small id="p3"></small><kbd>4</kbd></button></div>
+  <div id="prog"><i></i></div>
+ </div>
+ <div class="col">
+  <div class="cardbox"><h3>KART EKLE <small id="adeck"></small></h3>
+   <textarea class="inp" id="af" placeholder="Ön yüz: soru, terim ya da kelime" maxlength="300" spellcheck="false"></textarea>
+   <textarea class="inp" id="ab" placeholder="Arka yüz: cevap" maxlength="300" spellcheck="false" style="margin-top:8px"></textarea>
+   <div class="row" style="margin-top:8px"><button id="addb" style="flex:1">KARTI EKLE · Ctrl+Enter</button></div></div>
+  <div class="cardbox"><h3>JARVIS ÜRETSİN <small>yerel yapay zekâ</small></h3>
+   <div class="seg"><button class="on" data-s="topic">KONUDAN</button><button data-s="note">NOTLARIMDAN</button></div>
+   <input class="inp" id="gt" placeholder="Konu: örn. hücre organelleri, İngilizce renkler" maxlength="300" spellcheck="false" autocomplete="off" style="width:100%">
+   <select class="inp" id="gn" style="width:100%;display:none"></select>
+   <div class="row" style="margin-top:8px"><select class="inp" id="gc" style="flex:0 0 96px"><option>5</option><option selected>10</option><option>15</option><option>20</option></select><button id="genb" style="flex:1">KART ÜRET</button></div>
+   <div id="genst"></div><p class="mut" style="margin:6px 0 0">Üretilen kartlar <b style="color:var(--c2)">YZ</b> diye işaretlenir; yanlış olanı listeden silebilir ya da düzeltebilirsiniz.</p></div>
+  <div class="cardbox"><h3>DESTEDEKİ KARTLAR <small id="lc"></small></h3><div id="list"></div><button id="deld" style="margin-top:10px;width:100%;color:var(--bad);border-color:rgba(255,138,112,.35)">DESTEYİ SİL</button></div>
+ </div>
+</div>
+<div id="bar"><div id="cmdw"><span>›</span><input id="cmd" placeholder="Komut: çevir · bildim · bilmedim · zor · kolay · kart ekle apple = elma · hücre hakkında 10 kart üret · deste ingilizce · çık" spellcheck="false" autocomplete="off"></div><div id="log">Jarvis: kartı görünce cevabı düşünün, sonra çevirin.</div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+let ws,V=null,src="topic",shown=0;
+function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function cmd(t){send({type:"text",text:t});$("log").textContent="› komut uygulanıyor…"}
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function render(v){V=v;
+ $("today").textContent=`bugün ${v.today.rev} tekrar`;$("t_rev").textContent=v.today.rev;$("t_ok").textContent=v.today.rev?Math.round(100*v.today.ok/v.today.rev)+"%":"–";$("t_new").textContent=v.today.new;$("nl").textContent=v.today.newLimit;
+ $("dsum").textContent=`${v.all.total} kart`;
+ const D=$("decks");D.innerHTML="";
+ const mk=(id,name,s)=>{const e=document.createElement("div");e.className="dk"+((v.deck||null)===id?" on":"");e.innerHTML=`<b>${esc(name)}</b><div class="bd">${s.due?`<i class="du" title="tekrarı gelen">${s.due}</i>`:""}${s.new?`<i class="nw" title="yeni">${s.new}</i>`:""}</div><span>${s.total} kart · ${s.learned} öğrenildi</span>`;e.onclick=()=>send({type:"kartlar_deck",id:id||""});D.appendChild(e)};
+ if(v.decks.length>1||!v.decks.length)mk(null,"Tüm desteler (karışık)",v.all);
+ v.decks.forEach(d=>mk(d.id,d.name,d));
+ if(!v.decks.length)D.insertAdjacentHTML("beforeend",'<p class="mut">Henüz desteniz yok. Aşağıya bir ad yazıp ekleyin ya da “yeni deste İngilizce” deyin.</p>');
+ $("adeck").textContent=v.deck?"→ "+v.deckName:"önce deste seçin";$("addb").disabled=!v.deck;$("genb").disabled=!v.deck||v.gen.busy;$("deld").style.display=v.deck?"block":"none";
+ const c=v.card,h=v.here;
+ $("scene3d").style.display=c?"block":"none";$("showb").style.display=c&&!v.flipped?"block":"none";$("grades").style.display=c&&v.flipped?"grid":"none";
+ $("empty").style.display=c?"none":"block";
+ $("empty").innerHTML=!v.decks.length?"<b>Hoş geldiniz</b>Soldan bir deste oluşturun, sağdan kart ekleyin ya da Jarvis'e ürettirin.":!h.total?"<b>Bu deste boş</b>Sağdan kart ekleyin ya da bir konu yazıp Jarvis'e ürettirin.":`<b>Bugünlük bu kadar 🎉</b>${v.deckName} destesinde şu an çalışılacak kart yok. Tekrarlar zamanı gelince burada belirecek.`;
+ if(c){$("fr").textContent=c.front;$("bk").textContent=c.back;$("flip").classList.toggle("on",!!v.flipped);
+  $("meta").innerHTML=`<span class="tag">${esc(c.deck)}</span>${c.new?'<span class="tag nwt">YENİ</span>':`<span class="tag">${c.reps}. tekrar</span>`}${c.ai?'<span class="tag ai" title="yapay zekâ ile üretildi">YZ</span>':""}`;
+  for(let g=0;g<4;g++)$("p"+g).textContent=v.previews[g]||""}else $("meta").innerHTML="";
+ const left=h.due+h.new;if(left>shown)shown=left;$("prog").firstElementChild.style.width=(shown?100*(shown-left)/shown:0)+"%";
+ $("lc").textContent=v.deck?`${v.cards.length} kart`:"";
+ const L=$("list");L.innerHTML="";
+ if(!v.deck)L.innerHTML='<p class="mut">Kartları görmek için soldan bir deste seçin.</p>';
+ v.cards.slice().reverse().forEach(k=>{const e=document.createElement("div");e.className="it";
+  e.innerHTML=`<b></b><span></span><div class="ac"><button title="düzelt">✎</button><button title="sil" style="color:var(--bad)">×</button></div>`;
+  e.querySelector("b").textContent=k.front;if(k.ai)e.querySelector("b").insertAdjacentHTML("beforeend","<em>YZ</em>");e.querySelector("span").textContent=k.back+" · "+k.state+(k.state!=="yeni"?" · "+k.due:"");
+  const [eb,db]=e.querySelectorAll("button");
+  eb.onclick=()=>{const f=prompt("Ön yüz:",k.front);if(f===null)return;const b=prompt("Arka yüz:",k.back);if(b===null)return;send({type:"kartlar_edit",id:k.id,front:f,back:b})};
+  db.onclick=()=>{if(confirm("Bu kart silinsin mi?\n\n"+k.front))send({type:"kartlar_del",id:k.id})};L.appendChild(e)});
+ genStatus(v.gen.busy)}
+function genStatus(b){$("genst").innerHTML=b?'<span class="spin"></span>Kartlar üretiliyor… (yaklaşık bir dakika)':"";$("genb").disabled=b||!(V&&V.deck)}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>{send({type:"scene_ready",kind:"kartlar"});send({type:"kartlar_notes"})};
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.kind!=="kartlar")return;
+  if(m.type==="scene_init"&&m.data)render(m.data);
+  else if(m.type==="scene_do"){const d=m.do||{};if(d.data)render(d.data);if(d.gen)genStatus(true);if(d.done)genStatus(false);
+   if(d.notes){const s=$("gn");s.innerHTML=d.notes.length?d.notes.map(n=>`<option value="${esc(n.id)}">${esc(n.title)}</option>`).join(""):'<option value="">(hiç not yok)</option>'}
+   if(d.added){$("af").value="";$("ab").value="";$("af").focus()}
+   if(d.msg)$("log").textContent="Jarvis: "+d.msg}};
+ ws.onclose=()=>setTimeout(connect,1500)}
+const flipNow=()=>{if(V&&V.card)send({type:"kartlar_flip"})};
+$("scene3d").onclick=flipNow;$("showb").onclick=flipNow;
+document.querySelectorAll("#grades button").forEach(b=>b.onclick=()=>send({type:"kartlar_grade",g:b.dataset.g}));
+$("ndb").onclick=()=>{const n=$("nd").value.trim();if(n){send({type:"kartlar_newdeck",name:n});$("nd").value=""}};
+const add=()=>{const f=$("af").value.trim(),b=$("ab").value.trim();if(f&&b)send({type:"kartlar_add",front:f,back:b});else $("log").textContent="Jarvis: kartın iki yüzünü de yazın."};
+$("addb").onclick=add;
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{src=b.dataset.s;document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x===b));$("gt").style.display=src==="topic"?"block":"none";$("gn").style.display=src==="note"?"block":"none";if(src==="note")send({type:"kartlar_notes"})});
+$("genb").onclick=()=>{const n=$("gc").value;if(src==="topic"){const t=$("gt").value.trim();if(!t){$("log").textContent="Jarvis: bir konu yazın.";return}send({type:"kartlar_gen",topic:t,n})}else{const id=$("gn").value;if(!id)return;send({type:"kartlar_gen",note:id,n})}};
+$("deld").onclick=()=>{if(V&&V.deck&&confirm(`"${V.deckName}" destesi ve içindeki bütün kartlar silinsin mi? Bu geri alınamaz.`))send({type:"kartlar_deldeck",id:V.deck})};
+function shut(){send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+document.querySelectorAll("input,textarea,select").forEach(i=>i.addEventListener("keydown",e=>{e.stopPropagation();
+ if(e.key==="Escape"){e.target.blur();return}
+ if(e.target.id==="cmd"&&e.key==="Enter"&&e.target.value.trim()){cmd(e.target.value.trim());e.target.value=""}
+ if(e.target.id==="nd"&&e.key==="Enter")$("ndb").click();
+ if(e.target.id==="gt"&&e.key==="Enter")$("genb").click();
+ if((e.target.id==="af"||e.target.id==="ab")&&e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();add()}}));
+addEventListener("keydown",e=>{if(e.key==="Escape"){shut();return}
+ if(e.key===" "){e.preventDefault();if(V&&V.card&&!V.flipped)flipNow();return}
+ if(/^[1-4]$/.test(e.key)&&V&&V.card){if(!V.flipped)flipNow();else send({type:"kartlar_grade",g:String(+e.key-1)})}});
+connect();window.focus();
+</script></body></html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JARVIS ZIRH KONTROLÜ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><link rel="stylesheet" href="/kit/stark.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ff9d4a;--c2:#e8452c;--ln:rgba(255,157,74,.28);--hi:rgba(255,157,74,.13);--card:rgba(26,12,8,.7)}
+html,body{background:radial-gradient(ellipse 60% 55% at 50% 40%,rgba(255,120,60,.08),transparent 70%),radial-gradient(ellipse at 50% -10%,#3a1608 0%,#0c0504 64%)}
+#rd{border-left:4px solid var(--steel)}#rd.hazir{border-left-color:var(--ok)}#rd.dikkat{border-left-color:var(--warn)}
+#rd .big{font-size:26px;line-height:1.25}
+ul.lst{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--mut);line-height:1.6}ul.lst li.w{color:var(--warn)}
+.m .v{font:300 38px Bahnschrift;color:#fff;line-height:1.1}.m .v small{font-size:15px;color:var(--mut)}
+.bar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);margin:8px 0;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .6s}
+.bar i.warn{background:var(--warn)}.bar i.bad{background:var(--bad)}
+svg.sp{width:100%;height:34px;display:block}svg.sp polyline{fill:none;stroke:var(--c);stroke-width:1.6;opacity:.9}
+.na{color:var(--steel);font-size:13.5px;line-height:1.5}
+.mt{font:11px Consolas;color:var(--mut);margin-top:6px}
+</style></head><body>
+<div id="stage"><div class="hd"><h1>Zırh Kontrolü</h1><span class="sub" id="up">ölçüm bekleniyor…</span><span class="sp"></span><button id="qs" class="prim">HIZLI TARAMA</button><button id="ds">AYRINTILI TARAMA</button></div>
+<div class="sc" id="sc">
+ <div class="card" id="rd" style="grid-column:1/-1"><h3>GENEL HAZIRLIK <small id="rdt"></small></h3><div class="big ld" id="rdx">Ölçümler okunuyor…</div><div id="rdl"></div></div>
+ <div class="card m" id="m_cpu"><h3>İŞLEMCİ</h3><div class="ld">…</div></div>
+ <div class="card m" id="m_ram"><h3>BELLEK (RAM)</h3><div class="ld">…</div></div>
+ <div class="card m" id="m_gpu"><h3>EKRAN KARTI</h3><div class="ld">…</div></div>
+ <div class="card m" id="m_disk"><h3>DİSK (C:)</h3><div class="ld">…</div></div>
+ <div class="card m" id="m_bat"><h3>PİL</h3><div class="ld">…</div></div>
+ <div class="card m" id="m_net"><h3>AĞ</h3><div class="ld">…</div></div>
+ <div class="card" id="dp" style="grid-column:1/-1;display:none"><h3>AYRINTILI TARAMA</h3><div id="dpx"></div></div>
+</div></div>
+<script>
+const E=Mode.esc,H={cpu:[],ram:[],gpu:[],net:[],disk:[]};let lastT=0,lost=0;
+const p1=x=>(Math.round(x*10)/10).toLocaleString("tr-TR");
+const lvl=(v,w,b)=>v>=b?"bad":v>=w?"warn":"";
+function sp(k,v){const a=H[k];if(v!=null){a.push(v);if(a.length>60)a.shift()}if(a.length<2)return"";const mx=Math.max(100,...a);
+ return '<svg class="sp" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+a.map((y,i)=>(i*120/(a.length-1)).toFixed(1)+","+(32-y/mx*30).toFixed(1)).join(" ")+'"/></svg>'}
+function card(id,v,bar,sub,k,val,na,t){const c=$("m_"+id);const h=c.querySelector("h3").outerHTML;
+ c.innerHTML=h+(na?'<div class="na">'+E(na)+'</div>':'<div class="v">'+v+'</div>'+(bar!=null?'<div class="bar"><i class="'+lvl(bar,70,90)+'" style="width:'+Math.min(100,bar)+'%"></i></div>':"")+(k?sp(k,val):"")+'<div class="mt">'+sub+'</div>')+'<div class="mt">son ölçüm '+t+'</div>'}
+function render(d){if(d.static!==undefined){}
+ if(!d.snap)return;const s=d.snap,t=new Date(s.t*1000).toLocaleTimeString("tr-TR");lastT=Date.now();lost=0;$("up").textContent="son güncelleme "+t;
+ const c=s.cpu;card("cpu",p1(c.total)+"<small> %</small>",c.total,E((c.freq_mhz?p1(c.freq_mhz/1000)+" GHz · ":"")+c.procs+" işlem · sıcaklık: ölçülemedi (Windows yönetici izni olmadan vermiyor)"),"cpu",c.total,null,t);
+ const r=s.ram;card("ram",p1(r.used_gb)+"<small> / "+p1(r.total_gb)+" GB</small>",r.percent,"yüzde "+p1(r.percent)+" dolu · boş "+p1(r.avail_gb)+" GB","ram",r.percent,null,t);
+ const g=s.gpu;if(!g)card("gpu","",null,"",null,null,"Ölçülemedi: nvidia-smi bulunamadı ya da ekran kartı bilgi vermedi. Örnek değer gösterilmiyor.",t);
+ else card("gpu",p1(g.util)+"<small> % yük</small>",g.util,"VRAM "+(g.vram_total?p1(g.vram_used/1024)+" / "+p1(g.vram_total/1024)+" GB":"ölçülemedi")+" · sıcaklık "+(g.temp==null?"ölçülemedi":p1(g.temp)+" °C")+(g.throttle&&g.throttle.length?" · yavaşlatma: "+E(g.throttle.join(", ")):""),"gpu",g.util,null,t);
+ const dk=s.disk;card("disk",p1(dk.percent)+"<small> % dolu</small>",dk.percent,"boş "+dk.free_gb+" GB / "+dk.total_gb+" GB · sıcaklık: ölçülemedi (yönetici izni gerekir)","disk",dk.percent,null,t);
+ const b=d.bat;if(b&&!b.present)card("bat","",null,"",null,null,b.why,t);else if(b)card("bat",b.percent+"<small> %</small>",null,(b.plugged?"Şarjda":"Şarjda değil")+(b.left_min!=null?" · yaklaşık "+b.left_min+" dk kaldı":""),null,null,null,t);
+ const n=s.net,lk=d.link||{};
+ const nm=!lk.known?"Ağ durumu okunamadı.":null;
+ card("net",lk.up?"Bağlı":"Bağlantı yok",null,"arayüz "+E(n.nic||"?")+" · indirme "+(n.down_mbps==null?"ölçülemedi":p1(n.down_mbps)+" Mb/sn")+" · yükleme "+(n.up_mbps==null?"ölçülemedi":p1(n.up_mbps)+" Mb/sn")+" · internet erişimi sınanmıyor (yalnızca arayüz durumu)","net",n.down_mbps==null?null:Math.min(100,n.down_mbps),nm,t);
+ const rd=d.ready;if(rd){$("rd").className="card "+rd.level;$("rdx").className="big";$("rdx").textContent=rd.text;$("rdt").textContent=t;
+  $("rdl").innerHTML=(rd.warn.length?'<ul class="lst">'+rd.warn.map(w=>'<li class="w">'+E(w)+'</li>').join("")+'</ul>':"")+
+   '<div class="src">Bu durum şu ölçümlerden türetildi: '+E(rd.used.join(" · "))+'</div><div class="src">Ölçülemeyenler (duruma katılmadı): '+E(rd.unmeasured.join(" · "))+'</div>'}}
+Mode.start({kind:"zirh",title:"ZIRH KONTROLÜ",placeholder:"Komut: hızlı tarama · ayrıntılı tarama · pil nasıl · disk durumu",init:d=>{},act:d=>{
+ if(d.snap)render(d);
+ if(d.deep){const dp=$("dp");dp.style.display="block";$("dpx").innerHTML=d.deep.done?'<div style="line-height:1.6">'+E(d.deep.text)+'</div>':'<div class="ld">Ölçümler 10 saniye boyunca toplanıyor…</div>';Mode.pill(d.deep.done?"HAZIR":"TARANIYOR")}},
+ tick:()=>{if(lastT&&Date.now()-lastT>5000){$("up").textContent="ölçüm akışı kesildi — son veri "+Math.round((Date.now()-lastT)/1000)+" sn önce"}}});
+$("qs").onclick=()=>Mode.cmd("hızlı tarama");$("ds").onclick=()=>Mode.cmd("ayrıntılı tarama");
+</script></body></html>

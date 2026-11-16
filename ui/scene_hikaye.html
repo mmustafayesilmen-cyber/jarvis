@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS HİKÂYE ZARLARI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ff8fa3;--c2:#d9455f;--ln:rgba(255,143,163,.25);--hi:rgba(255,143,163,.12);--card:rgba(32,10,18,.7)}
+html,body{background:radial-gradient(ellipse at 30% -10%,#4a1428 0%,#0c0307 68%)}
+#stage{display:flex;flex-direction:column;gap:16px;min-height:0}
+#dice{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.die{border:1px solid var(--ln);border-radius:18px;padding:16px 14px;background:rgba(0,0,0,.35);min-height:140px;display:flex;flex-direction:column;justify-content:space-between;transition:border-color .2s}
+.die.lk{border-color:var(--c);background:var(--hi)}.die h4{margin:0 0 8px;font:600 11px Consolas;letter-spacing:.25em;color:var(--c)}.die p{margin:0;font:600 18px/1.3 "Segoe UI";color:#fff}
+.die .b{display:flex;gap:6px;margin-top:10px}.die button{padding:5px 9px;font-size:11px}
+.die.roll p{animation:sh .5s}@keyframes sh{0%{transform:translateY(-14px) rotate(-3deg);opacity:0}60%{transform:translateY(3px)}100%{transform:none;opacity:1}}
+#story{flex:1;min-height:0;overflow:auto;font:17px/1.7 Georgia,"Segoe UI";color:#f6e6ea;white-space:pre-wrap;padding:6px 10px}#story.empty{color:var(--mut);font:14px "Segoe UI"}
+</style></head><body>
+<div id="stage"><div id="dice"></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button id="rl" class="prim" style="padding:12px 26px">🎲 ZAR AT</button><button id="wr">HİKÂYE YAZ</button><button id="co">DEVAM ET</button><button id="rs">HİKÂYEYİ SIFIRLA</button><button id="ul">KİLİTLERİ AÇ</button></div>
+ <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column"><h3>HİKÂYE <small>yerel modelle yazılır, internete gitmez</small></h3><div id="story" class="empty"></div></div></div>
+<script>
+const NM={karakter:"KARAKTER",mekan:"MEKÂN",nesne:"NESNE",sorun:"SORUN",tur:"TÜR"};let S={dice:{},lock:[],story:""},roll=false;
+function ui(){$("dice").innerHTML=Object.keys(NM).map(k=>`<div class="die ${S.lock.includes(k)?"lk":""} ${roll?"roll":""}"><div><h4>${NM[k]}</h4><p>${Mode.esc(S.dice[k]||"")}</p></div><div class="b"><button data-r="${k}">🎲 DEĞİŞTİR</button><button data-l="${k}">${S.lock.includes(k)?"🔒":"🔓"}</button></div></div>`).join("");
+ $("dice").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>Mode.cmd(b.dataset.r+"ı değiştir"));$("dice").querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>Mode.cmd(b.dataset.l+(S.lock.includes(b.dataset.l)?" kilitleri aç":"yı kilitle")));
+ $("story").className=S.story?"":"empty";$("story").textContent=S.story||"Zarları at, sonra hikâye yaz de. Devam et diyerek hikâyeyi sürdürebilirsin.";roll=false;Mode.pill(S.story?"YAZILDI":"ZARLAR")}
+Mode.start({kind:"hikaye",title:"HİKÂYE ZARLARI",placeholder:"Komut: zar at · karakteri değiştir · mekanı kilitle · bu zarlarla hikâye yaz · devam et · hikâyeyi sıfırla",init:d=>{S=d.snap;ui()},act:d=>{if(d.roll)roll=true;if(d.snap){S=d.snap;ui()}}});
+$("rl").onclick=()=>Mode.cmd("zar at");$("wr").onclick=()=>{$("story").className="empty";$("story").textContent="Yazılıyor…";Mode.cmd("bu zarlarla hikâye yaz")};$("co").onclick=()=>Mode.cmd("devam et");$("rs").onclick=()=>Mode.cmd("hikâyeyi sıfırla");$("ul").onclick=()=>Mode.cmd("kilitleri aç");
+</script></body></html>

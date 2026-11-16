@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JARVIS GÜVENLİK MERKEZİ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><link rel="stylesheet" href="/kit/stark.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#7ef0b4;--c2:#1fb67a;--ln:rgba(126,240,180,.24);--hi:rgba(126,240,180,.1);--card:rgba(4,22,16,.7)}
+html,body{background:radial-gradient(ellipse at 50% -10%,#0b3b2a 0%,#020c08 64%)}
+.cd .tx2{font-size:14.5px;line-height:1.55;color:var(--txt)}.cd .ex{margin-top:6px;font-size:13px;color:var(--warn)}
+.ev{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13.5px}.ev b{font:12px Consolas;color:var(--c);white-space:nowrap}
+.note{border-left:3px solid var(--steel);padding:8px 12px;font-size:13px;line-height:1.55;color:var(--mut)}
+</style></head><body>
+<div id="stage"><div class="hd"><h1>Güvenlik Merkezi</h1><span class="sub" id="up">okunuyor…</span><span class="sp"></span></div>
+<div class="note" id="nt">Bu ekran yalnızca Jarvis'in kendi bildiği durumları gösterir. Ağ taraması, dosya taraması ya da saldırı tespiti yapmaz ve hiçbir güvenlik ayarını değiştirmez. Cihaz anahtarı, parola ve özel adresler gösterilmez.</div>
+<div class="sc" id="sc"><div class="card"><div class="ld">Durumlar okunuyor…</div></div></div></div>
+<script>
+const E=Mode.esc,ST={ok:["TAMAM","ok"],warn:["DİKKAT","warn"],info:["BİLGİ","info"],unk:["ÖLÇÜM YOK","unk"]};
+const hm=t=>new Date(t*1000).toLocaleTimeString("tr-TR");
+function render(v){$("up").textContent="son güncelleme "+hm(v.t)+" · izleme başlangıcı "+v.since;
+ $("sc").innerHTML=v.cards.map(c=>{const s=ST[c.state]||ST.unk;return `<div class="card cd"><h3>${E(c.name.toLocaleUpperCase("tr-TR"))} <small><span class="chip ${s[1]}">${s[0]}</span></small></h3><div class="tx2">${E(c.text)}</div>${c.extra?`<div class="ex">${E(c.extra)}</div>`:""}<div class="src">Kaynak: ${E(c.src)} · ${hm(c.at)}</div></div>`}).join("")+
+  `<div class="card" style="grid-column:1/-1"><h3>GÖZLENEN DEĞİŞİKLİKLER <small>yalnızca bu pencere açıkken</small></h3>${v.events.length?v.events.map(e=>`<div class="ev"><b>${E(e.t)}</b><span>${E(e.text)}</span></div>`).join(""):`<div class="empty">${E(v.none)}<br>Henüz gözlenen bir değişiklik yok.</div>`}</div>`}
+Mode.start({kind:"guvenlik",title:"GÜVENLİK MERKEZİ",placeholder:"Komut: uzaktan erişim açık mı · eşleşmiş cihazlar · mikrofon durumu",init:render,act:d=>{if(d.data)render(d.data)}});
+</script></body></html>

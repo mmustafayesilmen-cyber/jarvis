@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS SİSTEM ANALİZİ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#3fe8ff;--g:#5ee08a;--w:#ffd84a;--r:#ff6b5a;--bg:#020a10;--ln:rgba(63,232,255,.26);--hi:rgba(63,232,255,.12)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#06222e 0%,#020a10 65%);color:#d8f6fb;font-family:"Segoe UI",Bahnschrift,Consolas,sans-serif;user-select:none}
+#top{position:fixed;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:8px;padding:0 14px;z-index:5;background:linear-gradient(#000c,transparent);border-bottom:1px solid var(--ln)}
+#title{font:600 14px Bahnschrift,Consolas;letter-spacing:.32em;color:var(--c);text-shadow:0 0 12px var(--c);white-space:nowrap;margin-right:10px}
+#sp{flex:1}#clock{font:12px Consolas;opacity:.7}
+button{font:12.5px Consolas;letter-spacing:.06em;padding:6px 12px;cursor:pointer;color:var(--c);border:1px solid var(--ln);background:rgba(0,12,18,.65);white-space:nowrap}
+button:hover{background:var(--hi)}#close{border-color:rgba(255,120,84,.7);color:#ff9a7a}
+#alerts{position:fixed;top:54px;left:12px;right:12px;min-height:26px;z-index:4;display:flex;gap:8px;flex-wrap:wrap}
+.al{font:12.5px Consolas;border:1px solid rgba(255,107,90,.7);color:#ff9a8a;padding:3px 10px;background:rgba(60,10,6,.55)}.ok{border-color:rgba(94,224,138,.5);color:#8ff0b0;background:rgba(6,40,20,.45)}
+#grid{position:fixed;top:86px;bottom:84px;left:12px;right:12px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr;gap:10px;overflow:auto}
+.card{border:1px solid var(--ln);background:rgba(2,16,24,.72);padding:10px 12px;position:relative;overflow:hidden;min-height:0;display:flex;flex-direction:column}
+.card h3{margin:0 0 6px;font:600 11.5px Consolas;letter-spacing:.26em;color:var(--c);display:flex;justify-content:space-between}.card h3 span{opacity:.6;letter-spacing:.05em;font-weight:400}
+.big{font:700 36px Bahnschrift,Consolas;line-height:1;color:#fff;text-shadow:0 0 14px currentColor}.big small{font-size:15px;opacity:.7;margin-left:3px}
+.row{display:flex;justify-content:space-between;font:12.5px/1.65 Consolas;gap:8px}.row span:first-child{opacity:.65}.row b{font-weight:400;color:#fff;text-align:right}
+.na{color:#ffb86b!important;font-size:11.5px}
+canvas.sp{width:100%;height:46px;display:block;margin:6px 0 4px}
+.bar{height:7px;background:rgba(255,255,255,.08);margin:3px 0 6px}.bar i{display:block;height:100%;background:var(--c);transition:width .5s}
+.cores{display:flex;gap:4px;align-items:flex-end;height:44px;margin:6px 0}.cores div{flex:1;background:rgba(255,255,255,.07);position:relative;height:100%}.cores i{position:absolute;bottom:0;left:0;right:0;background:var(--c);transition:height .5s}
+.chip{display:inline-block;border:1px solid rgba(255,107,90,.7);color:#ff9a8a;padding:1px 8px;margin:2px 4px 2px 0;font:11.5px Consolas}
+.pl{font:12.5px/1.7 Consolas}.pl div{display:flex;gap:8px;align-items:center}.pl .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl .v{width:64px;text-align:right}.pl .b{width:70px;height:5px;background:rgba(255,255,255,.08)}.pl .b i{display:block;height:100%;background:var(--c)}
+#scanbar{position:fixed;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:3;display:none}
+#scanbar div{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#aaf6ff,transparent);box-shadow:0 0 24px 6px rgba(63,232,255,.55)}
+#scantxt{position:fixed;left:50%;top:58px;transform:translateX(-50%);font:600 14px Bahnschrift,Consolas;letter-spacing:.4em;color:var(--c);text-shadow:0 0 14px var(--c);z-index:6;display:none}
+#bar{position:fixed;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--ln);background:rgba(0,0,0,.65);z-index:9;padding:6px 12px}
+#cmd{width:100%;padding:8px 12px;background:rgba(0,0,0,.55);border:1px solid var(--ln);color:var(--c);font:14px Consolas;outline:0;user-select:text}#cmd:focus{border-color:var(--c)}
+#log{height:30px;margin-top:5px;font:12.5px Consolas;overflow:hidden;display:flex;gap:14px;align-items:center;white-space:nowrap}
+#log span.j{color:#cfeeff;overflow:hidden;text-overflow:ellipsis;max-width:62vw}#log span.mem{color:#9fe8a0;opacity:.85;margin-left:auto}
+@media(max-width:1100px){#grid{grid-template-columns:repeat(2,1fr);grid-template-rows:none}}
+</style></head><body>
+<div id="top"><span id="title">SİSTEM ANALİZİ</span><button id="scan">SİSTEMİ TARA</button><span id="sp"></span><span id="clock"></span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="alerts"><span class="al ok">ölçümler başlıyor…</span></div>
+<div id="grid">
+ <div class="card" id="c_cpu"><h3>İŞLEMCİ <span id="cpu_name"></span></h3><div class="big" id="cpu_v">–</div><canvas class="sp" id="sp_cpu"></canvas><div class="cores" id="cores"></div>
+  <div class="row"><span>Etkin frekans</span><b id="cpu_f">–</b></div><div class="row"><span>Çalışan işlem</span><b id="cpu_p">–</b></div><div class="row"><span>İşlemci kuyruğu</span><b id="cpu_q">–</b></div><div class="row"><span>Sıcaklık</span><b class="na">ölçülemiyor (Windows sensör vermiyor)</b></div></div>
+ <div class="card" id="c_ram"><h3>BELLEK <span id="ram_name"></span></h3><div class="big" id="ram_v">–</div><canvas class="sp" id="sp_ram"></canvas>
+  <div class="bar"><i id="ram_b"></i></div><div class="row"><span>Kullanımda</span><b id="ram_u">–</b></div><div class="row"><span>Boş</span><b id="ram_a">–</b></div><div class="row"><span>Sayfa dosyası</span><b id="ram_s">–</b></div><div class="row"><span>Sayfa okuma (sayfa/sn)</span><b id="ram_pg">–</b></div></div>
+ <div class="card" id="c_gpu"><h3>EKRAN KARTI <span id="gpu_name"></span></h3><div class="big" id="gpu_v">–</div><canvas class="sp" id="sp_gpu"></canvas>
+  <div class="row"><span>Sıcaklık</span><b id="gpu_t">–</b></div><div class="row"><span>Video belleği</span><b id="gpu_m">–</b></div><div class="bar"><i id="gpu_mb"></i></div><div class="row"><span>Güç</span><b id="gpu_w">–</b></div><div class="row"><span>Saat hızı (çekirdek / bellek)</span><b id="gpu_c">–</b></div><div class="row"><span>Fan · P-durumu</span><b id="gpu_f">–</b></div><div id="gpu_th"></div></div>
+ <div class="card" id="c_disk"><h3>DİSK <span id="disk_name"></span></h3><div class="big" id="disk_v">–</div><canvas class="sp" id="sp_disk"></canvas>
+  <div class="bar"><i id="disk_b"></i></div><div class="row"><span>C: dolu / boş</span><b id="disk_u">–</b></div><div class="row"><span>Okuma · Yazma</span><b id="disk_io">–</b></div><div class="row"><span>Meşguliyet · gecikme</span><b id="disk_l">–</b></div><div class="row"><span>Sağlık</span><b id="disk_h">–</b></div><div class="row"><span>Sıcaklık / aşınma</span><b class="na">ölçülemedi (yönetici izni gerekir)</b></div></div>
+ <div class="card" id="c_net"><h3>AĞ <span id="net_name"></span></h3><div class="big" id="net_v">–</div><canvas class="sp" id="sp_net"></canvas>
+  <div class="row"><span>İndirme · Yükleme</span><b id="net_io">–</b></div><div class="row"><span>Bağlantı hızı</span><b id="net_l">–</b></div><div class="row"><span>Yerel IP</span><b id="net_ip">–</b></div><div class="row"><span>Açılıştan beri (indirilen / yüklenen)</span><b id="net_t">–</b></div></div>
+ <div class="card" id="c_top"><h3>EN ÇOK KULLANANLAR <span>işlemci · bellek</span></h3><div class="pl" id="top_cpu"></div><div style="height:8px"></div><div class="pl" id="top_ram"></div></div>
+ <div class="card" id="c_sys"><h3>SİSTEM <span id="up"></span></h3><div class="pl" id="sysinfo">donanım bilgisi okunuyor…</div></div>
+ <div class="card" id="c_jar"><h3>JARVİS <span>kendi kaynak kullanımı</span></h3><div class="big" id="jar_v">–</div><div class="row"><span>Bellek</span><b id="jar_m">–</b></div><div class="row"><span>İşlemci</span><b id="jar_c">–</b></div><div class="row" style="margin-top:8px"><span>Ölçüm kaynağı</span><b>psutil · Windows PDH · nvidia-smi</b></div><div class="row"><span>Veri</span><b>yalnızca bu bilgisayarda, kaydedilmez</b></div></div>
+</div>
+<div id="scanbar"><div></div></div><div id="scantxt"></div>
+<div id="bar"><input id="cmd" placeholder="Komut: sistemi tara · işlemci · ram · ekran kartı · disk · ağ · en çok kaynak kullanan · bilgisayar neden yavaş · sistem bilgisi · çık" spellcheck="false" autocomplete="off"><div id="log"><span class="j" id="jl">Jarvis: değerler gerçek ölçümlerdir; ölçülemeyen şeyler açıkça belirtilir.</span><span class="mem" id="mem">anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)</span></div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const f1=(x,d=0)=>x==null?"–":Number(x).toFixed(d).replace(".",","),COL=p=>p>=90?"#ff6b5a":p>=70?"#ffd84a":"#3fe8ff";
+const H={cpu:[],ram:[],gpu:[],disk:[],dl:[],ul:[]};
+function push(k,v){H[k].push(v==null?0:v);if(H[k].length>60)H[k].shift()}
+function spark(id,series,max,cols){const c=$(id),w=c.clientWidth,h=c.clientHeight,d=devicePixelRatio||1;c.width=w*d;c.height=h*d;const x=c.getContext("2d");x.scale(d,d);x.clearRect(0,0,w,h);
+ series.forEach((s,si)=>{if(s.length<2)return;x.beginPath();s.forEach((v,i)=>{const px=i/(59)*w+(w-(s.length-1)/59*w),py=h-2-Math.min(1,v/max)*(h-4);i?x.lineTo(px,py):x.moveTo(px,py)});x.strokeStyle=cols[si];x.lineWidth=1.6;x.stroke();x.lineTo(w,h);x.lineTo(w-(s.length-1)/59*w,h);x.closePath();x.fillStyle=cols[si]+"22";x.fill()})}
+let ws;function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function log(s){$("jl").textContent="Jarvis: "+s}
+function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>send({type:"scene_ready",kind:"sistem"});
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.type==="cmdbuf"){const it=m.items||[];$("mem").textContent=it.length?`anlık komut kaydı: işleniyor → “${it[it.length-1].text}” (bitince silinecek)`:"anlık komut kaydı: bellekte 0 komut (işlem bitince silinir)";return}
+  if(m.kind!=="sistem")return;
+  if(m.type==="scene_init"){if(m.data&&m.data.static)setStatic(m.data.static)}
+  else if(m.type==="scene_do"){const d=m.do||{};if(d.msg)log(d.msg);if(d.static)setStatic(d.static);if(d.snap)render(d.snap);if(d.scan)scan()}};
+ ws.onclose=()=>setTimeout(connect,1500)}
+let ST={};
+function setStatic(s){if(!s||!s.cpu)return;ST=s;$("cpu_name").textContent=(s.cpu||"").replace(/\(R\)|\(TM\)| Quad-Core Processor| Processor/g,"").trim();
+ const ram=s.ram||[];$("ram_name").textContent=ram.length?ram.reduce((a,x)=>a+(x.gb||0),0)+" GB · "+ram.length+"×"+(ram[0].gb||"?")+" · "+(ram[0].mhz||"?")+" MT/s":"";
+ $("gpu_name").textContent=(s.gpu||"").replace("NVIDIA GeForce ","");const d=(s.disks||[])[0];$("disk_name").textContent=d?d.name:"";$("disk_h").textContent=d&&d.health?d.health:"–";
+ $("sysinfo").innerHTML=[["İşlemci",s.cpu],["Çekirdek / iş parçacığı",(s.cores||"?")+" / "+(s.threads||"?")],["Ana frekans",s.base_mhz?(s.base_mhz/1000).toFixed(2).replace(".",",")+" GHz":"–"],["Ekran kartı",s.gpu],["Sürücü",s.gpu_driver],["Çözünürlük",s.res],["Anakart",s.board],["BIOS",s.bios],["Sistem",(s.os||"")+(s.build?" ("+s.build+")":"")]].filter(r=>r[1]).map(r=>`<div><span class="n" style="opacity:.6">${esc(r[0])}</span><span style="text-align:right">${esc(r[1])}</span></div>`).join("")}
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function dur(s){const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return(d?d+" gün ":"")+h+" sa "+m+" dk"}
+function list(id,arr,unit,max){$(id).innerHTML=arr.map(([n,v])=>`<div><span class="n">${esc(n)}</span><span class="b"><i style="width:${Math.min(100,v/max*100)}%"></i></span><span class="v">${unit==="%"?f1(v,1)+" %":Math.round(v)+" MB"}</span></div>`).join("")||"<div>–</div>"}
+function render(s){
+ const al=$("alerts");al.innerHTML=s.alerts.length?s.alerts.map(a=>`<span class="al">⚠ ${esc(a)}</span>`).join(""):'<span class="al ok">✓ dikkat gerektiren bir durum yok</span>';
+ $("clock").textContent=new Date().toLocaleTimeString("tr-TR");$("up").textContent="açık: "+dur(s.uptime_s);
+ const c=s.cpu;$("cpu_v").innerHTML=f1(c.total)+"<small>%</small>";$("cpu_v").style.color=COL(c.total);push("cpu",c.total);spark("sp_cpu",[H.cpu],100,["#3fe8ff"]);
+ $("cores").innerHTML=c.per.map(p=>`<div title="${p}%"><i style="height:${p}%;background:${COL(p)}"></i></div>`).join("");
+ $("cpu_f").textContent=c.freq_mhz?f1(c.freq_mhz/1000,2)+" GHz"+(c.base_mhz?" (ana "+f1(c.base_mhz/1000,1)+")":""):"–";$("cpu_p").textContent=c.procs;$("cpu_q").textContent=c.queue==null?"–":f1(c.queue,0);
+ const r=s.ram;$("ram_v").innerHTML=f1(r.percent)+"<small>%</small>";$("ram_v").style.color=COL(r.percent);push("ram",r.percent);spark("sp_ram",[H.ram],100,["#5ee08a"]);$("ram_b").style.width=r.percent+"%";$("ram_b").style.background=COL(r.percent);
+ $("ram_u").textContent=f1(r.used_gb,1)+" / "+f1(r.total_gb,0)+" GB";$("ram_a").textContent=f1(r.avail_gb,1)+" GB";$("ram_s").textContent=r.swap_total_gb?f1(r.swap_used_gb,1)+" / "+f1(r.swap_total_gb,1)+" GB (%"+f1(r.swap_percent)+")":"yok";$("ram_pg").textContent=r.pages_sec==null?"–":f1(r.pages_sec,0);
+ const g=s.gpu;if(g){$("gpu_v").innerHTML=f1(g.util)+"<small>%</small>";$("gpu_v").style.color=COL(g.util);push("gpu",g.util);spark("sp_gpu",[H.gpu],100,["#b58cff"]);
+  $("gpu_t").textContent=f1(g.temp)+" °C";$("gpu_t").style.color=g.temp>=83?"#ff6b5a":g.temp>=75?"#ffd84a":"#fff";$("gpu_m").textContent=f1(g.vram_used/1024,2)+" / "+f1(g.vram_total/1024,1)+" GB";const vp=g.vram_used/g.vram_total*100;$("gpu_mb").style.width=vp+"%";$("gpu_mb").style.background=COL(vp);
+  $("gpu_w").textContent=f1(g.power,0)+" / "+f1(g.power_limit,0)+" W";$("gpu_c").textContent=f1(g.clock,0)+" / "+f1(g.mem_clock,0)+" MHz";$("gpu_f").textContent=(g.fan==null?"–":f1(g.fan,0)+" %")+" · "+g.pstate;
+  $("gpu_th").innerHTML=g.throttle.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}else{$("gpu_v").textContent="–";$("gpu_th").innerHTML='<span class="chip">veri okunamadı</span>'}
+ const d=s.disk;$("disk_v").innerHTML=f1(d.percent)+"<small>% dolu</small>";$("disk_v").style.color=COL(d.percent);push("disk",d.busy);spark("sp_disk",[H.disk],100,["#ffd84a"]);$("disk_b").style.width=d.percent+"%";$("disk_b").style.background=COL(d.percent);
+ $("disk_u").textContent=d.used_gb+" / "+d.total_gb+" GB (boş "+d.free_gb+")";$("disk_io").textContent=d.read_mbs==null?"–":f1(d.read_mbs,1)+" · "+f1(d.write_mbs,1)+" MB/s";$("disk_l").textContent=d.busy==null?"–":"% "+f1(d.busy)+" · "+f1(d.latency_ms,1)+" ms";
+ const n=s.net;$("net_v").innerHTML=n.down_mbps==null?"–":f1(n.down_mbps,1)+"<small>Mb/s ↓</small>";push("dl",n.down_mbps);push("ul",n.up_mbps);spark("sp_net",[H.dl,H.ul],Math.max(5,...H.dl,...H.ul),["#3fe8ff","#ff9a3c"]);$("net_name").textContent=n.nic||"";
+ $("net_io").textContent=n.down_mbps==null?"–":f1(n.down_mbps,2)+" ↓ · "+f1(n.up_mbps,2)+" ↑ Mb/s";$("net_l").textContent=n.link_mbps?n.link_mbps+" Mb/s":"–";$("net_ip").textContent=n.ip||"–";$("net_t").textContent=n.total_gb_down==null?"–":f1(n.total_gb_down,2)+" / "+f1(n.total_gb_up,2)+" GB";
+ list("top_cpu",s.top_cpu.slice(0,5),"%",Math.max(10,...s.top_cpu.map(x=>x[1])));list("top_ram",s.top_ram.slice(0,5),"MB",Math.max(500,...s.top_ram.map(x=>x[1])));
+ const j=s.jarvis||{};$("jar_v").innerHTML=(j.ram_mb||0)+"<small>MB</small>";$("jar_m").textContent=(j.ram_mb||0)+" MB";$("jar_c").textContent="% "+f1(j.cpu||0,1)}
+// ------------------------------------------------------------------ tarama animasyonu (yalnızca görsel; sonuçlar gerçek ölçümlerden okunur)
+let scanning=false;
+function scan(){if(scanning)return;scanning=true;const sb=$("scanbar"),ln=sb.firstElementChild,tx=$("scantxt");sb.style.display="block";tx.style.display="block";const t0=performance.now(),T=4200;
+ (function step(){const k=(performance.now()-t0)/T;if(k>=1){sb.style.display="none";tx.style.display="none";scanning=false;return}ln.style.top=(k*100)+"%";tx.textContent="TARAMA %"+Math.round(k*100);requestAnimationFrame(step)})()}
+$("scan").onclick=()=>send({type:"text",text:"sistemi tara"});
+function shut(){send({type:"scene_close"})}
+$("close").onclick=shut;$("peek").onclick=()=>send({type:"mode_peek"});
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){send({type:"text",text:e.target.value.trim()});$("jl").textContent="› komut uygulanıyor…";e.target.value=""}else if(e.key==="Escape")shut()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){const a=document.activeElement;if(a&&a.tagName==="INPUT"){a.blur();return}shut()}});
+setTimeout(()=>$("cmd").focus(),400);connect();window.focus();
+</script></body></html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JARVIS STARK LABORATUVARI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><link rel="stylesheet" href="/kit/stark.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ff6b57;--c2:#c8281a;--ln:rgba(255,107,87,.28);--hi:rgba(255,107,87,.12);--card:rgba(30,10,8,.7)}
+html,body{background:radial-gradient(ellipse at 15% -10%,#4a1410 0%,#0e0403 64%)}
+#lw{flex:1;min-height:0;display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:14px}
+@media (max-width:760px){#lw{grid-template-columns:1fr;overflow:auto}}
+#pl{overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:0}#mn{overflow:auto;min-height:0;display:flex;flex-direction:column;gap:12px}
+.pj{border:1px solid var(--ln);border-radius:12px;padding:10px 12px;cursor:pointer;background:rgba(0,0,0,.25);text-align:left;width:100%;font:inherit;letter-spacing:0;color:var(--txt)}
+.pj.cur{border-color:var(--c);background:var(--hi)}.pj b{display:block;font:600 14px "Segoe UI";color:#fff}.pj span{font-size:12px;color:var(--mut)}
+.tg{display:inline-block;font:11px Consolas;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.07);margin:2px 3px 0 0;color:var(--steel)}
+.it{border:1px solid var(--ln);border-radius:12px;padding:10px 12px;background:rgba(0,0,0,.22)}.it h4{margin:0 0 6px;font:600 14px "Segoe UI";color:#fff;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.it .bd{white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.55;user-select:text}.it a{color:var(--c)}
+.cb{position:relative;background:#06090c;border:1px solid rgba(255,255,255,.1);border-radius:9px;margin-top:6px}.cb .lb{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;font:11px Consolas;color:var(--steel);border-bottom:1px solid rgba(255,255,255,.08)}
+.cb pre{margin:0;padding:10px;overflow:auto;max-height:260px;font:12.5px/1.5 Consolas,monospace;color:#d6e4ee;user-select:text;white-space:pre}
+.nr{margin-top:6px;font-size:12px;color:var(--warn)}
+#af{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}#af textarea{grid-column:1/-1}
+@media (max-width:640px){#af{grid-template-columns:1fr}}
+</style></head><body>
+<div id="stage"><div class="hd"><h1>Stark Laboratuvarı</h1><span class="sub">projeler · notlar · fikirler · bağlantılar · kod parçaları</span><span class="sp"></span><input class="tx" id="q" aria-label="Ara" placeholder="Ara…" style="width:200px"></div>
+<div id="lw"><div class="card" id="pl"></div><div id="mn"></div></div></div>
+<script>
+const E=Mode.esc;let V=null,cfp=null,cfi=null;const P=s=>String(s).replace(/\|/g," ");
+function ago(t){if(!t)return"";const d=Math.round((Date.now()/1000-t)/60);return d<1?"az önce":d<60?d+" dk önce":d<1440?Math.round(d/60)+" sa önce":new Date(t*1000).toLocaleDateString("tr-TR")}
+function copy(txt,btn){const done=()=>{btn.textContent="KOPYALANDI";setTimeout(()=>btn.textContent="KOPYALA",1500)};
+ const fb=()=>{const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand("copy");done()}catch(e){btn.textContent="KOPYALANAMADI"}t.remove()};
+ if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(txt).then(done,fb);else fb()}
+function itemHtml(it,pid){const T=V.types[it.type]||it.type;let body="";
+ if(it.type==="kod")body=`<div class="cb"><div class="lb"><span>${E(it.lang||"diğer")}</span><span><button class="sm" data-c="${it.id}">KOPYALA</button></span></div><pre>${E(it.body)}</pre></div><div class="nr">Yalnızca saklanır — bu ekran kod çalıştırmaz.</div>`;
+ else if(it.type==="baglanti"){let ok=/^https?:\/\//i.test(it.body);body=ok?`<div class="bd">${E(it.body)}</div><div class="src">Otomatik açılmaz; adresi kopyalayıp tarayıcıda açın.</div><div class="ac"><button class="sm" data-c="${it.id}">KOPYALA</button></div>`:`<div class="bd">${E(it.body)}</div>`}
+ else body=`<div class="bd">${E(it.body)}</div>`;
+ return `<div class="it"><h4><span class="chip info">${E(T)}</span>${E(it.title)}${pid?` <span class="tc">· ${E(it.pname)}</span>`:""}<span class="sp"></span>${cfi===it.id?`<span class="err">Silinsin mi?</span><button class="sm" data-d="${it.id}">EVET</button><button class="sm" data-x="1">VAZGEÇ</button>`:`<button class="sm" data-s="${it.id}" aria-label="Öğeyi sil">SİL</button>`}</h4>${body}<div class="src">${ago(it.at)}</div></div>`}
+function render(v){V=v;window.__its={};(v.hits||[]).forEach(i=>window.__its[i.id]=i.body);
+ $("pl").innerHTML=`<h3>PROJELER <small>${v.projects.length}</small></h3><form id="np" class="a" style="display:flex;gap:6px"><input class="tx" id="pn" aria-label="Yeni proje adı" placeholder="Yeni proje adı" maxlength="80" style="flex:1"><button class="prim sm" type="submit">OLUŞTUR</button></form>`+
+  (v.projects.length?v.projects.map(p=>`<button class="pj ${v.open&&v.open.id===p.id?"cur":""}" data-o="${p.id}"><b>${p.pinned?"📌 ":""}${E(p.name)}</b><span>${p.n} öğe · ${ago(p.updated)}</span><div>${(p.tags||[]).map(t=>`<span class="tg">${E(t)}</span>`).join("")}</div></button>`).join(""):'<div class="empty">Henüz proje yok.<br>Yukarıdan ilk projenizi oluşturun.</div>');
+ let m="";
+ if(v.q){m=`<div class="card"><h3>ARAMA: “${E(v.q)}” <small>${v.hits.length} öğe · ${v.projects.length} proje</small></h3>${v.hits.length?v.hits.map(h=>itemHtml(h,true)).join(""):'<div class="empty">Eşleşen öğe bulunamadı.</div>'}</div>`}
+ else if(v.open){const p=v.open;m=`<div class="card"><h3>${E(p.name)} <small>${ago(p.updated)}</small></h3><div class="tc">${E(p.desc||"")}</div><div style="margin:6px 0">${(p.tags||[]).map(t=>`<span class="tg">${E(t)}</span>`).join("")}</div>
+   <div class="a" style="display:flex;gap:6px;flex-wrap:wrap"><button class="sm" data-p="${p.id}">${p.pinned?"SABİTLEMEYİ KALDIR":"SABİTLE"}</button><input class="tx" id="tg" aria-label="Etiketler" placeholder="etiketler (virgülle)" value="${E((p.tags||[]).join(", "))}" style="width:200px"><button class="sm" data-t="1">ETİKETLE</button>${cfp===p.id?`<span class="err">Proje ve tüm öğeleri silinsin mi? Geri alınamaz.</span><button class="sm" data-dp="${p.id}">EVET, SİL</button><button class="sm" data-x="1">VAZGEÇ</button>`:`<button class="sm" data-sp="${p.id}">PROJEYİ SİL</button>`}</div></div>
+   <div class="card"><h3>YENİ ÖĞE</h3><form id="af"><select class="tx" id="ty" aria-label="Tür">${Object.entries(v.types).map(([k,t])=>`<option value="${k}">${E(t)}</option>`).join("")}</select><input class="tx" id="ti" aria-label="Başlık" placeholder="Başlık" maxlength="100"><select class="tx" id="lg" aria-label="Dil" style="display:none">${v.langs.map(l=>`<option>${E(l)}</option>`).join("")}</select><textarea class="tx" id="bd" aria-label="İçerik" placeholder="İçerik"></textarea><button class="prim" type="submit">EKLE</button></form></div>`+
+   (p.items.length?[...p.items].reverse().map(i=>itemHtml(i,false)).join(""):'<div class="card"><div class="empty">Bu projede henüz öğe yok.</div></div>');
+  p.items.forEach(i=>window.__its[i.id]=i.body)}
+ else m='<div class="card"><div class="empty">Soldan bir proje seçin ya da yenisini oluşturun.<br><span class="tc">Kod parçaları yalnızca saklanır; bu ekran hiçbir kodu çalıştırmaz ve dosya sistemine dokunmaz.</span></div></div>';
+ $("mn").innerHTML=m;
+ const ty=$("ty");if(ty)ty.onchange=()=>{$("lg").style.display=ty.value==="kod"?"":"none"}}
+Mode.start({kind:"starklab",title:"STARK LABORATUVARI",placeholder:"Komut: proje oluştur: Robot kol · not ekle: … · kod ekle python: … · proje ara servo",init:render,act:d=>{if(d.data){cfp=cfi=null;render(d.data)}}});
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+ if(b.dataset.o!==undefined)return Mode.cmd("§o|"+b.dataset.o);
+ if(b.dataset.p)return Mode.cmd("§pin|"+b.dataset.p);
+ if(b.dataset.t)return Mode.cmd("§tag|"+P($("tg").value));
+ if(b.dataset.sp){cfp=b.dataset.sp*1;return render(V)}
+ if(b.dataset.dp)return Mode.cmd("§spo|"+b.dataset.dp);
+ if(b.dataset.s){cfi=b.dataset.s*1;return render(V)}
+ if(b.dataset.d)return Mode.cmd("§sio|"+b.dataset.d);
+ if(b.dataset.x){cfp=cfi=null;return render(V)}
+ if(b.dataset.c)return copy(window.__its[b.dataset.c]||"",b)});
+document.addEventListener("submit",e=>{e.preventDefault();
+ if(e.target.id==="np"){const n=P($("pn").value).trim();if(n)Mode.cmd("§p|"+n)}
+ else if(e.target.id==="af"){const ty=$("ty").value,b=$("bd").value,t=P($("ti").value);Mode.cmd(`§e|${ty}|${t}|${ty==="kod"?$("lg").value:""}|${b}`)}});
+$("q").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")Mode.cmd("§q|"+P($("q").value.trim()))});
+</script></body></html>

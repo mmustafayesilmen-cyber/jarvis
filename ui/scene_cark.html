@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS KARAR ÇARKI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ff7ad9;--c2:#c23db0;--ln:rgba(255,122,217,.25);--hi:rgba(255,122,217,.12);--card:rgba(30,8,28,.7)}
+html,body{background:radial-gradient(ellipse at 50% -10%,#4a1040 0%,#0a020a 66%)}
+#stage{display:grid;grid-template-columns:260px 1fr 280px;gap:18px}
+#mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:0;position:relative}
+#cv{width:min(62vh,540px);height:min(62vh,540px)}#conf{position:fixed;inset:0;pointer-events:none;z-index:8}
+#res{font:700 34px Bahnschrift,"Segoe UI";color:#fff;min-height:48px;text-shadow:0 0 24px var(--c);text-align:center}
+.col{display:flex;flex-direction:column;gap:14px;overflow:auto;min-height:0}
+.wl button{display:block;width:100%;text-align:left;margin-bottom:6px}.opt{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}.opt a{cursor:pointer;color:#ff8a70;padding:0 6px}
+input.t{padding:9px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:9px;color:#fff;font:14px "Segoe UI";outline:0;user-select:text;width:100%}
+</style></head><body>
+<div id="stage"><div class="col"><div class="card"><h3>ÇARKLAR</h3><div class="wl" id="wl"></div><input class="t" id="nwn" placeholder="Yeni çark adı"><input class="t" id="nwo" placeholder="seçenekler, virgülle" style="margin-top:6px"><button id="nw" style="width:100%;margin-top:6px">OLUŞTUR</button></div></div>
+ <div id="mid"><canvas id="cv" width="720" height="720"></canvas><div id="res">—</div><button id="spin" class="prim" style="padding:14px 40px;font-size:15px">ÇEVİR</button></div>
+ <div class="col"><div class="card"><h3>SEÇENEKLER <small id="cn"></small></h3><div id="ol"></div><div style="display:flex;gap:6px;margin-top:8px"><input class="t" id="no" placeholder="Seçenek ekle"><button id="na">+</button></div></div>
+  <div class="card"><h3>RASTGELE</h3><div style="display:flex;gap:6px;align-items:center"><input class="t" id="ra" type="number" value="1" style="width:70px"> – <input class="t" id="rb" type="number" value="50" style="width:70px"><button id="rn">SAYI</button></div>
+   <div style="display:flex;gap:8px;margin-top:8px"><button id="yt" style="flex:1">YAZI TURA</button><button id="zr" style="flex:1">ZAR</button></div></div></div></div>
+<canvas id="conf"></canvas>
+<script>
+let S={wheels:{},cur:""},ang=0,spinning=false;const cv=$("cv"),g=cv.getContext("2d"),COLS=["#ff7ad9","#7aa7ff","#5ee08a","#ffd84a","#ff9a5c","#c58bff","#4fe0e0","#ff6b8a"];
+Mode.start({kind:"cark",title:"KARAR ÇARKI",placeholder:"Komut: ders çalışma çarkını çevir · çarka seçenek ekle: Biyoloji ödevi · yeni çark yemek: pizza, kebap · rastgele sayı seç 1 ile 50 arası · yazı tura",init:d=>render(d.snap),
+ act:d=>{if(d.snap){const keep=S.cur;S=d.snap;if(!d.spin&&S.wheels[keep])S.cur=keep;ui()}if(d.spin)spin(d.spin.idx,d.spin.label);if(d.num){res(d.num.txt||d.num.n);if(d.num.n!==undefined)boom()}}});
+function render(s){S=s;ui()}
+function opts(){return S.wheels[S.cur]||[]}
+function ui(){$("wl").innerHTML="";Object.keys(S.wheels).forEach(k=>{const b=document.createElement("button");b.textContent=k.toUpperCase()+" ("+S.wheels[k].length+")";if(k===S.cur)b.className="cur";b.onclick=()=>{S.cur=k;ang=0;ui()};$("wl").appendChild(b)});
+ $("ol").innerHTML=opts().map((o,i)=>`<div class="opt"><span style="color:${COLS[i%COLS.length]}">●</span><span style="flex:1;margin-left:8px">${Mode.esc(o)}</span><a data-o="${Mode.esc(o)}">×</a></div>`).join("");
+ $("ol").querySelectorAll("a").forEach(a=>a.onclick=()=>Mode.cmd(S.cur+" çarkından sil: "+a.dataset.o));$("cn").textContent=S.cur;Mode.pill(S.cur.toUpperCase());draw()}
+function draw(){const o=opts(),n=o.length||1,R=340,cx=360,cy=360;g.clearRect(0,0,720,720);g.save();g.translate(cx,cy);g.rotate(ang);
+ for(let i=0;i<n;i++){const a0=i/n*6.2832,a1=(i+1)/n*6.2832;g.beginPath();g.moveTo(0,0);g.arc(0,0,R,a0,a1);g.closePath();g.fillStyle=COLS[i%COLS.length];g.fill();g.strokeStyle="#0008";g.lineWidth=3;g.stroke();
+  g.save();g.rotate((a0+a1)/2);g.textAlign="right";g.fillStyle="#111";g.font="600 "+(n>10?20:26)+"px Segoe UI";let t=o[i]||"";if(t.length>16)t=t.slice(0,15)+"…";g.fillText(t,R-24,9);g.restore()}
+ g.restore();g.beginPath();g.arc(cx,cy,34,0,6.2832);g.fillStyle="#120410";g.fill();g.strokeStyle="#ff7ad9";g.lineWidth=5;g.stroke();
+ g.beginPath();g.moveTo(cx+R-34,cy);g.lineTo(cx+R+14,cy-20);g.lineTo(cx+R+14,cy+20);g.closePath();g.fillStyle="#fff";g.strokeStyle="#120410";g.lineWidth=3;g.fill();g.stroke()}
+function res(t){$("res").textContent=t}
+function spin(idx,label){if(spinning)return;spinning=true;res("…");const n=opts().length,seg=6.2832/n,target=-((idx+.5)*seg)+ (Math.random()-.5)*seg*.6,from=ang%6.2832,turns=6.2832*(5+Math.floor(Math.random()*3));
+ const to=from+turns+((target-from)%6.2832+6.2832)%6.2832,t0=performance.now(),D=4200;
+ (function f(now){const p=Math.min(1,(now-t0)/D),e=1-Math.pow(1-p,4);ang=from+(to-from)*e;draw();if(p<1)requestAnimationFrame(f);else{ang=to%6.2832;spinning=false;res(label);boom()}})(t0)}
+function boom(){const c=$("conf"),x=c.getContext("2d");c.width=innerWidth;c.height=innerHeight;const P=[];for(let i=0;i<140;i++)P.push({x:innerWidth/2,y:innerHeight*.45,vx:(Math.random()-.5)*16,vy:-Math.random()*16-4,c:COLS[i%8],r:Math.random()*6+3,a:1});
+ (function f(){x.clearRect(0,0,c.width,c.height);let alive=0;P.forEach(p=>{p.vy+=.4;p.x+=p.vx;p.y+=p.vy;p.a-=.01;if(p.a>0){alive++;x.globalAlpha=p.a;x.fillStyle=p.c;x.fillRect(p.x,p.y,p.r,p.r*1.6)}});if(alive)requestAnimationFrame(f);else x.clearRect(0,0,c.width,c.height)})()}
+$("spin").onclick=()=>Mode.cmd(S.cur+" çarkını çevir");
+$("na").onclick=()=>{const v=$("no").value.trim();if(v){Mode.cmd(S.cur+" çarkına seçenek ekle: "+v);$("no").value=""}};
+$("nw").onclick=()=>{const n=$("nwn").value.trim(),o=$("nwo").value.trim();if(n&&o){Mode.cmd("yeni çark "+n+": "+o);$("nwn").value=$("nwo").value=""}};
+$("rn").onclick=()=>Mode.cmd("rastgele sayı seç "+$("ra").value+" ile "+$("rb").value+" arası");$("yt").onclick=()=>Mode.cmd("yazı tura");$("zr").onclick=()=>Mode.cmd("zar at");
+document.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"){const b={no:"na",nwo:"nw",nwn:"nw"}[i.id];if(b)$(b).click()}}));
+</script></body></html>

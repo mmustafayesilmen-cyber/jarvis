@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JARVIS GÖREV MASASI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><link rel="stylesheet" href="/kit/stark.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ffc857;--c2:#ff9a3d;--ln:rgba(255,200,87,.26);--hi:rgba(255,200,87,.12);--card:rgba(28,20,6,.7)}
+html,body{background:radial-gradient(ellipse at 20% -10%,#4d3510 0%,#100a03 64%)}
+.sc{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));align-items:start}
+.t{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.t:last-child{border-bottom:0}.t .bd{flex:1;min-width:0}.t .ti{font-size:15px;color:#fff;word-break:break-word}.t .mt{font-size:12px;color:var(--mut);margin-top:3px}
+.t.dn .ti{text-decoration:line-through;color:var(--mut)}.t .no{font-size:12.5px;color:var(--steel);margin-top:3px}
+.ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--c);background:transparent;cursor:pointer;padding:0;flex:none;margin-top:2px}.ck.on{background:var(--ok);border-color:var(--ok)}
+.pr1{border-left:3px solid var(--steel);padding-left:8px}.pr2{border-left:3px solid transparent;padding-left:8px}.pr3{border-left:3px solid var(--red);padding-left:8px}
+.ac{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.late{color:var(--bad)}
+#add{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;align-items:center}
+@media (max-width:640px){#add{grid-template-columns:1fr}}
+</style></head><body>
+<div id="stage"><div class="hd"><h1>Görev Masası</h1><span class="sub" id="dt"></span><span class="sp"></span></div>
+<div class="card"><form id="add" autocomplete="off"><input class="tx" id="ti" aria-label="Görev başlığı" placeholder="Yeni görev (örn. ödev yap)" maxlength="120" required><input class="tx" id="wh" aria-label="Zaman" placeholder="yarın saat 10 · cuma · tarihsiz" maxlength="60"><button class="prim" type="submit">EKLE</button></form>
+ <div class="src">Zaman Türkçe yazılır (bugün, yarın saat 10, 15 kasım…). Saatli görev, mevcut hatırlatıcılara bağlanır; takvim kayıtları ajandadan gelir. Silme onay ister.</div></div>
+<div class="sc" id="sc"><div class="card"><div class="ld">Görevler okunuyor…</div></div></div></div>
+<script>
+const E=Mode.esc;let V=null,ed=null,cf=null;
+function tk(r,done){const pr="pr"+r.prio;return `<div class="t ${pr} ${done?"dn":""}" data-id="${r.id}"><button class="ck ${done?"on":""}" data-a="${done?"geri":"tamam"}" aria-label="${done?"Yeniden aç":"Tamamla"}: ${E(r.title)}"></button><div class="bd"><div class="ti">${E(r.title)}</div>
+ <div class="mt ${r.late?"late":""}">${E(r.when)}${r.late?" · zamanı geçti":""}${r.repeat?" · tekrar: "+(r.repeat=="daily"?"her gün":"her hafta"):""}${r.remind?" · hatırlatıcı kurulu":""}${r.prio==3?" · öncelikli":r.prio==1?" · düşük":""}</div>${r.note?`<div class="no">${E(r.note)}</div>`:""}
+ ${done?"":`<div class="ac"><button class="sm" data-a="ertele">YARINA ERTELE</button><button class="sm" data-a="duzenle">DÜZENLE</button>${cf===r.id?`<span class="late">Silinsin mi? Geri alınamaz.</span><button class="sm" data-a="silonay">EVET, SİL</button><button class="sm" data-a="vazgec">VAZGEÇ</button>`:`<button class="sm" data-a="sil">SİL</button>`}</div>`}
+ ${ed===r.id?`<div class="ac"><input class="tx" id="e_t" value="${E(r.title)}" aria-label="Başlık"><input class="tx" id="e_n" value="${E(r.note||"")}" placeholder="not" aria-label="Not"><select class="tx" id="e_p" aria-label="Öncelik"><option value="1" ${r.prio==1?"selected":""}>düşük</option><option value="2" ${r.prio==2?"selected":""}>normal</option><option value="3" ${r.prio==3?"selected":""}>yüksek</option></select><button class="sm prim" data-a="kaydet">KAYDET</button></div>`:""}</div></div>`}
+function sec(t,rows,done,emp){return `<div class="card"><h3>${t} <small>${rows.length}</small></h3>${rows.length?rows.map(r=>tk(r,done)).join(""):`<div class="empty">${emp}</div>`}</div>`}
+function render(v){V=v;$("dt").textContent=v.date;
+ const cal=v.cal.length||v.rem.length?`<div class="card"><h3>TAKVİM VE HATIRLATICILAR <small>salt okunur</small></h3>${v.cal.map(c=>`<div class="row"><span>${E(c.t)}</span><b>${E(c.w)}</b></div>`).join("")}${v.rem.map(c=>`<div class="row"><span>⏰ ${E(c.t)}</span><b>${E(c.w)}</b></div>`).join("")}<div class="src">Kaynak: ajanda ve hatırlatıcılar (burada düzenlenmez; "takvimden sil …" komutu geçerli).</div></div>`:"";
+ $("sc").innerHTML=sec("BUGÜN",v.today,false,"Bugün için açık görev yok. Sakin bir gün.")+sec("YAKLAŞANLAR",v.later,false,"Yaklaşan ya da tarihsiz görev yok.")+cal+sec("TAMAMLANANLAR",v.done,true,"Henüz tamamlanan görev yok.")}
+Mode.start({kind:"gorev",title:"GÖREV MASASI",placeholder:"Komut: görev ekle: ödev yap yarın saat 10 · bugün ne yapmam gerekiyor · 2 numaralıyı tamamla",init:render,act:d=>{if(d.data)render(d.data)}});
+$("sc").addEventListener("click",e=>{const b=e.target.closest("button[data-a]");if(!b)return;const id=b.closest(".t").dataset.id,a=b.dataset.a;
+ if(a==="duzenle"){ed=ed==id*1?null:id*1;render(V);return}
+ if(a==="kaydet"){Mode.cmd(`§duzenle|${id}|${$("e_t").value.replace(/\|/g," ")}|${$("e_n").value.replace(/\|/g," ")}|${$("e_p").value}`);ed=null;return}
+ if(a==="sil"){cf=id*1;render(V);return}
+ if(a==="vazgec"){cf=null;render(V);return}
+ if(a==="silonay"){cf=null;Mode.cmd("§silonay|"+id);return}
+ Mode.cmd(`§${a}|${id}`)});
+$("add").onsubmit=e=>{e.preventDefault();const t=$("ti").value.trim().replace(/\|/g," "),w=$("wh").value.trim().replace(/\|/g," ");if(!t)return;
+ if(w&&!/tarihsiz/i.test(w))Mode.cmd("görev ekle: "+t+" "+w);else Mode.cmd("görev ekle: "+t);$("ti").value="";$("wh").value=""};
+</script></body></html>

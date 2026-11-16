@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS MÜZİK</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/scene_kit.css"><script src="/kit/scene_kit.js"></script>
+<style>
+:root{--c:#9fe8ff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:var(--c);font-family:"Segoe UI",Bahnschrift,Consolas,monospace;user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%}
+#top{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 16px;z-index:5;background:linear-gradient(#000000aa,transparent)}
+#title{flex:1;font:600 15px Bahnschrift,"Segoe UI";letter-spacing:.35em;text-shadow:0 0 10px #000}
+button{font:13px Consolas;letter-spacing:.12em;padding:7px 14px;cursor:pointer;color:var(--c);border:1px solid rgba(159,232,255,.45);background:rgba(0,8,18,.7)}
+button:hover{background:rgba(20,60,100,.85)}button.on{background:rgba(159,232,255,.3)}
+#close{border-color:rgba(255,180,84,.7);color:#ffb454}
+#chips,#cols{position:fixed;left:50%;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:96vw;z-index:5}
+#chips{bottom:50px}#cols{bottom:12px}
+#st{position:fixed;left:16px;bottom:14px;font:12px Consolas;opacity:.75;z-index:5}
+#box{position:fixed;left:16px;top:56px;width:min(430px,38vw);z-index:6;background:rgba(0,6,14,.78);border:1px solid rgba(159,232,255,.28);padding:8px 10px}
+#box h5{margin:0 0 6px;font:11px Consolas;letter-spacing:.2em;color:#ffb454}
+#mlog{max-height:30vh;overflow:auto;font:13.5px/1.45 "Segoe UI";color:#dff4ff;margin-bottom:6px;scrollbar-width:thin}
+#mlog div{padding:3px 0;border-bottom:1px solid rgba(159,232,255,.08)}#mlog .u{color:#9fe8ff}#mlog .j{color:#cfeeff}
+#cmd{width:100%;padding:8px 10px;background:rgba(0,10,18,.9);border:1px solid rgba(159,232,255,.35);color:#9fe8ff;font:14px Consolas;outline:0}
+#cmd:focus{border-color:#9fe8ff}
+#np{position:fixed;right:16px;top:56px;max-width:min(420px,36vw);text-align:right;z-index:5;font:600 15px "Segoe UI";color:#dff4ff;text-shadow:0 0 8px #000}
+#np small{display:block;font:12px Consolas;letter-spacing:.12em;opacity:.7;margin-top:2px}
+#lyr{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;width:min(900px,92vw);text-align:center;z-index:4;pointer-events:none;text-shadow:0 0 12px #000,0 0 3px #000}
+#lyr .cur{font:600 clamp(20px,3.2vw,40px)/1.25 "Segoe UI";color:#fff;transition:opacity .2s}
+#lyr .nx{font:clamp(14px,1.8vw,22px)/1.3 "Segoe UI";color:var(--c);opacity:.55;margin-top:6px}
+#lyr .pv{font:clamp(13px,1.5vw,18px)/1.3 "Segoe UI";color:var(--c);opacity:.3;margin-bottom:6px}
+#lyr .pl{max-height:34vh;overflow:hidden;font:15px/1.6 "Segoe UI";color:#dff4ff;white-space:pre-wrap;background:rgba(0,6,14,.55);padding:8px 14px}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="top"><span id="title">MÜZİK GÖRSELLEŞTİRİCİ</span><button id="peek" title="Masaüstüne geç (Ctrl+Alt+M)">MASAÜSTÜ</button><button id="close">KAPAT · ESC</button></div>
+<div id="np"></div><div id="lyr"></div><div id="chips"></div><div id="cols"></div><div id="st">sistem sesi bekleniyor…</div>
+<div id="box"><h5>SESLİ KONUŞMA KAPALI · KOMUTU YAZIN</h5><div id="mlog"></div><input id="cmd" placeholder="örn: tarkan çal · sıraya ekle … · sonraki şarkı · duraklat · sözler · tünel · mor renk · çık" spellcheck="false" autocomplete="off"></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),TOK=new URLSearchParams(location.search).get("t");
+const cv=$("c"),ctx=cv.getContext("2d");let W=0,H=0,DPR=1,u=10;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;u=Math.min(W,H)/100}addEventListener("resize",resize);resize();
+const TAU=Math.PI*2,R=Math.random,N=32;
+let bands=new Float32Array(N),raw=new Float32Array(N),peak=new Float32Array(N),agc=.15,gainK=1,style="bars",colorKey="blue",beat=0,bass=0,bassAvg=0,lastData=0,tAcc=0;
+const dust=[];const hist=[];
+function col(i,a,l){const k=colorKey;a=a===undefined?1:a;l=l||0;
+  if(k==="rainbow")return`hsla(${(i*11+tAcc*40)%360},90%,${58+l}%,${a})`;
+  const h={blue:195,red:5,green:130,purple:285}[k];return`hsla(${h+(i%6)*3},95%,${55+l+i/N*10}%,${a})`}
+function update(dt,t){let on=false;for(let i=0;i<N;i++){const v=Math.min(1.25,raw[i]*gainK/agc);bands[i]+=(v-bands[i])*(v>bands[i]?.55:.14);if(bands[i]>peak[i])peak[i]=bands[i];else peak[i]=Math.max(0,peak[i]-dt*.5);if(raw[i]>.02)on=true}
+  if(!on&&performance.now()-lastData>1500){for(let i=0;i<N;i++){const v=.08+.07*Math.sin(t*1.3+i*.5)+.05*Math.sin(t*.7-i*.3);bands[i]+=(v-bands[i])*.1}$("st").textContent="ses algılanmıyor · tarayıcıda (YouTube Music) bir şarkı açın ya da şarkı adı yazıp 'çal' deyin"}else if(on)$("st").textContent="sistem sesini dinliyor · hassasiyet x"+gainK.toFixed(2);
+  let m=0;for(let i=0;i<N;i++)m=Math.max(m,raw[i]*gainK);agc+=(Math.max(.05,m)-agc)*(m>agc?.1:.004);
+  bass=(bands[0]+bands[1]+bands[2]+bands[3])/4;bassAvg+=(bass-bassAvg)*.05;beat=Math.max(0,beat-dt*3);if(bass>bassAvg*1.3&&bass>.35)beat=1;tAcc+=dt}
+const ST={
+ bars(t){const w=W/N,base=H*.82;for(let i=0;i<N;i++){const h=bands[i]*H*.55+3,x=i*w+w*.12;const g=ctx.createLinearGradient(0,base-h,0,base+h*.45);g.addColorStop(0,col(i,1,12));g.addColorStop(1,col(i,.1));ctx.fillStyle=g;ctx.fillRect(x,base-h,w*.76,h);ctx.fillStyle=col(i,.35);ctx.fillRect(x,base+3,w*.76,h*.4);ctx.fillStyle="#fff";ctx.fillRect(x,base-peak[i]*H*.55-8,w*.76,3)}},
+ wave(t){ctx.lineWidth=3;for(let L=0;L<3;L++){ctx.strokeStyle=col(L*8,.9-L*.3,L*4);ctx.shadowColor=col(0,1);ctx.shadowBlur=18;ctx.beginPath();for(let x=0;x<=W;x+=6){const f=x/W*(N-1),i=Math.floor(f),a=bands[i],b=bands[Math.min(N-1,i+1)],v=a+(b-a)*(f-i);const y=H/2+Math.sin(x*.012+t*(2+L))*v*H*.28*(1-L*.25)+Math.sin(x*.03-t*3)*v*H*.06;x?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}ctx.shadowBlur=0},
+ ring(t){const cx=W/2,cy=H/2,r0=H*.17*(1+beat*.12);for(let k=0;k<N*2;k++){const i=k<N?k:2*N-1-k,a=k/(N*2)*TAU+t*.2,v=bands[i]*H*.28+4;ctx.strokeStyle=col(i,.95);ctx.lineWidth=Math.max(2,W/N/3.2);ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);ctx.lineTo(cx+Math.cos(a)*(r0+v),cy+Math.sin(a)*(r0+v));ctx.stroke()}ctx.strokeStyle=col(6,.5+beat*.5);ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,r0*.92,0,TAU);ctx.stroke()},
+ dust(t){if(beat>.9||R()<bass*.9){for(let k=0;k<6+bass*14;k++)dust.push({x:W/2,y:H/2,a:R()*TAU,s:2+R()*7*(1+bass),l:1,h:R()*N|0})}ctx.globalCompositeOperation="lighter";for(let i=dust.length-1;i>=0;i--){const p=dust[i];p.x+=Math.cos(p.a)*p.s;p.y+=Math.sin(p.a)*p.s;p.s*=1.012;p.l-=.012;if(p.l<=0||p.x<0||p.x>W||p.y<0||p.y>H){dust.splice(i,1);continue}ctx.fillStyle=col(p.h,p.l);ctx.beginPath();ctx.arc(p.x,p.y,2+bands[p.h]*5,0,TAU);ctx.fill()}ctx.globalCompositeOperation="source-over";if(dust.length>1800)dust.splice(0,300);
+   ctx.fillStyle=col(2,.6+beat*.4);ctx.beginPath();ctx.arc(W/2,H/2,H*.03*(1+beat*.8),0,TAU);ctx.fill()},
+ tunnel(t){const cx=W/2,cy=H/2;for(let k=24;k>=0;k--){const z=((k/24+t*.25*(1+bass))%1),r=Math.pow(z,2.2)*Math.hypot(W,H)*.6;const i=(k*3)%N;ctx.strokeStyle=col(i,Math.min(1,z*1.4));ctx.lineWidth=2+z*10*(1+bands[i]);ctx.beginPath();for(let a=0;a<=TAU+.1;a+=TAU/6){const rr=r*(1+bands[(i+(a*5|0))%N]*.15),x=cx+Math.cos(a+t*.3)*rr,y=cy+Math.sin(a+t*.3)*rr;a?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.stroke()}},
+ kaleid(t){const cx=W/2,cy=H/2,S=12;for(let s=0;s<S;s++){ctx.save();ctx.translate(cx,cy);ctx.rotate(s*TAU/S+t*.1);if(s%2)ctx.scale(1,-1);ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,Math.hypot(W,H),0,TAU/S);ctx.closePath();ctx.clip();for(let i=0;i<N;i+=2){const r=(i/N)*H*.5+bands[i]*H*.15,a=t*(.4+i*.03)+i;ctx.fillStyle=col(i,.55);ctx.beginPath();ctx.arc(Math.cos(a)*r*.8,Math.sin(a)*r*.5,4+bands[i]*H*.05,0,TAU);ctx.fill()}ctx.restore()}},
+ city(t){const w=W/N,base=H;for(let i=0;i<N;i++){const h=H*.12+bands[i]*H*.55,x=i*w;ctx.fillStyle="#0a1018";ctx.fillRect(x+2,base-h,w-4,h);ctx.fillStyle=col(i,.85);ctx.fillRect(x+2,base-h,w-4,4);const rows=Math.floor(h/(H*.035));for(let r=0;r<rows;r++)for(let c=0;c<3;c++){if(Math.sin(i*7+r*3+c*5+t*.6*(1+bands[i]))>.2){ctx.fillStyle=col(i,.6+.4*bands[i],10);ctx.fillRect(x+6+c*(w-12)/3,base-h+10+r*H*.035,(w-14)/3-3,H*.018)}}}},
+ warp(t){const cx=W/2,cy=H/2;if(!ST._w){ST._w=[];for(let i=0;i<420;i++)ST._w.push({a:R()*TAU,z:R(),h:R()*N|0})}const sp=.25+bass*1.6+beat*.8;ctx.lineCap="round";for(const s of ST._w){const z0=s.z;s.z-=dt_*sp;if(s.z<=.02){s.z=1;s.a=R()*TAU;s.h=R()*N|0;continue}const r0=(1/Math.max(.02,z0)-1)*H*.06,r1=(1/s.z-1)*H*.06;ctx.strokeStyle=col(s.h,Math.min(1,(1-s.z)*1.4+.1));ctx.lineWidth=.8+(1-s.z)*3.2*(1+bands[s.h]);ctx.beginPath();ctx.moveTo(cx+Math.cos(s.a)*r0,cy+Math.sin(s.a)*r0);ctx.lineTo(cx+Math.cos(s.a)*r1,cy+Math.sin(s.a)*r1);ctx.stroke()}ctx.fillStyle=col(2,.25+beat*.5);ctx.beginPath();ctx.arc(cx,cy,H*.03*(1+beat),0,TAU);ctx.fill()},
+ spiral(t){const cx=W/2,cy=H/2,arms=3;ctx.globalCompositeOperation="lighter";for(let a=0;a<arms;a++){for(let k=0;k<160;k++){const f=k/160,i=(k*N/160)|0,ang=a*TAU/arms+f*7+t*.35*(1+bass),r=f*H*.5*(1+bass*.25)+bands[i]*H*.05;ctx.fillStyle=col(i,.25+.65*(1-f)+.1);ctx.beginPath();ctx.arc(cx+Math.cos(ang)*r,cy+Math.sin(ang)*r*.62,1.5+bands[i]*7*(1-f*.5),0,TAU);ctx.fill()}}ctx.globalCompositeOperation="source-over";ctx.fillStyle=col(1,.5+beat*.5);ctx.beginPath();ctx.arc(cx,cy,H*.025*(1+beat*1.2),0,TAU);ctx.fill()},
+ net(t){if(!ST._n){ST._n=[];for(let i=0;i<70;i++)ST._n.push({x:R()*W,y:R()*H,vx:(R()-.5)*40,vy:(R()-.5)*40,h:R()*N|0})}const P=ST._n,k=60+bass*120;for(const p of P){p.x+=p.vx*dt_*(1+bass*3);p.y+=p.vy*dt_*(1+bass*3);if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1}ctx.lineWidth=1.4;for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){const d=Math.hypot(P[i].x-P[j].x,P[i].y-P[j].y),lim=H*.2+bass*H*.12;if(d<lim){ctx.strokeStyle=col(P[i].h,(1-d/lim)*.7);ctx.beginPath();ctx.moveTo(P[i].x,P[i].y);ctx.lineTo(P[j].x,P[j].y);ctx.stroke()}}for(const p of P){ctx.fillStyle=col(p.h,.95,10);ctx.beginPath();ctx.arc(p.x,p.y,2.5+bands[p.h]*8,0,TAU);ctx.fill()}},
+ grid(t){const hz=H*.5,vx=W/2;ctx.lineWidth=2;const sp=(t*(.4+bass))%1;for(let k=0;k<14;k++){const z=((k+sp)/14),y=hz+Math.pow(z,2.2)*H*.5;ctx.strokeStyle=col(k*2,.15+z*.8);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}for(let k=-12;k<=12;k++){ctx.strokeStyle=col(k+12,.5);ctx.beginPath();ctx.moveTo(vx+k*W*.02,hz);ctx.lineTo(vx+k*W*.14,H);ctx.stroke()}for(let i=0;i<N;i++){const h=bands[i]*H*.4+4,x=vx+(i-N/2)*(W/N)*.9;ctx.fillStyle=col(i,.85);ctx.fillRect(x,hz-h,W/N*.55,h);ctx.fillStyle=col(i,.25);ctx.fillRect(x,hz+2,W/N*.55,h*.35)}const sr=H*.14*(1+beat*.15);const g=ctx.createLinearGradient(0,hz-sr*2,0,hz);g.addColorStop(0,col(18,.95));g.addColorStop(1,col(2,.95));ctx.fillStyle=g;ctx.beginPath();ctx.arc(vx,hz-sr*1.1,sr,0,TAU);ctx.fill()}
+};
+let styles=[],colors=[];
+function build(d){styles=d.styles;colors=d.colors;const a=$("chips"),b=$("cols");a.innerHTML="";b.innerHTML="";styles.forEach(s=>{const x=document.createElement("button");x.dataset.k=s.key;x.textContent=s.name.toUpperCase();x.onclick=()=>send({type:"text",text:s.name});a.appendChild(x)});
+  colors.forEach(c=>{const x=document.createElement("button");x.dataset.k=c.key;x.textContent=c.name.toUpperCase();x.onclick=()=>send({type:"text",text:c.name+" renk"});b.appendChild(x)});mark()}
+function mark(){document.querySelectorAll("#chips button").forEach(x=>x.classList.toggle("on",x.dataset.k===style));document.querySelectorAll("#cols button").forEach(x=>x.classList.toggle("on",x.dataset.k===colorKey))}
+
+// ---- çalan şarkı ve sözler
+let np=null,lyr=null,lyrOn=true,lyrIdx=-1;
+function setNp(m){const prev=np;np=m.title?{title:m.title,artist:m.artist,pos:m.pos,dur:m.dur,playing:m.playing,src:m.src,ts:performance.now()}:null;
+ if(np&&prev&&prev.title===np.title&&prev.playing&&np.playing&&Math.abs(prev.pos+(np.ts-prev.ts)/1000-np.pos)<1.5){np.pos=prev.pos;np.ts=prev.ts}  // küçük sapmada kendi saatimizi koru, her yoklamada geri sıçramasın
+ $("np").innerHTML=np?`${esc(np.title)}${np.artist?`<small>${esc(np.artist)} · ${esc(np.src)}${np.playing?"":" · duraklatıldı"}</small>`:`<small>${esc(np.src)}</small>`}`:"";
+ if(!np){lyr=null;renderLyr()}}
+function setLyr(m){if(!np||m.title!==np.title)return;lyr=m.res||null;lyrIdx=-2;renderLyr()}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+function curPos(){return np?np.pos+(np.playing?(performance.now()-np.ts)/1000:0):0}
+function renderLyr(){const el=$("lyr");if(!lyrOn||!np){el.innerHTML="";return}
+ if(!lyr){el.innerHTML=`<div class="nx">${np?"sözler aranıyor ya da bulunamadı…":""}</div>`;return}
+ if(!lyr.synced){const p=lyr.plain||"";el.innerHTML=`<div class="pl" id="plt">${esc(p)}</div>`;return}}
+setInterval(()=>{if(!lyrOn||!np||!lyr||!lyr.synced)return;const L=lyr.lines,p=curPos()+.25;let i=-1;for(let k=0;k<L.length;k++){if(L[k][0]<=p)i=k;else break}
+ if(i===lyrIdx)return;lyrIdx=i;const g=k=>k>=0&&k<L.length?esc(L[k][1]):"";$("lyr").innerHTML=`<div class="pv">${g(i-1)}</div><div class="cur">${i>=0?(g(i)||"♪"):"♪"}</div><div class="nx">${g(i+1)}</div>`},120);
+setInterval(()=>{if(!lyrOn||!np||!lyr||lyr.synced)return;const e=$("plt");if(e&&np.dur>0)e.scrollTop=(e.scrollHeight-e.clientHeight)*Math.min(1,curPos()/np.dur)},500);
+let ws;function connect(){ws=new WebSocket("ws://127.0.0.1:8765/ws?t="+TOK);ws.onopen=()=>ws.send(JSON.stringify({type:"scene_ready",kind:"muzik"}));
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}if(m.kind!=="muzik")return;
+  if(m.type==="scene_init")build(m.data);
+  else if(m.type==="scene_fft"){const f=m.f;for(let i=0;i<N&&i<f.length;i++)raw[i]=f[i]/255;lastData=performance.now()}
+  else if(m.type==="scene_np"){setNp(m)}
+  else if(m.type==="scene_lyrics"){setLyr(m)}
+  else if(m.type==="scene_do"){const d=m.do||{};if(d.msg)addMsg("Jarvis: "+d.msg,"j");if(d.ask_np)addMsg("Jarvis: "+(np&&np.title?`Şu an çalan: ${np.title}${np.artist?" — "+np.artist:""}.`:"Şu an çalan bir şarkı algılamadım efendim."),"j");if(d.lyrics!==undefined){lyrOn=d.lyrics;renderLyr()}if(d.style){style=d.style;mark()}if(d.color){colorKey=d.color;mark()}if(d.gain)gainK=Math.max(.3,Math.min(6,gainK*d.gain))}};
+ ws.onclose=()=>setTimeout(connect,1500)}
+function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function addMsg(txt,cls){const d=document.createElement("div");d.className=cls;d.textContent=txt;const l=$("mlog");l.appendChild(d);while(l.children.length>8)l.removeChild(l.firstChild);l.scrollTop=l.scrollHeight}
+$("cmd").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.value.trim()){const v=e.target.value.trim();send({type:"text",text:v});e.target.value=""}else if(e.key==="Escape")send({type:"scene_close"})});
+$("close").onclick=()=>send({type:"scene_close"});$("peek").onclick=()=>send({type:"mode_peek"});addEventListener("keydown",e=>{if(e.key==="Escape")send({type:"scene_close"})});setTimeout(()=>$("cmd").focus(),400);addMsg("Jarvis: sesli komutlar bu ekranda kapalı. Komutları aşağıdaki kutuya yazın.","j");
+let lt=performance.now();
+let dt_=.016;function frame(ts){const dt=Math.min(.05,(ts-lt)/1000);lt=ts;dt_=dt;const t=ts/1000;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle=`rgba(2,4,10,${style==="dust"||style==="wave"?.22:.38})`;ctx.fillRect(0,0,W,H);update(dt,t);(ST[style]||ST.bars)(t);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);connect();window.focus();
+</script></body></html>

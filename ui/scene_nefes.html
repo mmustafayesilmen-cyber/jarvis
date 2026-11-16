@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS NEFES REHBERİ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#6ee7c8;--c2:#2bb39a;--ln:rgba(110,231,200,.25);--hi:rgba(110,231,200,.12);--card:rgba(6,30,28,.65)}
+html,body{background:radial-gradient(ellipse at 50% 40%,#0b3b3a 0%,#021412 70%)}
+#stage{display:grid;grid-template-columns:1fr 300px;gap:18px}
+#mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0}
+#orbw{position:relative;width:min(56vh,460px);height:min(56vh,460px);display:flex;align-items:center;justify-content:center}
+#orb{width:34%;height:34%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c9fff1,var(--c) 45%,var(--c2));box-shadow:0 0 70px var(--c),0 0 160px color-mix(in srgb,var(--c) 40%,transparent);transition:transform linear,opacity .5s}
+.ring{position:absolute;border-radius:50%;border:1px solid var(--ln)}
+#ph{font:700 36px Bahnschrift,"Segoe UI";color:#fff;text-shadow:0 0 24px var(--c);min-height:46px}#cnt{font:600 64px Bahnschrift;color:var(--c);min-height:76px}#tur{font:13px Consolas;color:var(--mut);letter-spacing:.15em}
+.pl button{display:block;width:100%;text-align:left;margin-bottom:6px}.pl small{display:block;color:var(--mut);font:11px "Segoe UI";letter-spacing:0;margin-top:2px;text-transform:none}
+</style></head><body>
+<div id="stage"><div id="mid"><div id="orbw"><div class="ring" style="inset:0"></div><div class="ring" style="inset:12%"></div><div class="ring" style="inset:24%"></div><div id="orb"></div></div><div id="ph">Hazır</div><div id="cnt"></div><div id="tur"></div>
+ <div style="display:flex;gap:10px"><button id="go" class="prim" style="padding:12px 34px">BAŞLAT</button><button id="st">DURDUR</button></div></div>
+ <div class="card"><h3>TEKNİK</h3><div class="pl" id="pl"></div><h3 style="margin-top:14px">TUR SAYISI</h3><div style="display:flex;gap:6px" id="cy"></div></div></div>
+<script>
+let P=null,cycles=6,pats=[],run=0,tm=null,doneC=0;
+function setOrb(sc,sec,op){const o=$("orb");o.style.transitionDuration=sec+"s";o.style.transform="scale("+sc+")";o.style.opacity=op}
+function ui(){$("pl").innerHTML=pats.map(p=>`<button data-p="${p.id}" class="${P&&P.id===p.id?"cur":""}">${Mode.esc(p.ad)}<small>${Mode.esc(p.ne)}</small></button>`).join("");$("pl").querySelectorAll("button").forEach(b=>b.onclick=()=>Mode.cmd({kutu:"kutu nefesi","478":"dört yedi sekiz nefesi",sakin:"sakin nefes",enerji:"enerji nefesi",uzun:"uzun verme nefesi"}[b.dataset.p]));
+ $("cy").innerHTML=[3,6,10,15].map(n=>`<button class="${n===cycles?"cur":""}" data-n="${n}">${n}</button>`).join("");$("cy").querySelectorAll("button").forEach(b=>b.onclick=()=>Mode.cmd(b.dataset.n+" tur"));
+ $("tur").textContent=P?P.ad.toUpperCase()+" · "+P.steps.map(s=>s[1]).join("-"):"";Mode.pill(P?P.ad.toUpperCase():"HAZIR")}
+function stop(){run++;clearTimeout(tm);setOrb(1,1.2,1);$("ph").textContent="Hazır";$("cnt").textContent=""}
+function start(){stop();const my=++run;let c=0,i=0;(function step(){if(my!==run)return;if(i>=P.steps.length){i=0;c++;if(c>=cycles){setOrb(1,1.5,1);$("ph").textContent="Tamamlandı";$("cnt").textContent="✓";run++;return}}
+  const [nm,sec]=P.steps[i];const grow=/al/i.test(nm),hold=/tut/i.test(nm);$("ph").textContent=nm+(P.steps.length>0?"":"");
+  if(!hold)setOrb(grow?2.6:1,sec,grow?1:.85);let left=sec;$("cnt").textContent=left;
+  const iv=setInterval(()=>{if(my!==run){clearInterval(iv);return}left--;$("cnt").textContent=left>0?left:""},1000);
+  tm=setTimeout(()=>{clearInterval(iv);i++;step()},sec*1000)})()}
+function take(d){if(d.pat){P=d.pat}if(d.cycles)cycles=d.cycles;if(d.pats)pats=d.pats;ui();if(d.run===true)start();else if(d.run===false)stop()}
+Mode.start({kind:"nefes",title:"NEFES REHBERİ",placeholder:"Komut: başlat · kutu nefesi · dört yedi sekiz · sakin nefes · enerji nefesi · on tur yap · durdur",init:take,act:take});
+$("go").onclick=()=>Mode.cmd("başlat");$("st").onclick=()=>Mode.cmd("durdur");
+</script></body></html>

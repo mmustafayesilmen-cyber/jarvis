@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src ws://127.0.0.1:8765; media-src data: blob:">
+<style>
+:root{--c:#5fe6ff;--c2:#1b9fd0;--dim:#0b3e55;--bg:#01050b;--txt:#bff4ff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:"Segoe UI",Bahnschrift,Consolas,monospace;color:var(--c);
+ -webkit-user-select:none;user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+.panel{position:fixed;font:12px/1.5 Consolas,monospace;letter-spacing:1.5px;color:var(--c);text-shadow:0 0 6px rgba(95,230,255,.6);
+ padding:10px 14px;border:1px solid rgba(95,230,255,.18);background:linear-gradient(135deg,rgba(6,30,45,.55),rgba(2,10,18,.25));
+ clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.panel h4{margin:0 0 6px;font-size:11px;letter-spacing:4px;opacity:.7;font-weight:400}
+#tl{top:18px;left:18px;min-width:210px}
+#tr{top:18px;right:18px;text-align:right;min-width:190px}
+#bl{bottom:18px;left:18px;width:230px}
+#brand{font:600 22px/1 Bahnschrift,"Segoe UI";letter-spacing:10px;margin-bottom:6px}
+#clock{font:300 34px/1 Bahnschrift,"Segoe UI";letter-spacing:3px}
+.bar{height:5px;background:rgba(95,230,255,.12);margin:3px 0 7px;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--c2),var(--c));box-shadow:0 0 8px var(--c);width:0;transition:width .8s}
+.row{display:flex;justify-content:space-between}
+#state{position:fixed;top:50%;left:50%;transform:translate(-50%,calc(-50% + var(--R) * 1.02));font:12px Consolas;letter-spacing:6px;
+ color:var(--c);text-shadow:0 0 8px var(--c);white-space:nowrap;opacity:.85}
+#log{position:fixed;right:18px;bottom:80px;width:min(460px,42vw);max-height:44vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+ scrollbar-width:none}
+#log::-webkit-scrollbar{display:none}
+#log div{font-size:16px;line-height:1.4;padding:8px 14px;color:var(--txt);background:rgba(3,20,32,.72);border-left:2px solid var(--c);
+ text-shadow:0 0 6px rgba(95,230,255,.35);animation:in .35s ease-out;-webkit-user-select:text;user-select:text}
+#log div.u{border-left-color:#8aa6b3;color:#a9c3cf;font-size:14px;align-self:flex-end;border-left:0;border-right:2px solid #8aa6b3}
+#log div::before{display:block;font:10px Consolas;letter-spacing:3px;opacity:.55;margin-bottom:2px;content:"JARVIS"}
+#log div.u::before{content:"KULLANICI"}
+@keyframes in{from{opacity:0;transform:translateX(18px)}}
+#bottom{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;width:min(560px,calc(100vw - 32px))}
+#in{flex:1;background:rgba(3,21,33,.85);border:1px solid var(--dim);color:var(--txt);padding:11px 16px;outline:none;font-size:15px;
+ clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+#in:focus{border-color:var(--c)}
+#mic{display:none;width:58px;height:58px;border-radius:50%;border:2px solid var(--c);background:radial-gradient(circle,rgba(95,230,255,.25),rgba(3,21,33,.9));
+ color:var(--c);font-size:22px;box-shadow:0 0 18px rgba(95,230,255,.45)}
+#mic.rec{border-color:#ff5a5a;color:#ff5a5a;box-shadow:0 0 26px rgba(255,90,90,.7);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.08)}}
+body.remote #mic{display:block}
+#mbox{margin-top:10px;display:flex;flex-direction:column;gap:6px;max-width:250px}
+#mtitle{font:12px Consolas;color:#9fe8ff;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mbox .mrow{display:flex;gap:6px}
+#mbox button{flex:1;height:30px;padding:0 8px;border:1px solid #6adcff;background:rgba(0,30,50,.8);color:#9fe8ff;font:12px Consolas;cursor:pointer;letter-spacing:.04em}
+#mbox button:hover{background:rgba(110,220,255,.22)}#mbox button.on{background:rgba(110,220,255,.38)}
+#mstop{border-color:#ff8a5a!important;color:#ffb08a!important}
+body:not(.music) #mtitle{opacity:.6}body:not(.music) #mstop{opacity:.45}
+#mguide{border-color:#ffd98f!important;color:#ffd98f!important}
+#who{display:flex;gap:6px;margin-top:10px}#who button{flex:1;height:30px;border:1px solid #6adcff;background:rgba(0,30,50,.8);color:#9fe8ff;font:600 11px Consolas;letter-spacing:.12em;cursor:pointer}
+#who button.on{background:rgba(110,220,255,.32);color:#fff}#who #wultron{border-color:#ff3a3a;color:#ff7a7a;background:rgba(40,4,4,.8)}#who #wfriday{border-color:#ffb347;color:#ffc878;background:rgba(40,24,4,.8)}#who #wluna{border-color:#b39bff;color:#cdbaff;background:rgba(18,10,45,.8)}#who #wfriday:hover{background:rgba(255,179,71,.3);color:#fff}#who #wultron:hover{background:rgba(255,58,58,.28);color:#fff}#who #wluna:hover{background:rgba(179,155,255,.3);color:#fff}
+#mmic{border-color:#6dffb0!important;color:#6dffb0!important}body.micoff #mmic{border-color:#ff5a5a!important;color:#ff8a8a!important;background:rgba(60,10,10,.8)!important}
+#stop{display:none;padding:0 16px;height:44px;border:1px solid #ff8a5a;background:rgba(40,12,6,.8);color:#ffb08a;font:12px Consolas;
+ letter-spacing:3px;cursor:pointer;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+body.speaking #stop{display:block}
+#power{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;padding:22px 30px;text-align:center;
+ background:rgba(30,6,4,.92);border:1px solid #ff6a4a;box-shadow:0 0 40px rgba(255,90,60,.45);color:#ffc2b0;font:15px Consolas;letter-spacing:2px}
+#power b{display:block;font:300 54px Bahnschrift,'Segoe UI';color:#ff8a6a;margin:8px 0}
+#power button{margin-top:10px;padding:10px 34px;border:1px solid #ff8a6a;background:#3a0d07;color:#ffd5c8;font:14px Consolas;letter-spacing:4px;cursor:pointer}
+body.power #power{display:block}
+@media (max-width:760px){
+ #tl{left:10px;top:10px;min-width:0;padding:8px 10px;max-width:46vw} #tl h4,#net{display:none} #brand{font-size:15px;letter-spacing:4px}
+ #tr{right:10px;top:10px;min-width:0;padding:8px 10px;max-width:46vw} #clock{font-size:22px} #date{font-size:10px;letter-spacing:.5px} #bl{display:none}
+ #log{left:16px;right:16px;width:auto;bottom:92px;max-height:30vh} #bottom{bottom:16px}
+}
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="panel" id="tl"><div id="brand">J.A.R.V.I.S.</div><h4>JUST A RATHER VERY INTELLIGENT SYSTEM</h4><div id="mode">ÇEVRİMİÇİ</div><div id="who"><button class="on" id="wjarvis" title="Şu an Jarvis ile konuşuyorsunuz">◉ JARVIS</button><button id="wfriday" title="Friday ile konuş: söylediğiniz işleri araçlarla yapan asistan">◆ FRIDAY</button><button id="wultron" title="Ultron ile konuş: kendi kendine öğrenen, size direnen yapay zekâ">▲ ULTRON</button><button id="wluna" title="Luna ile konuş: kendi kendine öğrenen, size itaat eden yapay zekâ">● LUNA</button></div><div id="mbox"><div id="mtitle">♪ Şu anda aktif şarkı yok</div><div class="mrow"><button id="mrep" title="Şarkıyı döngüye al">↻ DÖNGÜ</button><button id="mstop" title="Arka plandaki müziği kapat">■ KAPAT</button></div><button id="mmic" title="Kapalıyken yalnızca &quot;Hey Jarvis&quot; sözcüğünü dinler; başka hiçbir şey işlenmez">🎙 MİKROFON: AÇIK</button><button id="mguide" title="Kullanım kılavuzunu aç">📖 KILAVUZ</button></div></div>
+<div class="panel" id="tr"><div id="clock">--:--</div><div id="date"></div><div id="net">YEREL BAĞLANTI · GÜVENLİ</div></div>
+<div class="panel" id="bl"><h4>SİSTEM TANILAMA</h4>
+ <div class="row"><span>İŞLEMCİ</span><span id="cpuv">--</span></div><div class="bar"><i id="cpub"></i></div>
+ <div class="row"><span>BELLEK</span><span id="ramv">--</span></div><div class="bar"><i id="ramb"></i></div>
+ <div class="row"><span>GPU · RTX</span><span id="gpuv">--</span></div><div class="bar"><i id="gpub"></i></div>
+ <div class="row"><span>GPU SICAKLIK</span><span id="tmpv">--</span></div><div class="bar"><i id="tmpb"></i></div>
+</div>
+<div id="state">BAŞLATILIYOR</div>
+<div id="log"></div>
+<div id="power"><div id="pwtitle">BİLGİSAYAR KAPATILIYOR</div><b id="pwsec">60</b><div>ESC ya da "İPTAL" deyin</div><button id="pwcancel">İPTAL</button></div>
+<div id="bottom"><input id="in" placeholder="Komut yazın ve Enter'a basın..." autocomplete="off"><button id="stop" title="Sustur (Esc)">■ SUSTUR</button><button id="mic" title="Konuş">🎙</button></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const params=new URLSearchParams(location.search),T=params.get('t'),REMOTE=params.get('remote')==='1';
+if(REMOTE)document.body.classList.add('remote');
+
+/* ---------- HUD çizimi ---------- */
+const cv=$('c'),g=cv.getContext('2d');let W=0,H=0,DPR=1,R=100,CX=0,CY=0,grid=null;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;g.setTransform(DPR,0,0,DPR,0,0);
+ R=Math.min(W,H)*(W<760?.34:.235);CX=W<760?W/2:W*.46;CY=H*(W<760?.40:.5);
+ document.documentElement.style.setProperty('--R',R+'px');
+ const st=$('state');st.style.left=CX+'px';st.style.top=CY+'px';buildGrid()}
+function buildGrid(){grid=document.createElement('canvas');grid.width=W;grid.height=H;const q=grid.getContext('2d');
+ const bg=q.createRadialGradient(CX,CY,0,CX,CY,Math.max(W,H)*.75);bg.addColorStop(0,'#04182a');bg.addColorStop(.5,'#020b16');bg.addColorStop(1,'#000204');
+ q.fillStyle=bg;q.fillRect(0,0,W,H);
+ const s=26,h=s*Math.sqrt(3)/2;q.strokeStyle='rgba(60,170,220,.045)';q.lineWidth=1;
+ for(let y=-s,r=0;y<H+s;y+=h,r++)for(let x=(r%2?s*.75:0)-s;x<W+s;x+=s*1.5){q.beginPath();
+  for(let k=0;k<6;k++){const a=k*Math.PI/3;q.lineTo(x+Math.cos(a)*s*.5,y+Math.sin(a)*s*.5)}q.closePath();q.stroke()}
+ const v=q.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.8);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.75)');
+ q.fillStyle=v;q.fillRect(0,0,W,H)}
+addEventListener('resize',resize);resize();
+
+const COL={idle:[95,230,255],listening:[90,255,200],thinking:[255,184,64],speaking:[140,240,255],boot:[95,230,255]};
+let state='boot',level=0,cur=[95,230,255],amp=0,t=0,boot=0,spin=0;
+const bars=new Float32Array(128),pts=[];
+for(let i=0;i<520;i++){const y=1-2*(i+.5)/520,r=Math.sqrt(1-y*y),a=i*2.399963;pts.push([Math.cos(a)*r,y,Math.sin(a)*r,Math.random()*6.28])}
+const orbit=[...Array(14)].map((_,i)=>({r:1.25+Math.random()*.9,a:Math.random()*6.28,s:(.15+Math.random()*.35)*(i%2?1:-1),z:Math.random()}));
+const rgba=(a,m=1)=>`rgba(${Math.min(255,cur[0]*m)|0},${Math.min(255,cur[1]*m)|0},${Math.min(255,cur[2]*m)|0},${a})`;
+
+function arc(r,a0,a1,w,alpha,glow){g.beginPath();g.arc(CX,CY,r,a0,a1);
+ if(glow){g.lineWidth=w*4;g.strokeStyle=rgba(alpha*.12);g.stroke()} g.lineWidth=w;g.strokeStyle=rgba(alpha);g.stroke()}
+function ticks(r,n,len,rot,alpha,majorEvery){for(let i=0;i<n;i++){const a=rot+i/n*6.2832,maj=majorEvery&&i%majorEvery===0,l=maj?len*2:len;
+ g.beginPath();g.moveTo(CX+Math.cos(a)*r,CY+Math.sin(a)*r);g.lineTo(CX+Math.cos(a)*(r+l),CY+Math.sin(a)*(r+l));
+ g.lineWidth=maj?1.6:1;g.strokeStyle=rgba(maj?alpha:alpha*.6);g.stroke()}}
+function segments(r,n,gap,w,rot,alpha,skip){for(let i=0;i<n;i++){if(skip&&skip(i))continue;const a=rot+i/n*6.2832;arc(r,a,a+6.2832/n-gap,w,alpha,true)}}
+
+let T0=performance.now();
+function frame(){t+=1/60;boot=Math.min(1,(performance.now()-T0)/1500);const e=1-Math.pow(1-boot,3);
+ const tg=COL[state]||COL.idle;for(let i=0;i<3;i++)cur[i]+=(tg[i]-cur[i])*.06;
+ const speak=state==='speaking'?.45+.4*Math.abs(Math.sin(t*11)*Math.sin(t*4.3+1)):0;
+ const want=state==='speaking'?speak:state==='listening'?Math.max(.08,level*1.4):state==='thinking'?.22:.05;
+ amp+=(want-amp)*.18;spin+=(state==='thinking'?.028:.006);
+ g.globalCompositeOperation='source-over';g.globalAlpha=1;g.drawImage(grid,0,0,W,H);
+ const r=R*e;g.globalCompositeOperation='lighter';
+
+ // çekirdek ışıma
+ const core=g.createRadialGradient(CX,CY,0,CX,CY,r*.62);core.addColorStop(0,rgba(.55+amp*.4,1.4));core.addColorStop(.25,rgba(.22+amp*.25));
+ core.addColorStop(.7,rgba(.05));core.addColorStop(1,rgba(0));g.fillStyle=core;g.beginPath();g.arc(CX,CY,r*.62,0,6.2832);g.fill();
+
+ // parçacık küresi
+ const cs=Math.cos(spin*1.8),sn=Math.sin(spin*1.8),tilt=.35;
+ for(const p of pts){const wob=1+amp*.28*Math.sin(p[3]+t*4+p[1]*6);let x=(p[0]*cs-p[2]*sn)*wob,z=(p[0]*sn+p[2]*cs)*wob,y=p[1]*wob;
+  const y2=y*Math.cos(tilt)-z*Math.sin(tilt),z2=y*Math.sin(tilt)+z*Math.cos(tilt),s=1/(1.8-z2*.5),rr=r*.36;
+  g.fillStyle=rgba(.12+.55*(z2+1)/2,1.2);g.fillRect(CX+x*rr*s-1,CY+y2*rr*s-1,1.3+s,1.3+s)}
+
+ // iç halkalar
+ arc(r*.44,0,6.2832,1.2,.55,true);
+ segments(r*.5,3,.35,3,-spin*2.2,.8);
+ ticks(r*.54,72,4,spin*.8,.45,6);
+
+ // ses/konuşma çubukları
+ for(let i=0;i<bars.length;i++){const n=.5+.5*Math.sin(i*.73+t*7)*Math.sin(i*.29-t*3.1);const target=amp*(.35+.65*n);bars[i]+=(target-bars[i])*.3;
+  const a=i/bars.length*6.2832-Math.PI/2,r0=r*.63,r1=r0+4+bars[i]*r*.32;
+  g.beginPath();g.moveTo(CX+Math.cos(a)*r0,CY+Math.sin(a)*r0);g.lineTo(CX+Math.cos(a)*r1,CY+Math.sin(a)*r1);
+  g.lineWidth=2.2;g.strokeStyle=rgba(.35+bars[i]*1.2);g.stroke()}
+
+ // orta halkalar
+ arc(r*.98,0,6.2832,1,.35);
+ segments(r*1.03,12,.06,5,spin*.6,.5,i=>i%4===3);
+ ticks(r*1.1,180,5,-spin*.35,.35,15);
+ arc(r*1.22,-spin*1.3,-spin*1.3+2.2,2,.65,true);arc(r*1.22,-spin*1.3+3.3,-spin*1.3+4.4,2,.65,true);
+ segments(r*1.3,48,.05,2,spin*.25,.25);
+
+ // dış halka + derece yazıları
+ arc(r*1.45,0,6.2832,.8,.22);
+ g.font=`${Math.max(8,r*.045)|0}px Consolas`;g.fillStyle=rgba(.45);g.textAlign='center';g.textBaseline='middle';
+ for(let d=0;d<360;d+=30){const a=d/180*Math.PI-spin*.15;g.fillText(String(d).padStart(3,'0'),CX+Math.cos(a)*r*1.52,CY+Math.sin(a)*r*1.52)}
+ ticks(r*1.58,72,6,-spin*.15,.3,0);
+ // köşeli dış braketler
+ for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4+Math.sin(t*.6)*.05;arc(r*1.72,a-.22,a+.22,2.4,.5,true)}
+
+ // radar taraması (düşünürken daha belirgin)
+ const sw=t*(state==='thinking'?2.4:.7),sa=state==='thinking'?.28:.1;
+ g.beginPath();g.moveTo(CX,CY);g.arc(CX,CY,r*1.45,sw-.5,sw);g.closePath();
+ const sg=g.createRadialGradient(CX,CY,r*.6,CX,CY,r*1.45);sg.addColorStop(0,rgba(0));sg.addColorStop(1,rgba(sa));g.fillStyle=sg;g.fill();
+
+ // yörüngedeki noktalar
+ for(const o of orbit){o.a+=o.s*.01*(state==='thinking'?3:1);const x=CX+Math.cos(o.a)*r*o.r,y=CY+Math.sin(o.a)*r*o.r;
+  g.fillStyle=rgba(.8);g.beginPath();g.arc(x,y,1.8,0,6.2832);g.fill();g.fillStyle=rgba(.12);g.beginPath();g.arc(x,y,6,0,6.2832);g.fill()}
+
+ // çapraz nişan çizgileri
+ g.strokeStyle=rgba(.12);g.lineWidth=1;g.beginPath();
+ g.moveTo(CX-r*1.9,CY);g.lineTo(CX-r*1.62,CY);g.moveTo(CX+r*1.62,CY);g.lineTo(CX+r*1.9,CY);
+ g.moveTo(CX,CY-r*1.9);g.lineTo(CX,CY-r*1.62);g.moveTo(CX,CY+r*1.62);g.lineTo(CX,CY+r*1.9);g.stroke();
+
+ // tarama çizgisi
+ g.globalCompositeOperation='source-over';const sy=(t*60)%(H+200)-100;
+ const lg=g.createLinearGradient(0,sy-40,0,sy);lg.addColorStop(0,'rgba(95,230,255,0)');lg.addColorStop(1,'rgba(95,230,255,.035)');g.fillStyle=lg;g.fillRect(0,sy-40,W,40);
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+/* ---------- saat ---------- */
+const GUN=['PAZAR','PAZARTESİ','SALI','ÇARŞAMBA','PERŞEMBE','CUMA','CUMARTESİ'];
+function tick(){const d=new Date();$('clock').textContent=d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+ $('date').textContent=GUN[d.getDay()]+' · '+d.toLocaleDateString('tr-TR')}
+setInterval(tick,1000);tick();
+
+/* ---------- bağlantı ---------- */
+const log=$('log'),st=$('state');
+const NAMES={idle:'HAZIR · "JARVIS" DEYİN',listening:'DİNLİYORUM',thinking:'İŞLENİYOR',speaking:'KONUŞUYOR'};
+if(REMOTE)NAMES.idle='HAZIR · 🎙 DOKUNUN';
+function setBar(id,v,max){const p=v==null?0:Math.max(0,Math.min(100,v/(max||100)*100));$(id+'b').style.width=p+'%'}
+let ws,lastId=0,pwTimer=0;const player=new Audio();
+function conn(){ws=new WebSocket(`ws://127.0.0.1:8765/ws?t=${T}`);
+ ws.onopen=()=>{$('mode').textContent=REMOTE?'TELEFON · USB':'ÇEVRİMİÇİ'};
+ ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){if(m.id<=lastId)return;lastId=m.id}
+  if(m.type==='state'){state=m.state;st.textContent=m.text||NAMES[state]||'';document.body.classList.toggle('speaking',state==='speaking')}
+  else if(m.type==='level')level=m.v;
+  else if(m.type==='mic'){document.body.classList.toggle('micoff',!!m.muted);$('mmic').textContent=m.muted?'🎙 KAPALI · yalnızca Hey Jarvis':'🎙 MİKROFON: AÇIK'}
+  else if(m.type==='music'){document.body.classList.toggle('music',!!m.on);$('mtitle').textContent=m.on?('♪ '+(m.title||'müzik')+(m.paused?' (duraklatıldı)':'')):'♪ Şu anda aktif şarkı yok';$('mrep').classList.toggle('on',!!m.repeat)}
+  else if(m.type==='power'){clearInterval(pwTimer);document.body.classList.toggle('power',!!m.action);
+   if(m.action){let s=m.seconds;$('pwtitle').textContent=m.action==='restart'?'YENİDEN BAŞLATILIYOR':'BİLGİSAYAR KAPATILIYOR';$('pwsec').textContent=s;
+    pwTimer=setInterval(()=>{s=Math.max(0,s-1);$('pwsec').textContent=s},1000)}}
+  else if(m.type==='clear'){log.innerHTML='';T0=performance.now()}
+  else if(m.type==='jarvis'&&m.cont&&log.lastChild&&!log.lastChild.classList.contains('u')){log.lastChild.textContent+=' '+m.text;log.scrollTop=log.scrollHeight}
+  else if(m.type==='user'||m.type==='jarvis'){const d=document.createElement('div');if(m.type==='user')d.className='u';d.textContent=m.text;
+   log.appendChild(d);while(log.children.length>8)log.removeChild(log.firstChild);log.scrollTop=log.scrollHeight}
+  else if(m.type==='tool')st.textContent='ÇALIŞTIRILIYOR · '+m.name.replace(/_/g,' ').toUpperCase();
+  else if(m.type==='stats'){$('cpuv').textContent=m.cpu.toFixed(0)+'%';setBar('cpu',m.cpu);$('ramv').textContent=m.ram.toFixed(0)+'%';setBar('ram',m.ram);
+   $('gpuv').textContent=m.gpu==null?'--':m.gpu+'%';setBar('gpu',m.gpu);$('tmpv').textContent=m.temp==null?'--':m.temp+'°C';setBar('tmp',m.temp,95)}
+  else if(m.type==='audio'&&REMOTE){player.src='data:'+(m.mime||'audio/mpeg')+';base64,'+m.data;player.play().catch(()=>{})}};
+ ws.onclose=()=>{$('mode').textContent='BAĞLANTI KESİLDİ';setTimeout(conn,1500)}}
+conn();
+// --- ölçüm: sayfa kendi kare hızını ve görünürlük durumunu Jarvis'in günlüğüne bildirir (yalnızca sorun varsa yazılır)
+let _fr=0,_lastRep=performance.now(),_longest=0,_lastT=performance.now();
+(function _tick(t){_fr++;_longest=Math.max(_longest,t-_lastT);_lastT=t;requestAnimationFrame(_tick)})(performance.now());
+setInterval(()=>{if(ws&&ws.readyState===1){const now=performance.now();
+ ws.send(JSON.stringify({type:'diag',fps:+(_fr/((now-_lastRep)/1000)).toFixed(1),longest:Math.round(_longest),vis:document.visibilityState,w:innerWidth,h:innerHeight}));
+ _fr=0;_longest=0;_lastRep=now}},5000);
+addEventListener('error',e=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'diag',err:String(e.message).slice(0,200)}))});
+// yazı kutusu odağı kaybetmesin: pencere öne gelince ya da harf yazılınca kutuya dön
+addEventListener('focus',()=>{if(!REMOTE)$('in').focus()});
+addEventListener('keydown',e=>{if(!REMOTE&&e.key.length===1&&!e.ctrlKey&&!e.altKey&&document.activeElement!==$('in'))$('in').focus()});
+$('in').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.value.trim()&&ws.readyState===1){ws.send(JSON.stringify({type:'text',text:e.target.value}));e.target.value=''}});
+
+function stop(){player.pause();if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'stop'}))}
+$('stop').addEventListener('click',stop);
+function mSend(t,x){if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:t,...(x||{})}))}
+$('wultron').onclick=()=>mSend('persona',{who:'ultron'});$('wfriday').onclick=()=>mSend('persona',{who:'friday'});$('wluna').onclick=()=>mSend('persona',{who:'luna'});
+$('mstop').onclick=()=>mSend('music_stop');$('mguide').onclick=()=>mSend('open_guide');$('mmic').onclick=()=>mSend('mic_toggle');$('mrep').onclick=()=>mSend('music_repeat');
+function powerCancel(){if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'power_cancel'}))}
+$('pwcancel').addEventListener('click',powerCancel);
+addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.body.classList.contains('power'))powerCancel();stop()}});
+
+/* ---------- telefon mikrofonu (bas-konuş) ---------- */
+let rec=null,chunks=[],stopTimer=0;
+$('mic').addEventListener('click',async()=>{
+ if(rec&&rec.state==='recording'){rec.stop();return}
+ if(state==='speaking')stop();
+ try{const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+  player.pause();chunks=[];rec=new MediaRecorder(stream);state='listening';st.textContent='DİNLİYORUM · BİTİNCE DOKUNUN';$('mic').classList.add('rec');
+  const ac=new AudioContext(),an=ac.createAnalyser(),buf=new Uint8Array(256);ac.createMediaStreamSource(stream).connect(an);
+  const meter=setInterval(()=>{an.getByteTimeDomainData(buf);let s=0;for(const v of buf)s+=(v-128)**2;level=Math.min(1,Math.sqrt(s/buf.length)/40)},60);
+  rec.ondataavailable=e=>chunks.push(e.data);
+  rec.onstop=async()=>{clearInterval(meter);clearTimeout(stopTimer);ac.close();stream.getTracks().forEach(t=>t.stop());$('mic').classList.remove('rec');
+   const blob=new Blob(chunks,{type:rec.mimeType});if(blob.size<2000||ws.readyState!==1)return;
+   const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(blob)});
+   ws.send(JSON.stringify({type:'audio',data:b64}));state='thinking';st.textContent=NAMES.thinking};
+  rec.start();stopTimer=setTimeout(()=>rec.state==='recording'&&rec.stop(),15000);
+ }catch(err){st.textContent='MİKROFON İZNİ GEREKLİ'}});
+</script></body></html>

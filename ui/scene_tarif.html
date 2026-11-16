@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS TARİF</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ffb454;--c2:#ff7a45;--ln:rgba(255,180,84,.24);--hi:rgba(255,180,84,.12);--card:rgba(30,16,6,.66)}
+html,body{background:radial-gradient(ellipse 60% 55% at 50% 45%,rgba(255,122,69,.08),transparent 70%),radial-gradient(ellipse at 50% -10%,#3a1d08 0%,#0d0603 64%)}
+#stage{display:flex;flex-direction:column;gap:16px}
+#cats{display:flex;gap:10px;flex-wrap:wrap}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;overflow:auto;padding:4px}
+.rc{cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+.rc:hover{transform:translateY(-4px);border-color:var(--c);box-shadow:0 16px 40px rgba(0,0,0,.4),0 0 24px rgba(255,180,84,.25)}
+.rc b{display:block;font-size:19px;margin:4px 0 8px}.rc .k{font:600 10.5px Consolas;letter-spacing:.25em;color:var(--c)}.rc .m{font-size:13px;color:var(--mut)}
+#view{display:none;grid-template-columns:minmax(260px,330px) 1fr minmax(230px,280px);gap:22px;flex:1;min-height:0}
+#view>div{min-height:0;overflow:auto}
+#mal li{margin:7px 0;font-size:15px;line-height:1.4}#mal{margin:0;padding-left:20px}
+#stepbox{display:flex;flex-direction:column;gap:16px}
+#all{margin:0;padding-left:26px;font-size:15px;line-height:1.5;color:var(--mut)}#all li{margin:7px 0;cursor:pointer;padding:2px 6px;border-radius:8px}#all li:hover{background:var(--hi)}#all li.on{color:#fff;background:var(--hi)}#all li.done{opacity:.55}#all li::marker{color:var(--c);font-weight:600}#allw h3{margin:6px 0 4px}#st.pre{font:500 15px "Segoe UI";color:var(--mut);text-shadow:none}
+#busy{display:none;align-items:center;gap:12px;font:14px Consolas;color:var(--c)}#busy i{width:16px;height:16px;border-radius:50%;border:2px solid var(--ln);border-top-color:var(--c);animation:sp .8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+#src{font:12px Consolas;color:var(--mut);margin-top:12px;word-break:break-all}
+#sn{font:600 12px Consolas;letter-spacing:.3em;color:var(--c)}#st{font:600 min(3.4vh,30px)/1.38 "Segoe UI",sans-serif;color:#fff;text-shadow:0 0 24px rgba(255,180,84,.3)}
+#dots{display:flex;gap:8px;flex-wrap:wrap}#dots i{width:30px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);cursor:pointer}#dots i.on{background:var(--c);box-shadow:0 0 10px var(--c)}#dots i.done{background:rgba(255,180,84,.45)}
+.nav{display:flex;gap:12px;flex-wrap:wrap}.nav button{padding:12px 22px;font-size:13px}
+#tm{font:300 64px Bahnschrift,Consolas;color:#fff;text-align:center;font-variant-numeric:tabular-nums}#tl{text-align:center;font-size:13px;color:var(--mut);margin-top:4px;min-height:18px}
+body.ring #tm{animation:pl 1s infinite}@keyframes pl{50%{opacity:.3}}
+.tmb{position:absolute;top:12px;right:12px;font:700 10px Consolas;letter-spacing:.12em;color:#7dffb0;border:1px solid rgba(125,255,176,.5);background:rgba(20,80,45,.35);border-radius:8px;padding:2px 7px}
+#cats button.tmc{color:#7dffb0;border-color:rgba(125,255,176,.45)}#cats button.tmc.cur{background:rgba(125,255,176,.14);border-color:#7dffb0}
+#tmset{display:none;flex-wrap:wrap;gap:10px}#tmset span{display:flex;align-items:center;gap:7px;padding:10px 14px;border-radius:12px;border:1px solid rgba(125,255,176,.45);background:rgba(20,80,45,.3);font:600 17px Bahnschrift,"Segoe UI";color:#eafff2}
+#tmset span i{font-style:normal;font:600 10px Consolas;letter-spacing:.18em;color:#7dffb0}
+#tmt{display:none;margin:-4px 0 10px;width:100%;padding:8px 10px;font-size:11px}#tmt.on{color:#7dffb0;border-color:#7dffb0;background:rgba(20,80,45,.3)}
+</style></head><body>
+<div id="stage">
+ <div id="busy"><i></i><span></span></div>
+ <div id="cats"></div>
+ <div id="grid"></div>
+ <div id="view">
+  <div class="card"><h3>MALZEMELER <small id="meta"></small></h3>
+   <div style="display:flex;align-items:center;gap:8px;margin:-4px 0 10px"><span class="mut" style="font-size:13px">Kişi</span><button id="km" style="padding:2px 10px">−</button><b id="kv" style="min-width:24px;text-align:center">2</b><button id="kp" style="padding:2px 10px">+</button><button id="sh" style="margin-left:auto;padding:6px 10px;font-size:11px">LİSTEYE EKLE</button></div>
+   <button id="tmt"></button><ul id="mal"></ul><div id="tipb" style="display:none;margin-top:12px;padding:10px 12px;border:1px solid var(--ln);border-radius:12px;background:var(--hi);font-size:13.5px;line-height:1.55"></div><div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button id="back">‹ TARİFLER</button><button id="sl">ALIŞVERİŞ LİSTEM</button></div><div id="src"></div></div>
+  <div class="card" id="stepbox"><div id="sn"></div><div id="st"></div><div id="tmset"></div><div id="dots"></div>
+   <div class="nav"><button id="prev">‹ ÖNCEKİ</button><button class="prim" id="next">BAŞLA</button><button id="rep">TEKRAR OKU</button></div>
+   <div id="allw"><h3>HAZIRLANIŞI</h3><ol id="all"></ol></div></div>
+  <div class="card" id="shopc" style="display:none"><h3>ALIŞVERİŞ LİSTESİ <small id="shn"></small></h3><ul id="shl" style="margin:0;padding-left:18px;font-size:14px;line-height:1.6"></ul><button id="shc" style="margin-top:10px;padding:6px 10px;font-size:11px">LİSTEYİ TEMİZLE</button></div>
+  <div class="card"><h3>SAYAÇ</h3><div id="tm">00:00</div><div id="tl">Adımda süre varsa sayaç kurabilirsiniz.</div>
+   <div class="nav" style="justify-content:center;margin-top:14px"><button id="tset">ADIMA SAYAÇ KUR</button><button id="tstop">DURDUR</button></div></div>
+ </div>
+</div>
+<script>
+let D=null,cat="hepsi",ids=null,endAt=0,tl="",audio=null;
+Mode.start({kind:"tarif",title:"TARİF",placeholder:"Komut: menemen tarifi · hünkar beğendi tarifi (internetten) · malzemeler · başla · sonraki · önceki · tekrar · adım üç · sayaç kur · tatlı tarifleri",init:d=>{D=d;busy(d.busy);draw()},act,tick:tickT});
+function busy(t){$("busy").style.display=t?"flex":"none";$("busy").querySelector("span").textContent=t||""}
+function act(d){if("busy" in d)busy(d.busy);if(d.data){D=d.data;draw()}if(d.timer){endAt=Date.now()+d.timer*60000;tl=d.label||"";$("tl").textContent=tl;document.body.classList.remove("ring")}
+ if(d.filter){ids=d.filter;cat="hepsi";draw()}if(d.cat){cat=d.cat;ids=null;draw()}if(d.list){ids=null;cat="hepsi";draw()}}
+function draw(){if(!D)return;const cur=D.cur;$("grid").style.display=cur?"none":"grid";$("cats").style.display=cur?"none":"flex";$("view").style.display=cur?"grid":"none";
+ if(!cur){const cs=["hepsi",...D.cats,"thermomix"];$("cats").innerHTML=cs.map(c=>'<button class="'+(c==="thermomix"?"tmc ":"")+(c===cat&&!ids?"cur":"")+'" data-c="'+c+'">'+c.toUpperCase()+'</button>').join("");
+  $("cats").querySelectorAll("button").forEach(b=>b.onclick=()=>{cat=b.dataset.c;ids=null;draw()});
+  const L=D.list.filter(r=>ids?ids.includes(r.id):cat==="hepsi"||r.kat===cat||(cat==="thermomix"&&r.tm));
+  $("grid").innerHTML=L.map(r=>'<div class="card rc" data-id="'+r.id+'">'+(r.tm?'<span class="tmb">'+(r.tmonly?"THERMOMIX":"+ THERMOMIX")+"</span>":"")+'<div class="k">'+Mode.esc(r.kat.toUpperCase())+'</div><b>'+Mode.esc(r.ad)+'</b><div class="m">'+[r.dk?r.dk+' dk':'',r.kisi?r.kisi+' kişilik':'',r.n+' adım'].filter(Boolean).join(' · ')+'</div></div>').join("");
+  $("grid").querySelectorAll(".rc").forEach(e=>e.onclick=()=>Mode.cmd(D.list.find(r=>r.id===e.dataset.id).ad+" tarifi"));return}
+ $("meta").textContent=cur.dk?cur.dk+" dk":"";$("kv").textContent=cur.kisi||"–";$("src").textContent=cur.web?"Kaynak: "+cur.web:"";
+ $("shl").innerHTML=(D.shop||[]).map(x=>"<li>"+Mode.esc(x)+"</li>").join("")||'<li class="mut">Liste boş.</li>';$("shn").textContent=(D.shop||[]).length+" kalem";if(D.shop&&D.shop.length&&cur)$("shopc").style.display="block";$("mal").innerHTML=cur.mal.map(m=>"<li>"+Mode.esc(m)+"</li>").join("");$("tipb").style.display=cur.ip?"block":"none";$("tipb").innerHTML=cur.ip?"<b style=\"color:var(--c);letter-spacing:.2em;font-size:11px\">PÜF NOKTASI</b><br>"+Mode.esc(cur.ip)+(cur.sakla?"<br><span class=\"mut\">"+Mode.esc(cur.sakla)+"</span>":"")+(cur.kcal?"<br><span class=\"mut\">Yaklaşık "+cur.kcal+" kcal / kişi (porsiyona göre değişir)</span>":""):"";
+ const s=cur.step;$("dots").innerHTML=cur.adim.map((a,i)=>'<i class="'+(i===s?"on":i<s?"done":"")+'" data-i="'+i+'"></i>').join("");
+ $("dots").querySelectorAll("i").forEach(e=>e.onclick=()=>Mode.cmd("adım "+(Number(e.dataset.i)+1)));
+ $("sn").textContent=s<0?cur.ad.toUpperCase():"ADIM "+(s+1)+" / "+cur.adim.length;
+ $("st").textContent=s<0?"Malzemeleri hazırlayın, hazır olunca BAŞLA'ya basın ya da başla deyin.":cur.adim[s].t;
+ $("st").className=s<0?"pre":"";
+ $("all").innerHTML=cur.adim.map((a,i)=>'<li class="'+(i===s?"on":i<s?"done":"")+'" data-i="'+i+'">'+Mode.esc(a.t)+(a.dk?' <span class="mut">('+a.dk+" dk)</span>":"")+"</li>").join("");
+ $("all").querySelectorAll("li").forEach(e=>e.onclick=()=>Mode.cmd("adım "+(Number(e.dataset.i)+1)));
+ $("next").textContent=s<0?"BAŞLA":s>=cur.adim.length-1?"BİTTİ":"SONRAKİ ›";
+ $("tmt").style.display=cur.tm&&!cur.tmonly?"block":"none";$("tmt").className=cur.tmon?"on":"";$("tmt").textContent=cur.tmon?"THERMOMIX SÜRÜMÜ · OCAKTA YAP'A GEÇ":"OCAK SÜRÜMÜ · THERMOMIX İLE YAP'A GEÇ";
+ if(cur.tmonly){$("meta").textContent=cur.dk+" dk · Thermomix"}
+ const tm=s>=0?cur.adim[s].tm:null;$("tmset").style.display=tm?"flex":"none";$("tmset").innerHTML=tm?tmChips(tm):""}
+function tmChips(t){const ch=[],f=(i,v)=>ch.push('<span><i>'+i+"</i>"+Mode.esc(v)+"</span>");
+ if(t.s){const m=Math.floor(t.s/60),x=t.s%60;f("SÜRE",m?(m+" dk"+(x?" "+x+" sn":"")):x+" sn")}
+ if(t.c)f("SICAKLIK",t.c==="varoma"?"Varoma":t.c+" °C");
+ if(t.h)f("HIZ",t.h==="kaşık"?"Kaşık":t.h==="hamur"?"Hamur modu":t.h.replace("-","→").replace(".",","));
+ if(t.r)f("YÖN","↺ Ters");if(t.a)f("APARAT",{kelebek:"Kelebek",varoma:"Varoma",sepet:"Sepet"}[t.a]||t.a);return ch.join("")}
+$("tmt").onclick=()=>Mode.cmd(D&&D.cur&&D.cur.tmon?"ocakta yap":"thermomix ile yap");
+$("back").onclick=()=>Mode.cmd("tarif listesi");
+$("km").onclick=()=>Mode.cmd(Math.max(1,(D&&D.cur?D.cur.kisi:2)-1)+" kişilik yap");$("kp").onclick=()=>Mode.cmd(((D&&D.cur?D.cur.kisi:2)+1)+" kişilik yap");
+$("sh").onclick=()=>Mode.cmd("alışveriş listesine ekle");$("sl").onclick=()=>{$("shopc").style.display=$("shopc").style.display==="none"?"block":"none"};$("shc").onclick=()=>Mode.cmd("alışveriş listesini temizle");$("next").onclick=()=>Mode.cmd(D&&D.cur&&D.cur.step<0?"başla":"sonraki");
+$("prev").onclick=()=>Mode.cmd("önceki");$("rep").onclick=()=>Mode.cmd("tekrar");$("tset").onclick=()=>Mode.cmd("sayaç kur");
+$("tstop").onclick=()=>{endAt=0;tl="";$("tm").textContent="00:00";$("tl").textContent="";document.body.classList.remove("ring")};
+function beep(){try{audio=audio||new AudioContext();for(let i=0;i<3;i++){const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(audio.destination);o.start(audio.currentTime+i*.5);o.stop(audio.currentTime+i*.5+.25)}}catch(e){}}
+function tickT(){if(!endAt)return;const s=Math.max(0,Math.ceil((endAt-Date.now())/1000));$("tm").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+ if(s<=0){endAt=0;document.body.classList.add("ring");$("tl").textContent="Süre doldu!";beep()}}
+</script></body></html>

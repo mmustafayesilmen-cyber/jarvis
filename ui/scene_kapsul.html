@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS ZAMAN KAPSÜLÜ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#8ad4ff;--c2:#3b8fd1;--ln:rgba(138,212,255,.25);--hi:rgba(138,212,255,.12);--card:rgba(6,18,34,.7)}
+html,body{background:radial-gradient(ellipse at 50% 100%,#0e3358 0%,#030912 70%)}
+#stage{display:grid;grid-template-columns:380px 1fr;gap:18px}
+.col{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto}
+textarea,select,input.t{width:100%;padding:10px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:10px;color:#fff;font:14px "Segoe UI";outline:0;user-select:text}textarea{height:130px;resize:none}
+#jars{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;align-content:start;overflow:auto}
+.jar{border:1px solid var(--ln);border-radius:18px;padding:16px;background:linear-gradient(180deg,rgba(138,212,255,.08),rgba(0,0,0,.3));text-align:center;position:relative}
+.jar .ic{font-size:44px;filter:drop-shadow(0 0 12px var(--c))}.jar .d{font:700 26px Bahnschrift;color:#fff;margin:4px 0}.jar small{color:var(--mut);display:block;font:11.5px Consolas}
+.jar.due{border-color:#ffd36e;box-shadow:0 0 30px rgba(255,211,110,.35);animation:gl 2s infinite}@keyframes gl{50%{box-shadow:0 0 50px rgba(255,211,110,.6)}}
+.jar .tx{margin-top:10px;padding:10px;background:rgba(255,211,110,.08);border-radius:10px;font:13px "Segoe UI";text-align:left;white-space:pre-wrap;color:#ffeab5}
+#cf{position:fixed;inset:0;pointer-events:none;z-index:8}
+</style></head><body>
+<div id="stage"><div class="col"><div class="card"><h3>GELECEĞE MESAJ</h3><textarea id="tx" placeholder="Gelecekteki sana ne söylemek istersin?"></textarea>
+ <div style="display:flex;gap:8px;margin-top:8px"><input class="t" id="n" type="number" min="1" value="1" style="width:80px"><select id="u"><option value="gün">gün sonra</option><option value="hafta">hafta sonra</option><option value="ay">ay sonra</option><option value="yıl" selected>yıl sonra</option></select></div>
+ <button id="se" class="prim" style="width:100%;margin-top:10px">MÜHÜRLE</button></div>
+ <div class="card"><h3>KURAL</h3><div class="mut" style="font:13px/1.5 'Segoe UI'">Mühürlenen metin vakti gelene kadar bu ekranda bile görünmez. Yalnızca bu bilgisayarda saklanır.</div><button id="op" style="width:100%;margin-top:10px">VAKTİ GELENLERİ AÇ</button></div></div>
+ <div class="card" style="display:flex;flex-direction:column;min-height:0"><h3>KAPSÜLLER <small id="cn"></small></h3><div id="jars"></div></div></div><canvas id="cf"></canvas>
+<script>
+let S={rows:[]};
+function ui(){$("cn").textContent=S.rows.length+" kapsül";Mode.pill(S.rows.filter(r=>r.due).length?"AÇILABİLİR":"MÜHÜRLÜ");
+ $("jars").innerHTML=S.rows.map(r=>`<div class="jar ${r.due?"due":""}"><div class="ic">${r.due?"🎁":"⏳"}</div><div class="d">${r.due?"AÇILDI":r.days+" gün"}</div><small>mühür: ${Mode.esc(r.from)}</small><small>açılış: ${Mode.esc(r.open)}</small>${r.due&&r.text?`<div class="tx">${Mode.esc(r.text)}</div>`:""}</div>`).join("")||'<div class="mut">Henüz kapsül yok.</div>'}
+function boom(){const c=$("cf"),x=c.getContext("2d");c.width=innerWidth;c.height=innerHeight;const P=[];for(let i=0;i<160;i++)P.push({x:innerWidth/2,y:innerHeight*.4,vx:(Math.random()-.5)*18,vy:-Math.random()*16-3,c:["#ffd36e","#8ad4ff","#ff9a8a","#b6ff9a"][i%4],r:Math.random()*6+3,a:1});
+ (function f(){x.clearRect(0,0,c.width,c.height);let al=0;P.forEach(p=>{p.vy+=.4;p.x+=p.vx;p.y+=p.vy;p.a-=.01;if(p.a>0){al++;x.globalAlpha=p.a;x.fillStyle=p.c;x.fillRect(p.x,p.y,p.r,p.r*1.5)}});if(al)requestAnimationFrame(f);else x.clearRect(0,0,c.width,c.height)})()}
+Mode.start({kind:"kapsul",title:"ZAMAN KAPSÜLÜ",placeholder:"Komut: geleceğe mesaj: merhaba ben, bir yıl sonra · altı ay sonra · kapsülleri aç · son kapsülü sil",init:d=>{S=d.snap;ui()},act:d=>{if(d.snap){S=d.snap;ui()}if(d.confetti)boom()}});
+$("se").onclick=()=>{const v=$("tx").value.trim();if(!v)return;Mode.cmd("geleceğe mesaj: "+v+", "+$("n").value+" "+$("u").value+" sonra");$("tx").value=""};$("op").onclick=()=>Mode.cmd("kapsülleri aç");
+document.querySelectorAll("textarea,input").forEach(i=>i.addEventListener("keydown",e=>e.stopPropagation()));
+</script></body></html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS PANO</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#7aa7ff;--c2:#4a6cf0;--ln:rgba(122,167,255,.25);--hi:rgba(122,167,255,.12);--card:rgba(8,12,34,.68)}
+html,body{background:radial-gradient(ellipse at 50% -10%,#142060 0%,#03050f 66%)}
+#stage{display:grid;grid-template-columns:1fr 340px;gap:16px}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0}
+#bar2{display:flex;gap:8px}#q{flex:1;padding:10px 12px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:10px;color:#fff;font:14px "Segoe UI";outline:0;user-select:text}
+#list,#parts{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px}
+.it{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--ln);border-radius:12px;background:var(--card);cursor:pointer}.it:hover{border-color:var(--c);background:var(--hi)}
+.it .k{font:600 10px Consolas;letter-spacing:.12em;color:var(--c);width:44px;padding-top:3px}.it .tx{flex:1;font-size:13.5px;white-space:pre-wrap;word-break:break-word;max-height:84px;overflow:hidden;color:#e4ecff}
+.it .tx.s{color:var(--mut);letter-spacing:.2em}.it img{max-width:200px;max-height:100px;border-radius:6px;display:block}
+.it .m{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font:11px Consolas;color:var(--mut)}.it .m a{cursor:pointer;color:#ff8a70;padding:0 4px;font-size:15px}.it .m a.p{color:var(--mut)}.it .m a.p.on{color:#ffd84a}
+.flash{animation:fl .5s}@keyframes fl{from{background:rgba(122,167,255,.4)}}
+.emp{color:var(--mut);padding:16px;font-size:13px}
+.nv2{padding:8px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:9px;color:#fff;font:13px "Segoe UI";outline:0;width:100%;user-select:text}
+</style></head><body>
+<div id="stage"><div class="col"><div id="bar2"><input id="q" placeholder="Panoda ara…"><button id="tg">İZLEME: —</button><button id="cl">TEMİZLE</button></div><div id="list"></div></div>
+ <div class="col"><div class="card"><h3>HAZIR PARÇALAR <small>kalıcı</small></h3><div id="parts" style="max-height:44vh"></div>
+  <input class="nv2" id="pn" placeholder="Ad (örn. adres)" style="margin-top:10px"><textarea class="nv2" id="pt" placeholder="Metin" rows="3" style="margin-top:6px;resize:none"></textarea><button id="pa" class="prim" style="width:100%;margin-top:6px">PARÇA EKLE</button></div>
+  <div class="card"><h3>GİZLİLİK</h3><div class="mut" style="font-size:12.5px;line-height:1.55">Geçmiş yalnızca bellekte tutulur, Jarvis kapanınca silinir. Parola yöneticisinin işaretlediği içerik hiç alınmaz; parolaya benzeyen metinler gizli (••••) gösterilir. Parçalar bu bilgisayarda saklanır.</div></div></div></div>
+<script>
+let S={hist:[],parts:[],on:true};const E=Mode.esc,KD={text:"METİN",link:"LİNK",image:"GÖRSEL",files:"DOSYA"};
+Mode.start({kind:"pano",title:"PANO GEÇMİŞİ",placeholder:"Komut: son kopyaladığımı söyle · 3 numaralı kaydı panoya al · panoda ara kelime · parça ekle: ad = metin · panoyu temizle",init:d=>render(d.snap),act:d=>{if(d.snap)render(d.snap)}});
+function render(s){S=s;
+ $("tg").textContent="İZLEME: "+(s.on?"AÇIK":"KAPALI");Mode.pill(s.hist.length+" KAYIT");
+ $("list").innerHTML=s.hist.map((h,i)=>`<div class="it" data-id="${h.id}"><span class="k">${KD[h.kind]||h.kind}</span><div class="tx${h.secret?" s":""}">${h.thumb?`<img src="${h.thumb}">`:""}${E(h.text)}${h.n>300?"…":""}</div><div class="m"><span>${i+1} · ${E(h.ts)}</span><a class="p${h.pin?" on":""}" data-p="${h.id}" title="Sabitle">★</a><a data-d="${h.id}" title="Sil">×</a></div></div>`).join("")||'<div class="emp">Henüz kopyalanan bir şey yok. Bir şey kopyalayın, burada görünür.</div>';
+ $("list").querySelectorAll(".it").forEach(e=>e.onclick=ev=>{if(ev.target.dataset.d||ev.target.dataset.p)return;Mode.cmd("§kopyala|"+e.dataset.id);e.classList.add("flash")});
+ $("list").querySelectorAll("[data-d]").forEach(a=>a.onclick=()=>Mode.cmd("§sil|"+a.dataset.d));$("list").querySelectorAll("[data-p]").forEach(a=>a.onclick=()=>Mode.cmd("§sabit|"+a.dataset.p));
+ $("parts").innerHTML=s.parts.map(p=>`<div class="it" data-id="${p.id}"><span class="k">${p.id}</span><div class="tx"><b>${E(p.name)}</b><br>${E(p.text)}</div><div class="m"><a data-x="${p.id}">×</a></div></div>`).join("")||'<div class="emp">Sık kullandığınız metinleri (adres, imza…) buraya ekleyin. Parola saklamayın.</div>';
+ $("parts").querySelectorAll(".it").forEach(e=>e.onclick=ev=>{if(ev.target.dataset.x)return;Mode.cmd("§parcakopyala|"+e.dataset.id);e.classList.add("flash")});
+ $("parts").querySelectorAll("[data-x]").forEach(a=>a.onclick=()=>Mode.cmd("§parcasil|"+a.dataset.x))}
+let qt;$("q").addEventListener("input",()=>{clearTimeout(qt);qt=setTimeout(()=>Mode.cmd("§ara|"+$("q").value.trim()),250)});
+for(const i of["q","pn","pt"])$(i).addEventListener("keydown",e=>e.stopPropagation());
+$("pa").onclick=()=>{const t=$("pt").value.trim();if(t){Mode.cmd("§parcaekle|"+$("pn").value.trim()+"|"+t);$("pn").value=$("pt").value=""}};
+$("tg").onclick=()=>Mode.cmd(S.on?"pano izlemeyi kapat":"pano izlemeyi aç");$("cl").onclick=()=>Mode.cmd("panoyu temizle");
+</script></body></html>

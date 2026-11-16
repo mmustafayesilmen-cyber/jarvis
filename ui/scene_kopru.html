@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JARVIS ASİSTAN KÖPRÜSÜ</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><link rel="stylesheet" href="/kit/stark.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#c8a8ff;--c2:#7a4cff;--ln:rgba(200,168,255,.26);--hi:rgba(200,168,255,.12);--card:rgba(16,8,32,.7)}
+html,body{background:radial-gradient(ellipse at 50% -10%,#2b1458 0%,#07030f 64%)}
+.sc{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.as{display:flex;flex-direction:column;gap:8px}.as h2{margin:0;font:300 28px Bahnschrift;color:#fff;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.as p{margin:0;font-size:14px;line-height:1.5}.as ul{margin:0;padding-left:18px;font-size:13px;color:var(--mut);line-height:1.6}
+.as .vo{font:12px Consolas;color:var(--c)}.as .sw{font-size:12.5px;color:var(--warn)}
+.as.cur{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 10px 40px rgba(0,0,0,.35)}
+.note{border-left:3px solid var(--steel);padding:8px 12px;font-size:13px;line-height:1.55;color:var(--mut)}
+</style></head><body>
+<div id="stage"><div class="hd"><h1>Asistan Köprüsü</h1><span class="sub" id="up"></span><span class="sp"></span><button id="home">JARVİS'E DÖN</button></div>
+<div class="note" id="nt"></div>
+<div class="sc" id="sc"><div class="card"><div class="ld">Asistanlar okunuyor…</div></div></div></div>
+<script>
+const E=Mode.esc;
+function render(v){$("up").textContent="durum okundu "+new Date(v.t*1000).toLocaleTimeString("tr-TR");$("nt").textContent=v.note+" Bir asistanı açmak bu ana Jarvis ekranından ayrı bir moda geçiştir: bu pencere kapanır, asistanın kendi ekranı açılır.";
+ $("sc").innerHTML=v.cards.map(c=>`<div class="card as ${c.state==="active"?"cur":""}"><h2>${E(c.name)} <span class="chip ${c.state==="active"?"ok":"info"}">${c.state==="active"?"SEÇİLİ · ÇALIŞIYOR":"HAZIR"}</span></h2><p>${E(c.desc)}</p><ul>${c.caps.map(x=>`<li>${E(x)}</li>`).join("")}</ul>
+  <div class="vo">${E(c.voice)}</div>${c.learn!==null?`<div class="src">Arka plan öğrenme: ${c.learn?"açık":"kapalı"} (ayar: ${E(c.id)}_ogren)</div>`:""}
+  ${c.separate?`<div class="sw">Ayrı bir moda geçiş: bu pencere kapanır.</div><button class="prim" data-w="${c.id}" aria-label="${E(c.name)} asistanını aç">ASİSTANI AÇ</button>`:`<div class="sw" style="color:var(--mut)">Ana asistan. Diğerlerinden dönmek için “çık” demeniz yeterli.</div>`}</div>`).join("")}
+Mode.start({kind:"kopru",title:"ASİSTAN KÖPRÜSÜ",placeholder:"Komut: friday'i aç · ultron'u aç · luna'yı aç",init:render,act:d=>{if(d.data)render(d.data);if(d.open){Mode.pill("GEÇİLİYOR");Mode.send({type:"persona",who:d.open})}}});
+document.addEventListener("click",e=>{const b=e.target.closest("button[data-w]");if(b){Mode.pill("GEÇİLİYOR");Mode.send({type:"persona",who:b.dataset.w})}});
+$("home").onclick=()=>Mode.shut();
+</script></body></html>

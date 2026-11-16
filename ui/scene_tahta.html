@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS FİKİR TAHTASI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#ffb454;--c2:#e07a1f}
+html,body{background:radial-gradient(ellipse at 50% -10%,#3a2410 0%,#0c0703 70%)}
+#stage{display:flex;flex-direction:column;gap:12px}
+#tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#tools input[type=text]{flex:1;min-width:240px;padding:10px 12px;background:rgba(0,0,0,.4);border:1px solid var(--ln);border-radius:10px;color:#fff;font:14px "Segoe UI";outline:0;user-select:text}
+#tools select{padding:9px;background:rgba(0,0,0,.5);color:#fff;border:1px solid var(--ln);border-radius:10px;font:13px "Segoe UI"}
+#board{position:relative;flex:1;min-height:0;border-radius:16px;overflow:hidden;border:6px solid #6b4423;background:
+ radial-gradient(circle at 20% 30%,rgba(255,255,255,.05),transparent 40%),repeating-linear-gradient(45deg,#8a6038 0 6px,#7e5732 6px 12px);box-shadow:inset 0 0 60px #0007,0 10px 40px #0009}
+#lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.note{position:absolute;width:168px;min-height:96px;padding:12px 12px 10px;border-radius:3px;color:#2b2208;font:600 14px/1.35 "Segoe Print","Segoe UI";box-shadow:3px 6px 14px #0006;cursor:grab;touch-action:none;transform:rotate(var(--r,0deg));word-break:break-word}
+.note.drag{cursor:grabbing;z-index:20;box-shadow:6px 12px 24px #000a}.note.sel{outline:3px solid #fff}
+.note .id{position:absolute;top:2px;left:6px;font:700 10px Consolas;opacity:.5}.note .x{position:absolute;top:0;right:4px;font:700 14px Consolas;opacity:.0;cursor:pointer;padding:0 4px}.note:hover .x{opacity:.6}
+.note[contenteditable=true]{cursor:text;outline:2px dashed #000}
+.sari{background:#ffe66d}.pembe{background:#ff9fc2}.mavi{background:#8fd3ff}.yesil{background:#a6f09a}.turuncu{background:#ffb774}.mor{background:#d2a8ff}
+.gl{position:absolute;font:700 13px Bahnschrift,Consolas;letter-spacing:.25em;color:#fff;text-shadow:0 2px 6px #000;background:#0007;padding:3px 10px;border-radius:12px}
+#hint{font-size:12px;color:var(--mut)}
+</style></head><body>
+<div id="stage"><div id="tools"><input type="text" id="tx" placeholder="Yeni fikir yazın… (Enter)"><select id="cl"><option value="">rastgele renk</option><option>sarı</option><option>pembe</option><option>mavi</option><option>yeşil</option><option>turuncu</option><option>mor</option></select>
+ <button id="add" class="prim">EKLE</button><button id="grp">KATEGORİLERE AYIR</button><button id="dis">DAĞIT</button><button id="clr">TEMİZLE</button><span id="hint">sürükle · çift tıkla düzenle · iki notu Shift ile seç = bağla</span></div>
+ <div id="board"><svg id="lines"></svg></div></div>
+<script>
+let S={notes:[],links:[]},sel=[];const B=()=>$("board").getBoundingClientRect();
+Mode.start({kind:"tahta",title:"FİKİR TAHTASI",placeholder:"Komut: tahtaya ekle: fikir · sarı nota yaz: ... · 1 ile 3 bağla · fikirleri kategorilere ayır · 2 numaralı notu sil",init:d=>render(d.snap),act:d=>{if(d.snap)render(d.snap)}});
+function render(s){S=s;const bd=$("board");bd.querySelectorAll(".note,.gl").forEach(e=>e.remove());const r=B(),W=r.width,H=r.height;
+ s.notes.forEach(n=>{const e=document.createElement("div");e.className="note "+n.c;e.dataset.id=n.id;e.style.left=n.x*W+"px";e.style.top=n.y*H+"px";e.style.setProperty("--r",((n.id*37)%7-3)+"deg");
+  e.innerHTML='<span class="id">'+n.id+'</span><span class="x" title="Sil">×</span><div class="t"></div>';e.querySelector(".t").textContent=n.text;
+  e.querySelector(".x").onpointerdown=ev=>{ev.stopPropagation();Mode.cmd(n.id+" numaralı notu sil")};
+  e.ondblclick=()=>edit(e,n);drag(e,n);bd.appendChild(e)});
+ const seen={};s.notes.filter(n=>n.g).forEach(n=>{if(!seen[n.g]||n.y<seen[n.g].y)seen[n.g]=n});
+ Object.entries(seen).forEach(([g,n])=>{const l=document.createElement("div");l.className="gl";l.textContent=g.toUpperCase();l.style.left=n.x*W+"px";l.style.top=Math.max(2,n.y*H-30)+"px";bd.appendChild(l)});
+ lines();Mode.pill(s.notes.length+" NOT")}
+function lines(){const r=B(),W=r.width,H=r.height,sv=$("lines");sv.innerHTML="";
+ const pos={};S.notes.forEach(n=>pos[n.id]=[n.x*W+84,n.y*H+48]);
+ S.links.forEach(([a,b])=>{if(!pos[a]||!pos[b])return;const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+  l.setAttribute("x1",pos[a][0]);l.setAttribute("y1",pos[a][1]);l.setAttribute("x2",pos[b][0]);l.setAttribute("y2",pos[b][1]);l.setAttribute("stroke","#d8402a");l.setAttribute("stroke-width","3");l.setAttribute("stroke-dasharray","8 5");sv.appendChild(l)})}
+function drag(e,n){let sx,sy,ox,oy,mv=false;e.onpointerdown=ev=>{if(e.isContentEditable)return;e.setPointerCapture(ev.pointerId);sx=ev.clientX;sy=ev.clientY;ox=e.offsetLeft;oy=e.offsetTop;mv=false;e.classList.add("drag")};
+ e.onpointermove=ev=>{if(!e.classList.contains("drag"))return;const dx=ev.clientX-sx,dy=ev.clientY-sy;if(Math.abs(dx)+Math.abs(dy)>3)mv=true;
+  const r=B();e.style.left=Math.max(0,Math.min(r.width-170,ox+dx))+"px";e.style.top=Math.max(0,Math.min(r.height-100,oy+dy))+"px";n.x=e.offsetLeft/r.width;n.y=e.offsetTop/r.height;lines()};
+ e.onpointerup=ev=>{e.classList.remove("drag");if(mv){Mode.cmd("§tasi|"+n.id+"|"+n.x.toFixed(3)+"|"+n.y.toFixed(3))}
+  else if(ev.shiftKey){sel.push(n.id);e.classList.add("sel");if(sel.length===2){Mode.cmd(sel[0]+" ile "+sel[1]+" bağla");sel=[]}}}}
+function edit(e,n){const t=e.querySelector(".t");t.contentEditable=true;t.focus();const fin=()=>{t.contentEditable=false;const v=t.textContent.trim();if(v&&v!==n.text)Mode.cmd(n.id+" numaralı notu değiştir: "+v)};
+ t.onblur=fin;t.onkeydown=k=>{k.stopPropagation();if(k.key==="Enter"){k.preventDefault();t.blur()}}}
+function add(){const v=$("tx").value.trim();if(!v)return;Mode.cmd(($("cl").value?$("cl").value+" ":"")+"nota yaz: "+v);$("tx").value=""}
+$("add").onclick=add;$("tx").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")add()});
+$("grp").onclick=()=>Mode.cmd("fikirleri kategorilere ayır");$("dis").onclick=()=>Mode.cmd("notları dağıt");$("clr").onclick=()=>{if(confirm("Tahta temizlensin mi?"))Mode.cmd("tahtayı temizle")};
+addEventListener("resize",()=>render(S));
+</script></body></html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>JARVIS NASIL ÇALIŞIR</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:8765"><link rel="stylesheet" href="/kit/modes.css"><script src="/kit/modes.js"></script>
+<style>
+:root{--c:#4aa3ff;--c2:#2f6bff;--ln:rgba(74,163,255,.24);--hi:rgba(74,163,255,.13);--card:rgba(6,16,34,.72);--ok:#35e06b;--gold:#ffd84a}
+html,body{background:radial-gradient(ellipse 60% 55% at 50% 45%,rgba(47,107,255,.09),transparent 70%),radial-gradient(ellipse at 50% -10%,#0b1d3d 0%,#02060f 66%)}
+#stage{display:grid;grid-template-columns:minmax(230px,270px) 1fr minmax(270px,320px);gap:20px}
+.col{display:flex;flex-direction:column;gap:16px;min-height:0;overflow:auto}
+#list .cat{font:600 10.5px Bahnschrift,Consolas;letter-spacing:.3em;color:var(--mut);margin:12px 0 6px}#list .cat:first-child{margin-top:0}
+#list button{display:flex;width:100%;align-items:center;gap:10px;text-align:left;margin-bottom:6px;padding:9px 12px;font:600 13px "Segoe UI",sans-serif;letter-spacing:0;color:#dfefff}
+#list button .e{font-size:18px;width:24px;text-align:center}
+#main{display:flex;flex-direction:column;gap:16px;min-height:0}
+#head{display:flex;gap:18px;align-items:center}
+#ik{font-size:58px;line-height:1;filter:drop-shadow(0 0 18px rgba(74,163,255,.45))}
+#ad{font:700 30px Bahnschrift,"Segoe UI";color:#fff;letter-spacing:.02em}#oz{font-size:15px;color:#cfe3ff;margin-top:5px;line-height:1.45}
+.ai{display:none;margin-left:10px;font:600 10px Consolas;letter-spacing:.15em;color:var(--gold);border:1px solid rgba(255,216,74,.5);border-radius:8px;padding:2px 7px;vertical-align:middle}
+#flow{position:relative;flex:1;min-height:210px}
+#fl{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.lk{fill:none;stroke:#4aa3ff;stroke-width:3;opacity:.55;filter:drop-shadow(0 0 5px rgba(74,163,255,.6))}
+.lk.ok{stroke:var(--ok);opacity:.9;filter:drop-shadow(0 0 5px rgba(53,224,107,.6))}
+.lk.go{stroke-dasharray:8 8;animation:flow 1s linear infinite;opacity:1}@keyframes flow{to{stroke-dashoffset:-16}}
+.sn{position:absolute;transform:translate(-50%,-50%);width:132px;text-align:center;cursor:pointer}
+.sn .b{position:relative;width:54px;height:54px;margin:0 auto 7px;border-radius:50%;display:grid;place-items:center;font:700 20px Bahnschrift;color:var(--c);background:rgba(8,22,46,.94);border:2px solid var(--ln);transition:.3s}
+.sn .d{position:absolute;top:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:#556;border:2px solid #04101c}
+.sn.done .b{border-color:var(--ok);color:var(--ok)}.sn.done .d{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.sn.cur .b{border-color:#fff;color:#fff;background:linear-gradient(135deg,var(--c2),var(--c));box-shadow:0 0 0 6px rgba(74,163,255,.2),0 0 30px rgba(74,163,255,.7);transform:scale(1.12)}.sn.cur .d{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.sn .t{font:600 12.5px "Segoe UI",sans-serif;color:#dfefff;line-height:1.25;text-shadow:0 1px 6px #000}.sn.cur .t{color:#fff}
+#step{min-height:120px}#step h2{margin:0 0 8px;font:700 20px Bahnschrift,"Segoe UI";color:#fff}#step p{margin:0;font-size:17px;line-height:1.6;color:#e2f0ff}
+#ctl{display:flex;gap:10px;justify-content:center}#ctl button{height:42px;padding:0 20px;border-radius:21px}
+.tx{font-size:14.5px;line-height:1.55;color:#e2f0ff}
+#qq{font-size:14.5px;line-height:1.5;color:#fff;margin-bottom:10px}#qs button{display:block;width:100%;text-align:left;margin-bottom:7px;padding:10px 12px;font:600 13px "Segoe UI";letter-spacing:0;color:#dfefff;white-space:normal}
+#qs button.ok{border-color:var(--ok);background:rgba(53,224,107,.15);color:#fff}#qs button.no{border-color:var(--bad);background:rgba(255,138,112,.13)}
+#empty{display:none;flex:1;place-items:center;text-align:center;color:var(--mut);font-size:16px;line-height:1.8}
+#busy{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:20;padding:22px 34px;text-align:center}#busy b{display:block;color:#fff;font:600 16px "Segoe UI";margin-top:10px}
+.spin{width:38px;height:38px;margin:0 auto;border:3px solid var(--ln);border-top-color:var(--c);border-radius:50%;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.flash{animation:fl 1.2s}@keyframes fl{0%{box-shadow:0 0 0 2px var(--gold)}100%{box-shadow:none}}
+</style></head><body>
+<div id="stage">
+ <div class="col"><div class="card" id="list"></div></div>
+ <div id="main">
+  <div class="card" id="head"><div id="ik">⚙️</div><div><div id="ad">Nasıl Çalışır?<span class="ai" id="aib">YAPAY ZEKÂ</span></div><div id="oz">Soldan bir konu seç ya da sor: "buzdolabı nasıl çalışır".</div></div></div>
+  <div id="empty">Bir konu seç ya da merak ettiğin şeyi sor.<br>Örnek: "uçak nasıl uçar", "GPS nasıl çalışır", "bulut nasıl oluşur".<br>Listede olmayanı yapay zekâyla hazırlarım.</div>
+  <div id="flow"><svg id="fl"></svg></div>
+  <div class="card" id="step"><h2 id="st">Hazır</h2><p id="stx">Başla'ya bas; adımları sırayla anlatayım.</p></div>
+  <div id="ctl"><button id="prev">◀ ÖNCEKİ</button><button class="prim" id="next">BAŞLA ▶</button><button id="rep">TEKRAR</button></div>
+ </div>
+ <div class="col">
+  <div class="card" id="cb"><h3>BENZETME</h3><div class="tx" id="bz">—</div></div>
+  <div class="card" id="cf"><h3>İLGİNÇ BİLGİ</h3><div class="tx" id="bgi">—</div></div>
+  <div class="card"><h3>MİNİ TEST <small id="sc"></small></h3><div id="qq" class="mut">"Soru sor" de ya da aşağıya bas.</div><div id="qs"></div><button id="ask" style="width:100%">SORU SOR</button></div>
+ </div>
+</div>
+<div id="busy" class="card"><div class="spin"></div><b id="bt">Hazırlanıyor…</b><div class="mut" style="font-size:12px;margin-top:6px">Yerel yapay zekâ anlatımı yazıyor</div></div>
+<script>
+let S=null;const NS="http://www.w3.org/2000/svg";
+Mode.start({kind:"nasil",title:"NASIL ÇALIŞIR",placeholder:"Komut: buzdolabı nasıl çalışır · başla · sonraki · önceki · benzetme · ilginç bilgi · soru sor · konular",init:render,
+ act:d=>{if(d.snap)render(d.snap);if(d.show)flash(d.show==="benzetme"?"cb":"cf");if(d.answer)mark(d.answer)}});
+const esc=Mode.esc,send=t=>Mode.send({type:"text",text:t});
+function flash(id){const e=$(id);e.classList.remove("flash");void e.offsetWidth;e.classList.add("flash")}
+function render(s){S=s;const t=s.cur;
+ const L=$("list");L.innerHTML="";for(const c of s.cats){const xs=s.topics.filter(x=>x.kat===c);if(!xs.length)continue;
+  L.insertAdjacentHTML("beforeend",'<div class="cat">'+esc(c.toUpperCase())+"</div>");
+  for(const x of xs){const b=document.createElement("button");b.innerHTML='<span class="e">'+esc(x.ikon)+"</span>"+esc(x.ad);if(t&&t.id===x.id)b.classList.add("cur");b.onclick=()=>send("@seç "+x.id);L.appendChild(b)}}
+ $("busy").style.display=s.busy?"block":"none";$("bt").textContent=s.busy?"Hazırlanıyor: "+s.busy:"";
+ const has=!!t;for(const id of ["flow","step","ctl"])$(id).style.display=has?"":"none";$("empty").style.display=has?"none":"grid";
+ $("sc").textContent=s.score[1]?s.score[0]+" / "+s.score[1]+" doğru":"";
+ if(!t){$("ik").textContent="⚙️";$("ad").firstChild.textContent="Nasıl Çalışır?";$("aib").style.display="none";$("oz").textContent="Soldan bir konu seç ya da sor: \"buzdolabı nasıl çalışır\".";$("bz").textContent=$("bgi").textContent="—";Mode.pill("HAZIR");return}
+ $("ik").textContent=t.ikon||"✨";$("ad").firstChild.textContent=t.ad;$("aib").style.display=t.ai?"inline-block":"none";$("oz").textContent=t.ozet;
+ $("bz").textContent=t.benzetme||"—";$("bgi").textContent=t.bilgi||"—";
+ const i=s.step;$("st").textContent=i<0?"Hazır":"Adım "+(i+1)+" / "+t.adim.length+" · "+t.adim[i][0];$("stx").textContent=i<0?"Başla'ya bas; adımları sırayla anlatayım.":t.adim[i][1];
+ $("next").textContent=i<0?"BAŞLA ▶":i>=t.adim.length-1?"BİTTİ ✓":"SONRAKİ ▶";$("prev").disabled=i<=0;
+ Mode.pill(i<0?"KONU SEÇİLDİ":"ADIM "+(i+1)+"/"+t.adim.length);
+ flow(t,i);quiz(t)}
+function flow(t,cur){const F=$("flow"),sv=$("fl");F.querySelectorAll(".sn").forEach(e=>e.remove());sv.innerHTML="";
+ const n=t.adim.length,W=F.clientWidth,H=F.clientHeight,P=t.adim.map((_,i)=>[W*(i+.5)/n,H*(i%2?.68:.32)]);
+ for(let i=0;i<n-1;i++){const [ax,ay]=P[i],[bx,by]=P[i+1],mx=(ax+bx)/2,p=document.createElementNS(NS,"path");
+  p.setAttribute("d","M"+ax+" "+ay+" C"+mx+" "+ay+" "+mx+" "+by+" "+bx+" "+by);p.setAttribute("class","lk"+(i<cur?" ok":"")+(i===cur?" go":""));sv.appendChild(p)}
+ t.adim.forEach((a,i)=>{const e=document.createElement("div");e.className="sn"+(i<cur?" done":"")+(i===cur?" cur":"");
+  e.innerHTML='<div class="b">'+(i+1)+'<span class="d"></span></div><div class="t">'+esc(a[0])+"</div>";e.style.left=P[i][0]+"px";e.style.top=P[i][1]+"px";e.onclick=()=>send("@adım "+i);F.appendChild(e)})}
+function quiz(t){const qs=t.soru||[];$("ask").style.display=qs.length?"":"none";
+ if(S.q<0||!qs[S.q]){$("qq").textContent=qs.length?'"Soru sor" de ya da aşağıya bas.':"Bu konu için soru yok.";$("qq").className="mut";$("qs").innerHTML="";return}
+ const q=qs[S.q];$("qq").textContent=q.q;$("qq").className="";$("qs").innerHTML="";
+ q.s.forEach((x,i)=>{const b=document.createElement("button");b.textContent="ABC"[i]+")  "+x;b.onclick=()=>send("@cevap "+i);$("qs").appendChild(b)})}
+function mark(a){const bs=$("qs").querySelectorAll("button");if(!bs.length)return;const q=(S.cur.soru||[])[S.q<0?S.cur.soru.length-1:S.q];
+ if(q&&bs[q.c])bs[q.c].classList.add("ok");if(!a.ok&&bs[a.pick])bs[a.pick].classList.add("no")}
+$("next").onclick=()=>{if(!S||!S.cur)return;const i=S.step;if(i<0)send("başla");else if(i<S.cur.adim.length-1)send("sonraki");else send("soru sor")};
+$("prev").onclick=()=>send("önceki");$("rep").onclick=()=>send("tekrar");$("ask").onclick=()=>send("soru sor");
+addEventListener("keydown",e=>{if(document.activeElement.tagName==="INPUT")return;if(e.key==="ArrowRight")$("next").click();else if(e.key==="ArrowLeft")$("prev").click()});
+addEventListener("resize",()=>{if(S&&S.cur)flow(S.cur,S.step)});
+</script></body></html>

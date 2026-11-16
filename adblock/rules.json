@@ -1,0 +1,60 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "resourceTypes": ["script", "image", "xmlhttprequest", "sub_frame", "ping", "media", "stylesheet", "font", "other"],
+      "requestDomains": [
+        "doubleclick.net", "googlesyndication.com", "googleadservices.com", "adservice.google.com",
+        "pagead2.googlesyndication.com", "googletagservices.com", "google-analytics.com", "googletagmanager.com",
+        "adnxs.com", "adsrvr.org", "adform.net", "advertising.com", "criteo.com", "criteo.net",
+        "taboola.com", "outbrain.com", "revcontent.com", "mgid.com", "zemanta.com",
+        "rubiconproject.com", "pubmatic.com", "openx.net", "casalemedia.com", "indexww.com",
+        "smartadserver.com", "amazon-adsystem.com", "media.net", "contextweb.com", "yieldmo.com",
+        "moatads.com", "adsafeprotected.com", "doubleverify.com", "scorecardresearch.com", "quantserve.com",
+        "hotjar.com", "mouseflow.com", "crazyegg.com", "fullstory.com", "clarity.ms",
+        "facebook.net", "connect.facebook.net", "ads-twitter.com", "analytics.twitter.com", "ads.linkedin.com",
+        "ads.pinterest.com", "ads.tiktok.com", "analytics.tiktok.com", "snap.licdn.com", "sc-static.net",
+        "bat.bing.com", "ads.yahoo.com", "analytics.yahoo.com", "adtech.com", "yieldlab.net",
+        "exoclick.com", "juicyads.com", "trafficjunky.net", "propellerads.com", "popads.net",
+        "popcash.net", "adcash.com", "clickadu.com", "hilltopads.net", "adsterra.com",
+        "bidswitch.net", "sharethrough.com", "triplelift.com", "teads.tv", "gumgum.com",
+        "33across.com", "lijit.com", "sovrn.com", "everesttech.net", "serving-sys.com",
+        "mathtag.com", "turn.com", "demdex.net", "krxd.net", "bluekai.com",
+        "agkn.com", "rlcdn.com", "tapad.com", "adition.com", "weborama.com",
+        "hotjar.io", "segment.io", "mixpanel.com", "amplitude.com", "branch.io",
+        "appsflyer.com", "adjust.com", "kochava.com", "chartbeat.com", "newrelic.com",
+        "ad.doubleclick.net", "stats.g.doubleclick.net"      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "resourceTypes": ["script", "image", "xmlhttprequest", "sub_frame", "ping", "other"],
+      "urlFilter": "/ads/*",
+      "domainType": "thirdParty"
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "resourceTypes": ["script", "image", "xmlhttprequest", "sub_frame", "ping", "other"],
+      "urlFilter": "/adserver/",
+      "domainType": "thirdParty"
+    }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "resourceTypes": ["script", "xmlhttprequest", "ping", "other"],
+      "regexFilter": "^https?://[^/]+/.*(/|[._-])(adframe|adsbygoogle|ad-banner|ads\\.js|adsense|prebid|pagead)([._/?-]|$)"
+    }
+  }
+]
