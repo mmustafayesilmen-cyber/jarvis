@@ -14,6 +14,8 @@
   "volume_max": 60,
   "city": "Istanbul",
   "report_phone": "",
+  "home_url": "",
+  "home_default_device": "",
   "kendi_tarayici": true,
   "tarayici_tema": "gx"
 }
